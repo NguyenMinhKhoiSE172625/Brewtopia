@@ -1,6 +1,8 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, ImageBackground, Dimensions, SafeAreaView } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function Role() {
+  const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
 
@@ -59,7 +61,7 @@ export default function Role() {
                   marginBottom: 60 * scale,
                   borderRadius: 10 * scale,
                 }]}
-                onPress={() => {/* Xử lý đăng nhập người dùng */}}
+                onPress={() => router.push("/pages/login/login")}
               >
                 <Text style={styles.buttonText}>NGƯỜI DÙNG</Text>
               </TouchableOpacity>
