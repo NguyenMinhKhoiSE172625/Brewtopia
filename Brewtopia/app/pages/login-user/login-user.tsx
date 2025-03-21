@@ -18,8 +18,7 @@ export default function LoginUser() {
     if (email === 'user@gmail.com' && password === '123') {
       // Login successful
       setIsError(false);
-      // Navigate to next screen or handle successful login
-      router.push("/pages/home"); // You'll need to create this page
+      router.push("/pages/home/home");
     } else {
       setIsError(true);
     }
