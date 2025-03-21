@@ -9,6 +9,7 @@ export default function Home() {
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
   const [currentImage, setCurrentImage] = useState(0);
+  const [showBotMessage, setShowBotMessage] = useState(false);
 
   // Auto slide for special offers
   useEffect(() => {
@@ -18,32 +19,44 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  // Show bot message after 5 seconds
+  useEffect(() => {
+    const messageTimer = setTimeout(() => {
+      setShowBotMessage(true);
+    }, 5000);
+    return () => clearInterval(messageTimer);
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.topSection}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.locationContainer}>
-            <MaterialIcons name="location-on" size={24} color="#6E543C" />
+            <MaterialIcons name="location-on" size={24} color="#FFFFFF" />
             <Text style={styles.locationText}>Ho Chi Minh, Viet Nam</Text>
           </View>
           <TouchableOpacity 
             style={styles.notificationButton}
             onPress={() => router.push("/pages/notifications/notifications")}
           >
-            <Ionicons name="notifications-outline" size={24} color="#6E543C" />
+            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity 
-          style={styles.searchBar}
-          onPress={() => router.push("/pages/search/search")}
-        >
-          <Ionicons name="search" size={20} color="#999" />
-          <Text style={styles.searchText}>Search your coffee...</Text>
-          <MaterialIcons name="filter-list" size={20} color="#999" />
-        </TouchableOpacity>
+        <View style={styles.searchContainer}>
+          <TouchableOpacity 
+            style={styles.searchBar}
+            onPress={() => router.push("/pages/search/search")}
+          >
+            <Ionicons name="search" size={20} color="#999" />
+            <Text style={styles.searchText}>Search your coffee...</Text>
+            <TouchableOpacity style={styles.filterButton}>
+              <MaterialIcons name="filter-list" size={20} color="#000" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -51,15 +64,27 @@ export default function Home() {
             style={styles.paymentCard}
             onPress={() => router.push("/pages/payment/payment")}
           >
-            <MaterialIcons name="payment" size={24} color="#6E543C" />
-            <Text style={styles.actionText}>Payment{'\n'}Add card</Text>
+            <View style={styles.paymentContent}>
+              <Text style={styles.paymentTitle}>Payment</Text>
+              <Text style={styles.paymentSubtitle}>Add card</Text>
+              <MaterialIcons name="credit-card" size={24} color="#000000" style={styles.paymentIcon} />
+            </View>
           </TouchableOpacity>
           <View style={styles.rewardsCard}>
             <Text style={styles.rewardsTitle}>Brewtopia Rewards</Text>
-            <Text style={styles.rewardsPoints}>100</Text>
+            <View style={styles.rewardsPointsContainer}>
+              <Text style={styles.rewardsPoints}>100</Text>
+              <Image 
+                source={require('../../../assets/images/icondongtien.png')}
+                style={styles.rewardsIcon}
+                resizeMode="contain"
+              />
+            </View>
           </View>
         </View>
+      </View>
 
+      <ScrollView style={styles.scrollView}>
         {/* Special Offers */}
         <View style={styles.specialOffers}>
           <View style={styles.sectionHeader}>
@@ -68,19 +93,27 @@ export default function Home() {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.offersCarousel}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.offersCarousel}
+          >
             <Image 
-              source={currentImage === 0 ? 
-                require('../../../assets/images/special1.png') :
-                require('../../../assets/images/special2.png')
-              }
+              source={require('../../../assets/images/special1.png')}
               style={styles.offerImage}
               resizeMode="cover"
             />
-            <View style={styles.dots}>
-              <View style={[styles.dot, currentImage === 0 && styles.activeDot]} />
-              <View style={[styles.dot, currentImage === 1 && styles.activeDot]} />
-            </View>
+            <Image 
+              source={require('../../../assets/images/special2.png')}
+              style={styles.offerImage}
+              resizeMode="cover"
+            />
+          </ScrollView>
+          <View style={styles.dots}>
+            <View style={[styles.dot, currentImage === 0 && styles.activeDot]} />
+            <View style={[styles.dot, currentImage === 1 && styles.activeDot]} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
           </View>
         </View>
 
@@ -94,7 +127,17 @@ export default function Home() {
           />
         </View>
 
-        {/* AI Chat Bot */}
+        {/* Add spacing for chatbot */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* AI Chat Bot */}
+      <View style={styles.chatBotContainer}>
+        {showBotMessage && (
+          <View style={styles.chatBubble}>
+            <Text style={styles.botText}>How can i help you...</Text>
+          </View>
+        )}
         <TouchableOpacity 
           style={styles.chatBot}
           onPress={() => router.push("/pages/chat/chat")}
@@ -103,9 +146,8 @@ export default function Home() {
             source={require('../../../assets/images/bot1.png')}
             style={styles.botImage}
           />
-          <Text style={styles.botText}>How can I help you...</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -139,8 +181,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  topSection: {
+    backgroundColor: '#6E543C',
+    paddingBottom: 16,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
   scrollView: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -156,16 +205,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
-    color: '#6E543C',
+    color: '#FFFFFF',
   },
   notificationButton: {
     padding: 8,
   },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    margin: 16,
+    backgroundColor: '#E8E8E8',
     padding: 12,
     borderRadius: 10,
   },
@@ -174,38 +226,83 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#999',
   },
+  filterButton: {
+    backgroundColor: '#FFFFFF',
+    padding: 8,
+    borderRadius: 8,
+  },
   quickActions: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 16,
     gap: 16,
   },
   paymentCard: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 10,
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  paymentContent: {
+    alignItems: 'flex-start',
+  },
+  paymentTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  paymentSubtitle: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 2,
+  },
+  paymentIcon: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    marginTop: -12,
   },
   rewardsCard: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  actionText: {
-    marginTop: 8,
-    textAlign: 'center',
-    color: '#6E543C',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   rewardsTitle: {
-    color: '#6E543C',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  rewardsPointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
   },
   rewardsPoints: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#6E543C',
+    color: '#000000',
+    marginRight: 4,
+  },
+  rewardsIcon: {
+    width: 24,
+    height: 24,
+    marginLeft: 4,
   },
   specialOffers: {
     padding: 16,
@@ -222,30 +319,32 @@ const styles = StyleSheet.create({
     color: '#6E543C',
   },
   seeAllText: {
-    color: '#B68D5F',
+    color: '#6E543C',
   },
   offersCarousel: {
-    alignItems: 'center',
+    flexDirection: 'row',
   },
   offerImage: {
-    width: '100%',
-    height: 200,
+    width: 300,
+    height: 180,
     borderRadius: 10,
+    marginRight: 16,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 16,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 4,
+    opacity: 0.5,
   },
   activeDot: {
-    backgroundColor: '#6E543C',
+    opacity: 1,
   },
   didYouKnow: {
     padding: 16,
@@ -256,48 +355,50 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 16,
   },
-  chatBot: {
+  chatBotContainer: {
     position: 'absolute',
     bottom: 80,
     right: 16,
-    flexDirection: 'row',
+    alignItems: 'flex-end',
+    zIndex: 1000,
+  },
+  chatBot: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 8,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   botImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 60,
+    height: 60,
+  },
+  chatBubble: {
+    backgroundColor: '#D9D9D9',
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    marginBottom: 8,
   },
   botText: {
-    marginLeft: 8,
     color: '#6E543C',
+    fontSize: 18,
   },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderTopWidth: 1,
-    borderTopColor: '#F5F5F5',
+    borderTopColor: '#E8E8E8',
   },
   navItem: {
     alignItems: 'center',
     padding: 8,
   },
   activeNavItem: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
+    paddingHorizontal: 16,
   },
   navText: {
     fontSize: 12,
