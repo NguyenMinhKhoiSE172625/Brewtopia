@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, SafeAreaView, Image, TextInput, TouchableOpacit
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
 export default function Payment() {
   const [isSaveCard, setIsSaveCard] = useState(false);
@@ -132,48 +133,48 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 20,
+    padding: moderateScale(16),
+    paddingTop: verticalScale(20),
   },
   backButton: {
-    marginRight: 16,
+    marginRight: horizontalScale(16),
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: fontScale(24),
     fontWeight: 'bold',
     color: '#6E543C',
     flex: 1,
     textAlign: 'center',
-    marginRight: 40,
+    marginRight: horizontalScale(40),
   },
   cardContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: horizontalScale(20),
+    marginBottom: verticalScale(20),
   },
   cardImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 10,
+    height: verticalScale(200),
+    borderRadius: moderateScale(10),
   },
   inputContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: horizontalScale(20),
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: fontScale(14),
     fontWeight: '600',
     color: '#6E543C',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   input: {
-    height: 50,
+    height: verticalScale(50),
     borderWidth: 1,
     borderColor: '#6E543C',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    borderRadius: moderateScale(25),
+    paddingHorizontal: horizontalScale(20),
+    fontSize: fontScale(16),
     color: '#000000',
   },
   rowContainer: {
@@ -184,33 +185,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 20,
+    paddingHorizontal: horizontalScale(20),
+    marginTop: verticalScale(20),
   },
   saveCardText: {
-    fontSize: 16,
+    fontSize: fontScale(16),
     color: '#6E543C',
     fontWeight: '500',
   },
   addCardButton: {
     backgroundColor: '#6E543C',
-    marginHorizontal: 20,
-    marginTop: 30,
-    height: 50,
-    borderRadius: 25,
+    marginHorizontal: horizontalScale(20),
+    marginTop: verticalScale(30),
+    height: verticalScale(50),
+    borderRadius: moderateScale(25),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 80, // Add space above bottom navigation
+    marginBottom: verticalScale(80),
   },
   addCardButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: fontScale(18),
     fontWeight: '600',
   },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 8,
+    padding: moderateScale(8),
     backgroundColor: '#F5F5F5',
     borderTopWidth: 1,
     borderTopColor: '#E8E8E8',
@@ -221,11 +222,11 @@ const styles = StyleSheet.create({
   },
   navItem: {
     alignItems: 'center',
-    padding: 8,
+    padding: moderateScale(8),
   },
   navText: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: fontScale(12),
+    marginTop: verticalScale(4),
     color: '#6E543C',
   },
   navTextBold: {
