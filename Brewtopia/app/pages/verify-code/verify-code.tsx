@@ -1,14 +1,17 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign } from '@expo/vector-icons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function VerifyCode() {
   const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
-  const [timeLeft, setTimeLeft] = useState(20); // 20 seconds countdown
+  const [timeLeft, setTimeLeft] = useState(20);
+  const [code, setCode] = useState(['', '', '', '', '']);
+  const [isError, setIsError] = useState(false);
+  const inputRefs = useRef([]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -16,6 +19,34 @@ export default function VerifyCode() {
       return () => clearTimeout(timerId);
     }
   }, [timeLeft]);
+
+  const handleCodeChange = (text, index) => {
+    const newCode = [...code];
+    newCode[index] = text;
+    setCode(newCode);
+    setIsError(false);
+
+    // Auto-focus next input
+    if (text && index < 4) {
+      inputRefs.current[index + 1].focus();
+    }
+
+    // Check if code is complete
+    if (index === 4 && text) {
+      const fullCode = newCode.join('');
+      if (fullCode === '12345') {
+        router.push("/pages/login-user/login-user");
+      } else {
+        setIsError(true);
+      }
+    }
+  };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1].focus();
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -58,22 +89,41 @@ export default function VerifyCode() {
 
           {/* Code Input Container */}
           <View style={styles.codeContainer}>
-            {[1, 2, 3, 4, 5].map((_, index) => (
-              <View key={index} style={styles.codeBox}>
+            {[0, 1, 2, 3, 4].map((index) => (
+              <View 
+                key={index} 
+                style={[
+                  styles.codeBox,
+                  isError && styles.codeBoxError
+                ]}
+              >
                 <TextInput
+                  ref={ref => inputRefs.current[index] = ref}
                   style={styles.codeInput}
                   maxLength={1}
                   keyboardType="numeric"
+                  value={code[index]}
+                  onChangeText={(text) => handleCodeChange(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
                 />
               </View>
             ))}
           </View>
 
+          {/* Error Message */}
+          {isError && (
+            <Text style={styles.errorText}>Wrong code</Text>
+          )}
+
           {/* Resend Code */}
           <View style={styles.resendContainer}>
             <TouchableOpacity 
               style={styles.resendButton}
-              onPress={() => setTimeLeft(20)}
+              onPress={() => {
+                setTimeLeft(20);
+                setCode(['', '', '', '', '']);
+                setIsError(false);
+              }}
               disabled={timeLeft > 0}
             >
               <Text style={[styles.resendText, timeLeft > 0 && styles.resendTextDisabled]}>
@@ -148,12 +198,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
+  codeBoxError: {
+    borderColor: '#FF0000',
+    borderWidth: 2,
+  },
   codeInput: {
     fontSize: 24,
     color: '#000000',
     textAlign: 'center',
     width: '100%',
     height: '100%',
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   resendContainer: {
     flexDirection: 'row',

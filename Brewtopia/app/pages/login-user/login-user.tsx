@@ -10,6 +10,20 @@ export default function LoginUser() {
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isError, setIsError] = useState(false);
+
+  const handleLogin = () => {
+    if (email === 'user@gmail.com' && password === '123') {
+      // Login successful
+      setIsError(false);
+      // Navigate to next screen or handle successful login
+      router.push("/pages/home"); // You'll need to create this page
+    } else {
+      setIsError(true);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -45,25 +59,45 @@ export default function LoginUser() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email address</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                isError && styles.inputError
+              ]}
               placeholder="helloworld@gmail.com"
               placeholderTextColor="#999"
               keyboardType="email-address"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setIsError(false);
+              }}
             />
           </View>
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+            <View style={[
+              styles.passwordContainer,
+              isError && styles.inputError
+            ]}>
               <TextInput
                 style={[styles.input, { flex: 1, borderWidth: 0 }]}
                 placeholder="••••••••"
                 placeholderTextColor="#999"
                 secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setIsError(false);
+                }}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Text>👁</Text>
+                <Ionicons 
+                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                  size={24} 
+                  color="#999"
+                />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
@@ -74,6 +108,11 @@ export default function LoginUser() {
             </TouchableOpacity>
           </View>
 
+          {/* Error Message */}
+          {isError && (
+            <Text style={styles.errorText}>Please check your email and password</Text>
+          )}
+
           {/* Login Button */}
           <TouchableOpacity 
             style={[styles.loginButton, {
@@ -81,6 +120,7 @@ export default function LoginUser() {
               borderRadius: 10 * scale,
               marginTop: 20 * scale,
             }]}
+            onPress={handleLogin}
           >
             <Text style={styles.buttonText}>Log in</Text>
           </TouchableOpacity>
@@ -156,6 +196,10 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
   },
+  inputError: {
+    borderColor: '#FF0000',
+    borderWidth: 2,
+  },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -170,6 +214,12 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   loginButton: {
     backgroundColor: '#B68D5F',
