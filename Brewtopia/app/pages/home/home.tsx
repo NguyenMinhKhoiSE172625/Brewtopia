@@ -1,6 +1,6 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 
 export default function Home() {
@@ -10,13 +10,33 @@ export default function Home() {
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
   const [currentImage, setCurrentImage] = useState(0);
   const [showBotMessage, setShowBotMessage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
-  // Auto slide for special offers
+  const specialOffers = [
+    require('../../../assets/images/special1.png'),
+    require('../../../assets/images/special2.png'),
+    require('../../../assets/images/special3.png'),
+    require('../../../assets/images/special4.png'),
+    require('../../../assets/images/special1.png'),  // Repeating first image for smooth loop
+  ];
+
+  const flatListRef = useRef<FlatList | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentImage((prev) => (prev === 0 ? 1 : 0));
+    const scrollInterval = setInterval(() => {
+      setCurrentIndex(prevIndex => {
+        const nextIndex = prevIndex < specialOffers.length - 1 ? prevIndex + 1 : 0;
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true
+        });
+        return nextIndex;
+      });
     }, 3000);
-    return () => clearInterval(timer);
+
+    return () => clearInterval(scrollInterval);
   }, []);
 
   // Show bot message after 5 seconds
@@ -26,6 +46,26 @@ export default function Home() {
     }, 5000);
     return () => clearInterval(messageTimer);
   }, []);
+
+  const renderSpecialOffer = ({ item, index }: { item: any; index: number }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setSelectedImage(index);
+        setShowImageModal(true);
+      }}
+    >
+      <Image
+        source={item}
+        style={{
+          width: screenWidth - 32,
+          height: 180,
+          borderRadius: 20,
+          marginRight: 16
+        }}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -86,45 +126,45 @@ export default function Home() {
 
       <ScrollView style={styles.scrollView}>
         {/* Special Offers */}
-        <View style={styles.specialOffers}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Special Offers</Text>
             <TouchableOpacity>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView 
-            horizontal 
+          <FlatList
+            ref={flatListRef}
+            data={specialOffers}
+            renderItem={renderSpecialOffer}
+            horizontal
+            pagingEnabled
             showsHorizontalScrollIndicator={false}
-            style={styles.offersCarousel}
-          >
-            <Image 
-              source={require('../../../assets/images/special1.png')}
-              style={styles.offerImage}
-              resizeMode="cover"
-            />
-            <Image 
-              source={require('../../../assets/images/special2.png')}
-              style={styles.offerImage}
-              resizeMode="cover"
-            />
-          </ScrollView>
-          <View style={styles.dots}>
-            <View style={[styles.dot, currentImage === 0 && styles.activeDot]} />
-            <View style={[styles.dot, currentImage === 1 && styles.activeDot]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
+            keyExtractor={(_, index) => index.toString()}
+            onScrollToIndexFailed={info => {
+              const wait = new Promise(resolve => setTimeout(resolve, 500));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+              });
+            }}
+          />
         </View>
 
         {/* Did you know section */}
         <View style={styles.didYouKnow}>
           <Text style={styles.sectionTitle}>Did you know ...</Text>
-          <Image 
-            source={require('../../../assets/images/didyouknow.png')}
-            style={styles.didYouKnowImage}
-            resizeMode="cover"
-          />
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedImage(specialOffers.length); // Use an index after special offers
+              setShowImageModal(true);
+            }}
+          >
+            <Image 
+              source={require('../../../assets/images/didyouknow.png')}
+              style={styles.didYouKnowImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Add spacing for chatbot */}
@@ -172,6 +212,39 @@ export default function Home() {
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Image Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImageModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Image
+              source={selectedImage !== null 
+                ? (selectedImage < specialOffers.length 
+                  ? specialOffers[selectedImage] 
+                  : require('../../../assets/images/didyouknow.png'))
+                : specialOffers[0]
+              }
+              style={styles.modalImage}
+              resizeMode="contain"
+            />
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowImageModal(false)}
+            >
+              <MaterialIcons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -304,14 +377,15 @@ const styles = StyleSheet.create({
     height: 24,
     marginLeft: 4,
   },
-  specialOffers: {
+  section: {
     padding: 16,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
@@ -320,31 +394,6 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     color: '#6E543C',
-  },
-  offersCarousel: {
-    flexDirection: 'row',
-  },
-  offerImage: {
-    width: 300,
-    height: 180,
-    borderRadius: 10,
-    marginRight: 16,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 4,
-    opacity: 0.5,
-  },
-  activeDot: {
-    opacity: 1,
   },
   didYouKnow: {
     padding: 16,
@@ -407,5 +456,29 @@ const styles = StyleSheet.create({
   },
   activeNavText: {
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalImage: {
+    width: '100%',
+    height: 400,
+    borderRadius: 20,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    backgroundColor: '#6E543C',
+    borderRadius: 20,
+    padding: 8,
   },
 }); 
