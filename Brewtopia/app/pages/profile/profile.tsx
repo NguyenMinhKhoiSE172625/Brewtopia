@@ -49,8 +49,8 @@ export default function Profile() {
   ];
 
   const handleLogout = () => {
-    // Handle logout logic here
-    console.log('Logging out...');
+    // Navigate to roles page
+    router.replace('/pages/roles/role');
   };
 
   return (
