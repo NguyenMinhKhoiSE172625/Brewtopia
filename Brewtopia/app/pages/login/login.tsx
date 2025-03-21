@@ -40,6 +40,7 @@ export default function Login() {
               backgroundColor: '#6E543C',
               marginBottom: 20 * scale,
             }]}
+            onPress={() => router.push("/pages/login-user/login-user")}
           >
             <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Đăng nhập</Text>
           </TouchableOpacity>
@@ -51,6 +52,7 @@ export default function Login() {
               borderColor: '#000000',
               borderWidth: 1,
             }]}
+            onPress={() => router.push("/pages/register/register")}
           >
             <Text style={[styles.buttonText, { color: '#000000' }]}>Tạo tài khoản</Text>
           </TouchableOpacity>

@@ -1,10 +1,9 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function LoginUser() {
+export default function Register() {
   const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
@@ -39,14 +38,24 @@ export default function LoginUser() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Log In</Text>
+          <Text style={styles.title}>Tạo tài khoản</Text>
+
+          {/* Username Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tên đăng nhập</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Tên đăng nhập của bạn"
+              placeholderTextColor="#999"
+            />
+          </View>
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email address</Text>
+            <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="helloworld@gmail.com"
+              placeholder="Email của bạn"
               placeholderTextColor="#999"
               keyboardType="email-address"
             />
@@ -54,7 +63,7 @@ export default function LoginUser() {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>Mật khẩu</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.input, { flex: 1, borderWidth: 0 }]}
@@ -62,52 +71,39 @@ export default function LoginUser() {
                 placeholderTextColor="#999"
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Text>👁</Text>
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                  size={24} 
+                  color="#999"
+                />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={styles.forgotPassword}
-              onPress={() => router.push("/pages/forgot-password/forgot-password")}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Login Button */}
+          <Text style={styles.terms}>
+            Tôi chấp nhận các điều khoản và chính sách bảo mật
+          </Text>
+
+          {/* Register Button */}
           <TouchableOpacity 
-            style={[styles.loginButton, {
+            style={[styles.registerButton, {
               height: 50 * scale,
               borderRadius: 10 * scale,
-              marginTop: 20 * scale,
             }]}
+            onPress={() => router.push("/pages/verify-code/verify-code")}
           >
-            <Text style={styles.buttonText}>Log in</Text>
+            <Text style={styles.buttonText}>Đăng Ký</Text>
           </TouchableOpacity>
 
-          {/* Social Login */}
-          <View style={styles.socialContainer}>
-            <Text style={styles.orText}>Or Login with</Text>
-            <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text>f</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text>G</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <AntDesign name="apple1" size={24} color="black" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Sign up link */}
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/pages/register/register")}>
-              <Text style={styles.signupLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.policyText}>
+            Bằng cách tạo tài khoản hoặc đăng nhập, bạn đồng ý với{' '}
+            <Text style={styles.linkText}>Điều khoản</Text> và{' '}
+            <Text style={styles.linkText}>Điều kiện</Text> của chúng tôi
+          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -161,58 +157,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    paddingRight: 15,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
+  eyeButton: {
+    padding: 15,
   },
-  forgotPasswordText: {
+  terms: {
     color: '#FFFFFF',
+    marginVertical: 20,
     fontSize: 14,
   },
-  loginButton: {
+  registerButton: {
     backgroundColor: '#B68D5F',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
   },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  socialContainer: {
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  orText: {
+  policyText: {
     color: '#FFFFFF',
-    marginBottom: 15,
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 12,
   },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  socialButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 30,
-  },
-  signupText: {
-    color: '#FFFFFF',
-  },
-  signupLink: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+  linkText: {
     textDecorationLine: 'underline',
   },
 });
