@@ -39,12 +39,18 @@ export default function Profile() {
     {
       id: '1',
       title: 'Group đi cà phê đê',
-      onPress: () => console.log('Chat Group')
+      onPress: () => router.push({
+        pathname: '/pages/chat/chat',
+        params: { chatId: '1', chatName: 'Group đi cà phê đê', isGroup: 'true' }
+      })
     },
     {
       id: '2',
       title: 'John Weed',
-      onPress: () => console.log('Chat John')
+      onPress: () => router.push({
+        pathname: '/pages/chat/chat',
+        params: { chatId: '2', chatName: 'John Weed', isGroup: 'false' }
+      })
     }
   ];
 
@@ -74,7 +80,7 @@ export default function Profile() {
               <Text style={styles.profileName}>Ngô Văn A</Text>
               <View style={styles.statusContainer}>
                 <View style={styles.freeStatus}>
-                  <Text style={styles.freeText}>Free</Text>
+                  <Text style={styles.freeText}>Limited User</Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.buyPremiumButton}
