@@ -78,7 +78,7 @@ export default function Profile() {
                 </View>
                 <TouchableOpacity 
                   style={styles.buyPremiumButton}
-                  onPress={() => console.log('Buy Premium')}
+                  onPress={() => router.push('/pages/premium/premium')}
                 >
                   <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
                 </TouchableOpacity>

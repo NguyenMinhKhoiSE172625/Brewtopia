@@ -21,8 +21,11 @@ export default function Role() {
           {/* Background mờ với logo */}
           <ImageBackground 
             source={require('../../../assets/images/Logo2.png')} 
-            style={[styles.blurredBackground]}
-            resizeMode="cover"
+            style={[styles.blurredBackground, {
+              width: screenWidth * 2,
+              height: screenWidth * 2,
+            }]}
+            resizeMode="contain"
             blurRadius={2}
           />
           
@@ -98,11 +101,10 @@ const styles = StyleSheet.create({
   },
   blurredBackground: {
     position: 'absolute',
-    width: '100%',
-    height: '70%',
     opacity: 0.1,
     transform: [{ rotate: '-7.27deg' }],
-    top: '20%',
+    top: '10%',
+    left: '-50%',
   },
   headerContainer: {
     position: 'absolute',
