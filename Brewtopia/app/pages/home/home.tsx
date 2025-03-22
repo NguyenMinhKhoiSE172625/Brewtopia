@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
@@ -33,6 +33,9 @@ export default function Home() {
 
   const flatListRef = useRef<FlatList | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const scrollInterval = setInterval(() => {
@@ -49,12 +52,28 @@ export default function Home() {
     return () => clearInterval(scrollInterval);
   }, []);
 
-  // Show bot message after 5 seconds
+  // Show bot message after 5 seconds with animation
   useEffect(() => {
     const messageTimer = setTimeout(() => {
       setShowBotMessage(true);
+      Animated.sequence([
+        // Pop up animation
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 3,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
     }, 5000);
-    return () => clearInterval(messageTimer);
+    return () => clearTimeout(messageTimer);
   }, []);
 
   const renderSpecialOffer = ({ item, index }: { item: any; index: number }) => (
@@ -194,9 +213,17 @@ export default function Home() {
       {/* AI Chat Bot */}
       <View style={styles.chatBotContainer}>
         {showBotMessage && (
-          <View style={styles.chatBubble}>
+          <Animated.View style={[
+            styles.chatBubble,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { scale: scaleAnim },
+              ],
+            }
+          ]}>
             <Text style={styles.chatBubbleText}>How can i help you...</Text>
-          </View>
+          </Animated.View>
         )}
         <TouchableOpacity 
           style={styles.chatBot}
@@ -490,9 +517,17 @@ const styles = StyleSheet.create({
   },
   chatBubble: {
     backgroundColor: '#D9D9D9',
-    padding: moderateScale(8),
+    padding: moderateScale(12),
     borderRadius: moderateScale(30),
     marginBottom: verticalScale(8),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   chatBubbleText: {
     color: '#6E543C',
