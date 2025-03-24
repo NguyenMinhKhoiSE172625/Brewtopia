@@ -175,6 +175,11 @@ export default function Nearby() {
             }}
             showsUserLocation={true}
             showsMyLocationButton={false}
+            showsCompass={true}
+            showsScale={true}
+            showsBuildings={true}
+            showsTraffic={false}
+            showsIndoors={true}
           >
             {cafes.map((cafe) => (
               <Marker
@@ -239,7 +244,7 @@ export default function Nearby() {
                   {
                     translateY: slideAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [200, 0],
+                      outputRange: [300, 0],
                     }),
                   },
                 ],
@@ -251,26 +256,15 @@ export default function Nearby() {
               <View style={styles.cafeHeaderTop}>
                 <Text style={styles.cafeName}>{selectedCafe.name}</Text>
                 <TouchableOpacity onPress={handleCloseCard}>
-                  <MaterialIcons name="close" size={24} color="#6E543C" />
+                  <MaterialIcons name="more-horiz" size={28} color="#6E543C" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.cafeAddress}>{selectedCafe.address}</Text>
-              <View style={styles.ratingContainer}>
-                <View style={styles.stars}>
-                  {[...Array(5)].map((_, index) => (
-                    <MaterialIcons
-                      key={index}
-                      name="star"
-                      size={16}
-                      color={index < selectedCafe.rating ? '#FFD700' : '#D3D3D3'}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.ratingText}>{selectedCafe.rating}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.cafeAddress}>{selectedCafe.address}</Text>
+                <Text style={styles.cafeStatus}>
+                  {selectedCafe.status} - Closed at {selectedCafe.closingTime}
+                </Text>
               </View>
-              <Text style={styles.cafeStatus}>
-                {selectedCafe.status} - Closed at {selectedCafe.closingTime}
-              </Text>
             </View>
             
             <View style={styles.cafeActions}>
@@ -278,7 +272,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={handleGetDirections}
               >
-                <MaterialIcons name="place" size={28} color="#6E543C" />
+                <MaterialIcons name="place" size={24} color="#6E543C" />
                 <Text style={styles.actionText}>Path</Text>
               </TouchableOpacity>
 
@@ -286,7 +280,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Handle phone call */}}
               >
-                <MaterialIcons name="phone" size={28} color="#6E543C" />
+                <MaterialIcons name="phone" size={24} color="#6E543C" />
                 <Text style={styles.actionText}>Phone</Text>
               </TouchableOpacity>
 
@@ -294,7 +288,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Toggle notifications */}}
               >
-                <MaterialIcons name="notifications" size={28} color="#6E543C" />
+                <MaterialIcons name="notifications" size={24} color="#6E543C" />
                 <Text style={styles.actionText}>Alert</Text>
               </TouchableOpacity>
 
@@ -302,7 +296,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Share cafe */}}
               >
-                <MaterialIcons name="share" size={28} color="#6E543C" />
+                <MaterialIcons name="share" size={24} color="#6E543C" />
                 <Text style={styles.actionText}>Share</Text>
               </TouchableOpacity>
             </View>
@@ -314,17 +308,12 @@ export default function Nearby() {
               contentContainerStyle={styles.cafeImagesContent}
             >
               {selectedCafe.images.map((image, index) => (
-                <TouchableOpacity
+                <Image
                   key={index}
-                  activeOpacity={0.9}
-                  onPress={() => {/* Handle image press */}}
-                >
-                  <Image
-                    source={image}
-                    style={styles.cafeImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
+                  source={image}
+                  style={styles.cafeImage}
+                  resizeMode="cover"
+                />
               ))}
             </ScrollView>
           </Animated.View>
@@ -391,16 +380,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: moderateScale(20),
     borderTopRightRadius: moderateScale(20),
-    padding: moderateScale(20),
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    maxHeight: '60%',
+    padding: moderateScale(16),
+    paddingBottom: verticalScale(80),
   },
   cafeHeader: {
     marginBottom: verticalScale(16),
@@ -409,69 +390,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: verticalScale(12),
+    marginBottom: verticalScale(4),
   },
   cafeName: {
-    fontSize: fontScale(24),
-    fontWeight: '600',
+    fontSize: fontScale(28),
+    fontWeight: '700',
     color: '#000000',
     flex: 1,
     marginRight: horizontalScale(16),
   },
   cafeAddress: {
-    fontSize: fontScale(16),
+    fontSize: fontScale(14),
     color: '#666666',
-    marginBottom: verticalScale(12),
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(12),
-  },
-  stars: {
-    flexDirection: 'row',
-    marginRight: horizontalScale(8),
-  },
-  ratingText: {
-    fontSize: fontScale(16),
-    color: '#666666',
-    marginLeft: horizontalScale(4),
   },
   cafeStatus: {
-    fontSize: fontScale(16),
+    fontSize: fontScale(14),
     color: '#666666',
-    marginBottom: verticalScale(16),
+    marginLeft: horizontalScale(8),
   },
   cafeActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: verticalScale(20),
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-    paddingBottom: verticalScale(20),
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(16),
+    gap: horizontalScale(8),
   },
   actionButton: {
     alignItems: 'center',
-    padding: moderateScale(12),
-    minWidth: horizontalScale(70),
+    justifyContent: 'center',
+    backgroundColor: '#F5F1ED',
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: horizontalScale(16),
+    borderRadius: moderateScale(25),
+    flex: 1,
   },
   actionText: {
-    fontSize: fontScale(14),
+    fontSize: fontScale(12),
     color: '#6E543C',
-    marginTop: verticalScale(8),
-    fontWeight: '500',
+    marginTop: verticalScale(4),
   },
   cafeImagesContainer: {
-    marginTop: verticalScale(4),
-    height: verticalScale(150),
+    marginTop: verticalScale(16),
   },
   cafeImagesContent: {
-    paddingRight: horizontalScale(16),
+    gap: horizontalScale(6),
   },
   cafeImage: {
     width: horizontalScale(200),
     height: verticalScale(150),
     borderRadius: moderateScale(12),
-    marginRight: horizontalScale(12),
   },
 }); 

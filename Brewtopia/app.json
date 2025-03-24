@@ -9,20 +9,27 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.brewtopia.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
-        "NSLocationAlwaysUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions."
+        "NSLocationAlwaysUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions."
       },
       "config": {
         "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
+      "package": "com.brewtopia.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
