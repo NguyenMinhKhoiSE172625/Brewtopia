@@ -197,7 +197,7 @@ export default function News() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Community</Text>
+        <Text style={styles.headerTitle}>BrewNews</Text>
         <TouchableOpacity 
           style={styles.postButton}
           onPress={() => setShowPostModal(true)}

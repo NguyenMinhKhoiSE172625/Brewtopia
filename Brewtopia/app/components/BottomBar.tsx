@@ -12,7 +12,7 @@ export default function BottomBar() {
     {
       name: 'Nearby',
       icon: 'place',
-      route: '/pages/nearby/nearby',
+      route: '/pages/nearby',
     },
     {
       name: 'News',
