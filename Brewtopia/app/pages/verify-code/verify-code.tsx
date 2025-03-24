@@ -20,6 +20,7 @@ export default function VerifyCode() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   
   // Create a ref array for TextInputs
   const inputRefs = useRef<Array<TextInput | null>>([]);
@@ -117,6 +118,7 @@ export default function VerifyCode() {
         // Verification successful
         setIsSuccess(true);
         setIsError(false);
+        setSuccessMessage('Verification successful! Redirecting...');
         
         // Clear stored email after successful verification
         await AsyncStorage.removeItem('registration_email');
@@ -149,11 +151,15 @@ export default function VerifyCode() {
     setIsLoading(true);
 
     try {
-      // Call resend code API (you might need to implement this endpoint)
-      const response = await fetch('http://10.0.2.2:4000/api/auth/resend-code', {
+      // Get JWT token if available
+      const token = await AsyncStorage.getItem('auth_token');
+      
+      // Call verification API to resend code
+      const response = await fetch('http://10.0.2.2:4000/api/auth/verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           email: email,
@@ -167,16 +173,22 @@ export default function VerifyCode() {
         setTimeLeft(60);
         setCode(['', '', '', '']);
         setIsError(false);
-        setErrorMessage('');
+        setIsSuccess(true);
+        setSuccessMessage('Verification code has been resent to your email');
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setIsSuccess(false);
+        }, 3000);
       } else {
         // Resend failed
         setIsError(true);
         setErrorMessage(data.message || 'Failed to resend verification code');
       }
     } catch (error) {
-      DebugService.logError('Resend code API error', error);
+      DebugService.logError('Resend verification code error', error);
       setIsError(true);
-      setErrorMessage('Unable to connect to resend code server');
+      setErrorMessage('Unable to connect to server');
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +261,7 @@ export default function VerifyCode() {
 
           {/* Success Message */}
           {isSuccess && (
-            <Text style={styles.successText}>Verification successful! Redirecting...</Text>
+            <Text style={styles.successText}>{successMessage}</Text>
           )}
 
           {/* Error Message */}
@@ -273,7 +285,7 @@ export default function VerifyCode() {
                 styles.resendText, 
                 (timeLeft > 0 || isLoading || isSuccess) && styles.resendTextDisabled
               ]}>
-                Resend Code
+                {isLoading ? 'Sending...' : 'Resend Code'}
               </Text>
             </TouchableOpacity>
             {timeLeft > 0 && (

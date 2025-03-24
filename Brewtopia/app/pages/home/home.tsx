@@ -26,6 +26,11 @@ export default function Home() {
   const [newMessage, setNewMessage] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  
+  // Animation values for welcome popup
+  const welcomePopupOpacity = useRef(new Animated.Value(0)).current;
+  const welcomePopupTranslateY = useRef(new Animated.Value(-50)).current;
 
   const specialOffers = [
     require('../../../assets/images/special1.png'),
@@ -80,6 +85,7 @@ export default function Home() {
     return () => clearTimeout(messageTimer);
   }, []);
 
+  // Animation for welcome popup
   useEffect(() => {
     // Get user data when component mounts
     const getUserData = async () => {
@@ -89,6 +95,45 @@ export default function Home() {
           const user = JSON.parse(userData);
           setUserRole(user.role || 'user');
           setUserName(user.name || '');
+          
+          // Show welcome popup animation
+          setShowWelcomePopup(true);
+          
+          // Animation sequence
+          Animated.sequence([
+            // Slide in and fade in
+            Animated.parallel([
+              Animated.timing(welcomePopupOpacity, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.spring(welcomePopupTranslateY, {
+                toValue: 0,
+                friction: 6,
+                tension: 40,
+                useNativeDriver: true,
+              }),
+            ]),
+            // Wait for 3 seconds
+            Animated.delay(3000),
+            // Fade out and slide up
+            Animated.parallel([
+              Animated.timing(welcomePopupOpacity, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(welcomePopupTranslateY, {
+                toValue: -50,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+            ]),
+          ]).start(() => {
+            // Hide popup completely after animation finishes
+            setShowWelcomePopup(false);
+          });
         }
       } catch (error) {
         console.error('Error getting user data:', error);
@@ -122,14 +167,23 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* User Role Display for Testing */}
-      {userRole && (
-        <View style={styles.userInfoContainer}>
-          <Text style={styles.userInfoText}>
-            Xin chào, {userName || 'Người dùng'} ({UserRoleHelper.getDisplayName(userRole)})
+      {/* Animated Welcome Popup */}
+      {showWelcomePopup && (
+        <Animated.View 
+          style={[
+            styles.welcomePopup,
+            {
+              opacity: welcomePopupOpacity,
+              transform: [{ translateY: welcomePopupTranslateY }],
+            }
+          ]}
+        >
+          <Text style={styles.welcomePopupText}>
+            Welcome, {userName || 'User'} ({UserRoleHelper.getDisplayName(userRole)})
           </Text>
-        </View>
+        </Animated.View>
       )}
+      
       <ScrollView style={styles.content}>
         <View style={styles.topSection}>
           {/* Header */}
@@ -725,16 +779,27 @@ const styles = StyleSheet.create({
     marginRight: horizontalScale(12),
     fontSize: fontScale(16),
   },
-  userInfoContainer: {
+  welcomePopup: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     backgroundColor: '#6E543C',
-    padding: 10,
-    width: '100%',
+    padding: verticalScale(15),
     alignItems: 'center',
-    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  userInfoText: {
+  welcomePopupText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: fontScale(18),
     fontWeight: 'bold',
   },
 }); 

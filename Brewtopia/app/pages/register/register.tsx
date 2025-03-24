@@ -19,11 +19,18 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
       setIsError(true);
       setErrorMessage('Please fill in all the information');
+      return;
+    }
+
+    if (!termsAccepted) {
+      setIsError(true);
+      setErrorMessage('You must accept the terms and privacy policy');
       return;
     }
 
@@ -149,17 +156,35 @@ export default function Register() {
             <Text style={styles.errorText}>{errorMessage}</Text>
           )}
 
-          <Text style={styles.terms}>
-            I accept the terms and privacy policy
-          </Text>
+          {/* Terms and Conditions Checkbox */}
+          <View style={styles.termsContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox}
+              onPress={() => setTermsAccepted(!termsAccepted)}
+            >
+              {termsAccepted ? (
+                <Ionicons name="checkbox" size={24} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="square-outline" size={24} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.terms}>
+              I accept the terms and privacy policy
+            </Text>
+          </View>
 
           {/* Register Button */}
           <TouchableOpacity 
-            style={[styles.registerButton, {
-              height: 50 * scale,
-              borderRadius: 10 * scale,
-            }]}
+            style={[
+              styles.registerButton, 
+              {
+                height: 50 * scale,
+                borderRadius: 10 * scale,
+                opacity: termsAccepted ? 1 : 0.6,
+              }
+            ]}
             onPress={handleRegister}
+            disabled={!termsAccepted}
           >
             <Text style={styles.buttonText}>Register</Text>
           </TouchableOpacity>
@@ -226,9 +251,16 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 15,
   },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  checkbox: {
+    marginRight: 10,
+  },
   terms: {
     color: '#FFFFFF',
-    marginVertical: 20,
     fontSize: 14,
   },
   registerButton: {
