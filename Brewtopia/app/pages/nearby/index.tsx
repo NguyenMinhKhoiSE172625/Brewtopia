@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
@@ -30,6 +30,8 @@ export default function Nearby() {
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [showDirections, setShowDirections] = useState(false);
   const mapRef = useRef<MapView>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Dữ liệu mẫu cho các quán cafe
   const cafes: Cafe[] = [
@@ -85,12 +87,46 @@ export default function Nearby() {
     setSelectedCafe(cafe);
     setShowDirections(false);
 
+    // Animate card appearance
+    slideAnim.setValue(0);
+    fadeAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     // Di chuyển map để hiển thị marker và card
     mapRef.current?.animateToRegion({
       latitude: cafe.coordinate.latitude,
       longitude: cafe.coordinate.longitude,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
+    });
+  };
+
+  const handleCloseCard = () => {
+    // Animate card disappearance
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSelectedCafe(null);
     });
   };
 
@@ -176,7 +212,7 @@ export default function Nearby() {
           style={[
             styles.currentLocationButton,
             {
-              bottom: selectedCafe ? verticalScale(200) : verticalScale(30)
+              bottom: selectedCafe ? verticalScale(400) : verticalScale(30)
             }
           ]}
           onPress={handleCurrentLocation}
@@ -184,11 +220,54 @@ export default function Nearby() {
           <MaterialIcons name="my-location" size={24} color="#6E543C" />
         </TouchableOpacity>
 
+        {/* Map Overlay for tap outside */}
+        {selectedCafe && (
+          <TouchableOpacity 
+            style={[styles.mapOverlay, { opacity: fadeAnim }]}
+            activeOpacity={1}
+            onPress={handleCloseCard}
+          />
+        )}
+
         {/* Selected Cafe Card */}
         {selectedCafe && (
-          <View style={styles.cafeCard}>
+          <Animated.View 
+            style={[
+              styles.cafeCard,
+              {
+                transform: [
+                  {
+                    translateY: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [200, 0],
+                    }),
+                  },
+                ],
+                opacity: fadeAnim,
+              },
+            ]}
+          >
             <View style={styles.cafeHeader}>
-              <Text style={styles.cafeName}>{selectedCafe.name}</Text>
+              <View style={styles.cafeHeaderTop}>
+                <Text style={styles.cafeName}>{selectedCafe.name}</Text>
+                <TouchableOpacity onPress={handleCloseCard}>
+                  <MaterialIcons name="close" size={24} color="#6E543C" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.cafeAddress}>{selectedCafe.address}</Text>
+              <View style={styles.ratingContainer}>
+                <View style={styles.stars}>
+                  {[...Array(5)].map((_, index) => (
+                    <MaterialIcons
+                      key={index}
+                      name="star"
+                      size={16}
+                      color={index < selectedCafe.rating ? '#FFD700' : '#D3D3D3'}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.ratingText}>{selectedCafe.rating}</Text>
+              </View>
               <Text style={styles.cafeStatus}>
                 {selectedCafe.status} - Closed at {selectedCafe.closingTime}
               </Text>
@@ -199,7 +278,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={handleGetDirections}
               >
-                <MaterialIcons name="place" size={24} color="#6E543C" />
+                <MaterialIcons name="place" size={28} color="#6E543C" />
                 <Text style={styles.actionText}>Path</Text>
               </TouchableOpacity>
 
@@ -207,7 +286,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Handle phone call */}}
               >
-                <MaterialIcons name="phone" size={24} color="#6E543C" />
+                <MaterialIcons name="phone" size={28} color="#6E543C" />
                 <Text style={styles.actionText}>Phone</Text>
               </TouchableOpacity>
 
@@ -215,7 +294,7 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Toggle notifications */}}
               >
-                <MaterialIcons name="notifications" size={24} color="#6E543C" />
+                <MaterialIcons name="notifications" size={28} color="#6E543C" />
                 <Text style={styles.actionText}>Alert</Text>
               </TouchableOpacity>
 
@@ -223,21 +302,32 @@ export default function Nearby() {
                 style={styles.actionButton}
                 onPress={() => {/* Share cafe */}}
               >
-                <MaterialIcons name="share" size={24} color="#6E543C" />
+                <MaterialIcons name="share" size={28} color="#6E543C" />
                 <Text style={styles.actionText}>Share</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.cafeImages}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.cafeImagesContainer}
+              contentContainerStyle={styles.cafeImagesContent}
+            >
               {selectedCafe.images.map((image, index) => (
-                <Image
+                <TouchableOpacity
                   key={index}
-                  source={image}
-                  style={styles.cafeImage}
-                />
+                  activeOpacity={0.9}
+                  onPress={() => {/* Handle image press */}}
+                >
+                  <Image
+                    source={image}
+                    style={styles.cafeImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
               ))}
-            </View>
-          </View>
+            </ScrollView>
+          </Animated.View>
         )}
       </View>
 
@@ -285,59 +375,103 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  mapOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
   cafeCard: {
     position: 'absolute',
-    bottom: verticalScale(16),
-    left: horizontalScale(16),
-    right: horizontalScale(16),
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(20),
-    padding: moderateScale(16),
+    borderTopLeftRadius: moderateScale(20),
+    borderTopRightRadius: moderateScale(20),
+    padding: moderateScale(20),
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: -2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    maxHeight: '60%',
   },
   cafeHeader: {
+    marginBottom: verticalScale(16),
+  },
+  cafeHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: verticalScale(12),
   },
   cafeName: {
-    fontSize: fontScale(18),
+    fontSize: fontScale(24),
     fontWeight: '600',
     color: '#000000',
-    marginBottom: verticalScale(4),
+    flex: 1,
+    marginRight: horizontalScale(16),
+  },
+  cafeAddress: {
+    fontSize: fontScale(16),
+    color: '#666666',
+    marginBottom: verticalScale(12),
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(12),
+  },
+  stars: {
+    flexDirection: 'row',
+    marginRight: horizontalScale(8),
+  },
+  ratingText: {
+    fontSize: fontScale(16),
+    color: '#666666',
+    marginLeft: horizontalScale(4),
   },
   cafeStatus: {
-    fontSize: fontScale(14),
+    fontSize: fontScale(16),
     color: '#666666',
+    marginBottom: verticalScale(16),
   },
   cafeActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(20),
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
-    paddingBottom: verticalScale(16),
+    paddingBottom: verticalScale(20),
   },
   actionButton: {
     alignItems: 'center',
+    padding: moderateScale(12),
+    minWidth: horizontalScale(70),
   },
   actionText: {
-    fontSize: fontScale(12),
+    fontSize: fontScale(14),
     color: '#6E543C',
-    marginTop: verticalScale(4),
+    marginTop: verticalScale(8),
+    fontWeight: '500',
   },
-  cafeImages: {
-    flexDirection: 'row',
-    gap: horizontalScale(8),
+  cafeImagesContainer: {
+    marginTop: verticalScale(4),
+    height: verticalScale(150),
+  },
+  cafeImagesContent: {
+    paddingRight: horizontalScale(16),
   },
   cafeImage: {
-    width: horizontalScale(100),
-    height: verticalScale(80),
-    borderRadius: moderateScale(8),
+    width: horizontalScale(200),
+    height: verticalScale(150),
+    borderRadius: moderateScale(12),
+    marginRight: horizontalScale(12),
   },
 }); 
