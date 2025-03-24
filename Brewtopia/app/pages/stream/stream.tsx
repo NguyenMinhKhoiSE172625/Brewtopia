@@ -89,7 +89,13 @@ export default function Stream() {
   const [selectedCategory, setSelectedCategory] = useState('1');
 
   const renderLiveStreamItem = ({ item }: { item: LiveStream }) => (
-    <View style={styles.streamCard}>
+    <TouchableOpacity 
+      style={styles.streamCard}
+      onPress={() => router.push({
+        pathname: '/pages/stream/livestream-view',
+        params: { streamId: item.id }
+      })}
+    >
       <View style={styles.thumbnailContainer}>
         <Image source={item.thumbnail} style={styles.thumbnail} />
         <View style={styles.liveIndicator}>
@@ -108,7 +114,7 @@ export default function Stream() {
           <MaterialIcons name="more-vert" size={20} color="#6E543C" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -132,7 +138,13 @@ export default function Stream() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.cafeIconsScroll}
         >
-          <View style={styles.cafeIconItem}>
+          <TouchableOpacity 
+            style={styles.cafeIconItem}
+            onPress={() => router.push({
+              pathname: '/pages/stream/livestream-view',
+              params: { streamId: '1' }
+            })}
+          >
             <View style={styles.cafeIconCircle}>
               <Image source={require('../../../assets/images/iconcafe2.png')} style={styles.cafeIcon} />
               <View style={styles.liveCircleIndicator}>
@@ -140,8 +152,14 @@ export default function Stream() {
               </View>
             </View>
             <Text style={styles.cafeIconText}>COFFEE SHOP 1</Text>
-          </View>
-          <View style={styles.cafeIconItem}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.cafeIconItem}
+            onPress={() => router.push({
+              pathname: '/pages/stream/livestream-view',
+              params: { streamId: '2' }
+            })}
+          >
             <View style={styles.cafeIconCircle}>
               <Image source={require('../../../assets/images/iconcafe3.png')} style={styles.cafeIcon} />
               <View style={styles.liveCircleIndicator}>
@@ -149,14 +167,20 @@ export default function Stream() {
               </View>
             </View>
             <Text style={styles.cafeIconText}>COFFEE 22</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.cafeIconItem}>
             <View style={styles.cafeIconCircle}>
               <Image source={require('../../../assets/images/iconcafe4.png')} style={styles.cafeIcon} />
             </View>
             <Text style={styles.cafeIconText}>StayAwayHouse</Text>
           </View>
-          <View style={styles.cafeIconItem}>
+          <TouchableOpacity 
+            style={styles.cafeIconItem}
+            onPress={() => router.push({
+              pathname: '/pages/stream/livestream-view',
+              params: { streamId: '4' }
+            })}
+          >
             <View style={styles.cafeIconCircle}>
               <Image source={require('../../../assets/images/iconcafe5.png')} style={styles.cafeIcon} />
               <View style={styles.liveCircleIndicator}>
@@ -164,7 +188,7 @@ export default function Stream() {
               </View>
             </View>
             <Text style={styles.cafeIconText}>QUESTO café</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.cafeIconItem}>
             <View style={styles.cafeIconCircle}>
               <Image source={require('../../../assets/images/iconcafe6.png')} style={styles.cafeIcon} />
@@ -189,7 +213,7 @@ export default function Stream() {
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         <View style={styles.categoriesHeader}>
-          <Text style={styles.categoriesTitle}>Categories</Text>
+          <Text style={styles.categoriesTitle}>ALL LIVE NOW</Text>
           <TouchableOpacity>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>

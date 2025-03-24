@@ -314,7 +314,7 @@ export default function Home() {
           onPress={() => setShowChatModal(true)}
         >
           <Image 
-            source={require('../../../assets/images/bot1.png')}
+            source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
             style={styles.botImage}
           />
         </TouchableOpacity>
@@ -365,7 +365,7 @@ export default function Home() {
             <View style={styles.chatHeader}>
               <View style={styles.chatHeaderLeft}>
                 <Image 
-                  source={require('../../../assets/images/bot1.png')}
+                  source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
                   style={styles.chatHeaderIcon}
                 />
                 <Text style={styles.chatHeaderText}>BREWBOT</Text>
@@ -390,7 +390,7 @@ export default function Home() {
                 >
                   {!message.isUser && (
                     <Image 
-                      source={require('../../../assets/images/bot1.png')}
+                      source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
                       style={styles.messageBotIcon}
                     />
                   )}
