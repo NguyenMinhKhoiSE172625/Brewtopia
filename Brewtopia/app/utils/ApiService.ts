@@ -96,7 +96,7 @@ class ApiService {
         DebugService.logError(`Request timeout for ${method} ${fullUrl}`, error);
         throw {
           status: 408,
-          message: 'Request timeout. Vui lòng thử lại sau.',
+          message: 'Request timeout. Please try again later.',
         };
       }
       
@@ -113,7 +113,7 @@ class ApiService {
         
         throw {
           status: 0,
-          message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.',
+          message: 'Unable to connect to the server. Please check your network connection.',
         };
       }
       
@@ -175,6 +175,14 @@ class ApiService {
     isLoggedIn: async () => {
       const token = await AsyncStorage.getItem('auth_token');
       return !!token;
+    },
+    
+    // Forgot password
+    forgotPassword: async (email: string) => {
+      return this.fetch('/auth/forgotPassword', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
     },
   };
 }

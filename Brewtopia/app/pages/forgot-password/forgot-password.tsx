@@ -1,12 +1,71 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign } from '@expo/vector-icons';
+import { useState } from 'react';
+import ApiService from '../../utils/ApiService';
+import DebugService from '../../utils/DebugService';
 
 export default function ForgotPassword() {
   const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
+  
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Validate email format
+  const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const handleForgotPassword = async () => {
+    // Reset states
+    setIsError(false);
+    setIsSuccess(false);
+    
+    // Validate email
+    if (!email) {
+      setIsError(true);
+      setErrorMessage('Please enter your email address');
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setIsError(true);
+      setErrorMessage('Invalid email address');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Call the forgot password API using the ApiService
+      await ApiService.auth.forgotPassword(email);
+      
+      // Success
+      setIsSuccess(true);
+      setSuccessMessage('Password reset instructions have been sent to your email');
+      DebugService.log('Reset password email sent successfully', email);
+      
+    } catch (error: any) {
+      // Error handling
+      setIsError(true);
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        setErrorMessage(error.message as string);
+      } else {
+        setErrorMessage('Unable to reset password');
+      }
+      DebugService.logError('Forgot password error', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -44,37 +103,67 @@ export default function ForgotPassword() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Forgot password?</Text>
-          <Text style={styles.subtitle}>Don't worry! It happens. Please enter the email associated with your account.</Text>
+          <Text style={styles.title}>Forgot Password?</Text>
+          <Text style={styles.subtitle}>Don't worry! Please enter the email address associated with your account.</Text>
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email address</Text>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                isError && styles.inputError
+              ]}
               placeholder="Enter your email address"
               placeholderTextColor="#999"
               keyboardType="email-address"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setIsError(false);
+                setIsSuccess(false);
+              }}
+              editable={!isLoading}
             />
           </View>
 
+          {/* Error Message */}
+          {isError && (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          )}
+
+          {/* Success Message */}
+          {isSuccess && (
+            <Text style={styles.successText}>{successMessage}</Text>
+          )}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
+          )}
+
           {/* Send Code Button */}
           <TouchableOpacity 
-            style={[styles.sendButton, {
-              height: 50 * scale,
-              borderRadius: 10 * scale,
-            }]}
-            onPress={() => router.push("/pages/login-user/login-user")}
+            style={[
+              styles.sendButton, 
+              {
+                height: 50 * scale,
+                borderRadius: 10 * scale,
+                opacity: isLoading ? 0.7 : 1
+              }
+            ]}
+            onPress={handleForgotPassword}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Send code</Text>
+            <Text style={styles.buttonText}>Send Instructions</Text>
           </TouchableOpacity>
         </View>
 
         {/* Remember password */}
         <View style={styles.rememberContainer}>
-          <Text style={styles.rememberText}>Remember password? </Text>
+          <Text style={styles.rememberText}>Remember your password? </Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.loginLink}>Log in</Text>
+            <Text style={styles.loginLink}>Login</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -134,6 +223,28 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
   },
+  inputError: {
+    borderColor: '#FF0000',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#FF0000',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  successText: {
+    color: '#4CAF50',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   sendButton: {
     backgroundColor: '#B68D5F',
     justifyContent: 'center',
@@ -157,5 +268,8 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  loader: {
+    marginVertical: 10,
   },
 }); 

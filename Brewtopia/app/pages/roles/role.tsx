@@ -1,5 +1,6 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, ImageBackground, Dimensions, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
+import DebugService from '../../utils/DebugService';
 
 export default function Role() {
   const router = useRouter();
@@ -64,9 +65,12 @@ export default function Role() {
                   marginBottom: 60 * scale,
                   borderRadius: 10 * scale,
                 }]}
-                onPress={() => router.push("/pages/login/login")}
+                onPress={() => {
+                  DebugService.log('Selected role: User (no role parameter)');
+                  router.push("/pages/login/login");
+                }}
               >
-                <Text style={styles.buttonText}>NGƯỜI DÙNG</Text>
+                <Text style={styles.buttonText}>USER</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -74,9 +78,12 @@ export default function Role() {
                   height: 89 * scale,
                   borderRadius: 10 * scale,
                 }]}
-                onPress={() => router.push("/pages/login/login?role=admin")}
+                onPress={() => {
+                  DebugService.log('Selected role: Admin');
+                  router.push("/pages/login/login?role=admin");
+                }}
               >
-                <Text style={styles.buttonText}>DOANH NGHIỆP</Text>
+                <Text style={styles.buttonText}>BUSINESS</Text>
               </TouchableOpacity>
             </View>
           </View>

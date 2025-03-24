@@ -28,7 +28,7 @@ export default function LoginUser() {
   const handleLogin = async () => {
     if (!email || !password) {
       setIsError(true);
-      setErrorMessage('Vui lòng nhập email và mật khẩu');
+      setErrorMessage('Please enter email and password');
       return;
     }
 
@@ -45,7 +45,7 @@ export default function LoginUser() {
       if (typeof error === 'object' && error !== null && 'message' in error) {
         setErrorMessage(error.message as string);
       } else {
-        setErrorMessage('Đăng nhập thất bại');
+        setErrorMessage('Login failed');
       }
     }
   };
@@ -78,7 +78,7 @@ export default function LoginUser() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Đăng nhập {role === 'admin' ? 'Doanh Nghiệp' : 'Người Dùng'}</Text>
+          <Text style={styles.title}>Login {role === 'admin' ? 'Business' : 'User'}</Text>
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
@@ -147,7 +147,7 @@ export default function LoginUser() {
             }]}
             onPress={handleLogin}
           >
-            <Text style={styles.buttonText}>Log in</Text>
+            <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
 
           {/* Social Login */}

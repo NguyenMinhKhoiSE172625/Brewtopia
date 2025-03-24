@@ -34,12 +34,12 @@ export default function VerifyCode() {
           DebugService.log('Retrieved email for verification', savedEmail);
         } else {
           setIsError(true);
-          setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+          setErrorMessage('Email not found. Please register again.');
         }
       } catch (error) {
         DebugService.logError('Error retrieving email', error);
         setIsError(true);
-        setErrorMessage('Đã xảy ra lỗi khi lấy thông tin email.');
+        setErrorMessage('An error occurred while retrieving email.');
       }
     };
     
@@ -92,7 +92,7 @@ export default function VerifyCode() {
   const verifyCode = async (verificationCode: string) => {
     if (!email) {
       setIsError(true);
-      setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+      setErrorMessage('Email not found. Please register again.');
       return;
     }
 
@@ -128,12 +128,12 @@ export default function VerifyCode() {
       } else {
         // Verification failed
         setIsError(true);
-        setErrorMessage(data.message || 'Mã xác thực không đúng');
+        setErrorMessage(data.message || 'Invalid verification code');
       }
     } catch (error) {
       DebugService.logError('Verification API error', error);
       setIsError(true);
-      setErrorMessage('Không thể kết nối đến máy chủ xác thực');
+      setErrorMessage('Unable to connect to verification server');
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +142,7 @@ export default function VerifyCode() {
   const resendCode = async () => {
     if (!email) {
       setIsError(true);
-      setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+      setErrorMessage('Email not found. Please register again.');
       return;
     }
 
@@ -171,12 +171,12 @@ export default function VerifyCode() {
       } else {
         // Resend failed
         setIsError(true);
-        setErrorMessage(data.message || 'Không thể gửi lại mã xác thực');
+        setErrorMessage(data.message || 'Failed to resend verification code');
       }
     } catch (error) {
       DebugService.logError('Resend code API error', error);
       setIsError(true);
-      setErrorMessage('Không thể kết nối đến máy chủ');
+      setErrorMessage('Unable to connect to resend code server');
     } finally {
       setIsLoading(false);
     }
@@ -218,9 +218,9 @@ export default function VerifyCode() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Nhập mã xác thực</Text>
+          <Text style={styles.title}>Enter Verification Code</Text>
           <Text style={styles.subtitle}>
-            Chúng tôi đã gửi mã xác thực đến email của bạn{email ? `: ${email}` : ''}
+            We've sent a verification code to your email{email ? `: ${email}` : ''}
           </Text>
 
           {/* Code Input Container */}
@@ -249,7 +249,7 @@ export default function VerifyCode() {
 
           {/* Success Message */}
           {isSuccess && (
-            <Text style={styles.successText}>Xác thực thành công! Đang chuyển hướng...</Text>
+            <Text style={styles.successText}>Verification successful! Redirecting...</Text>
           )}
 
           {/* Error Message */}
@@ -273,7 +273,7 @@ export default function VerifyCode() {
                 styles.resendText, 
                 (timeLeft > 0 || isLoading || isSuccess) && styles.resendTextDisabled
               ]}>
-                Gửi lại mã
+                Resend Code
               </Text>
             </TouchableOpacity>
             {timeLeft > 0 && (

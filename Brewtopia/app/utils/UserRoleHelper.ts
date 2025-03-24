@@ -14,8 +14,8 @@ export enum UserRole {
 
 // Role display names
 const ROLE_DISPLAY_NAMES = {
-  [UserRole.USER]: 'Người Dùng',
-  [UserRole.ADMIN]: 'Doanh Nghiệp'
+  [UserRole.USER]: 'User',
+  [UserRole.ADMIN]: 'Business'
 };
 
 class UserRoleHelper {
@@ -73,11 +73,11 @@ class UserRoleHelper {
    */
   getRoleValidationError(userRole: string | null, pathRole: string | null): string {
     if (userRole === UserRole.ADMIN && pathRole !== UserRole.ADMIN) {
-      return 'Vui lòng đăng nhập với tư cách doanh nghiệp';
+      return 'Please log in as a business account';
     }
     
     if (userRole !== UserRole.ADMIN && pathRole === UserRole.ADMIN) {
-      return 'Tài khoản này không phải là tài khoản doanh nghiệp';
+      return 'This account is not a business account';
     }
     
     return '';

@@ -23,7 +23,7 @@ export default function Register() {
   const handleRegister = async () => {
     if (!name || !email || !password) {
       setIsError(true);
-      setErrorMessage('Vui lòng điền đầy đủ thông tin');
+      setErrorMessage('Please fill in all the information');
       return;
     }
 
@@ -59,7 +59,7 @@ export default function Register() {
       if (typeof error === 'object' && error !== null && 'message' in error) {
         setErrorMessage(error.message as string);
       } else {
-        setErrorMessage('Đăng ký thất bại');
+        setErrorMessage('Registration failed');
       }
     }
   };
@@ -92,14 +92,14 @@ export default function Register() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Tạo tài khoản {role === 'admin' ? 'Doanh Nghiệp' : 'Người Dùng'}</Text>
+          <Text style={styles.title}>Create {role === 'admin' ? 'Business' : 'User'} Account</Text>
 
           {/* Username Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tên đăng nhập</Text>
+            <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
-              placeholder="Tên đăng nhập của bạn"
+              placeholder="Your username"
               placeholderTextColor="#999"
               value={name}
               onChangeText={setName}
@@ -111,7 +111,7 @@ export default function Register() {
             <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="Email của bạn"
+              placeholder="Your email"
               placeholderTextColor="#999"
               keyboardType="email-address"
               value={email}
@@ -121,7 +121,7 @@ export default function Register() {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mật khẩu</Text>
+            <Text style={styles.label}>Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.input, { flex: 1, borderWidth: 0 }]}
@@ -150,7 +150,7 @@ export default function Register() {
           )}
 
           <Text style={styles.terms}>
-            Tôi chấp nhận các điều khoản và chính sách bảo mật
+            I accept the terms and privacy policy
           </Text>
 
           {/* Register Button */}
@@ -161,13 +161,13 @@ export default function Register() {
             }]}
             onPress={handleRegister}
           >
-            <Text style={styles.buttonText}>Đăng Ký</Text>
+            <Text style={styles.buttonText}>Register</Text>
           </TouchableOpacity>
 
           <Text style={styles.policyText}>
-            Bằng cách tạo tài khoản hoặc đăng nhập, bạn đồng ý với{' '}
-            <Text style={styles.linkText}>Điều khoản</Text> và{' '}
-            <Text style={styles.linkText}>Điều kiện</Text> của chúng tôi
+            By creating an account or signing in, you agree to our{' '}
+            <Text style={styles.linkText}>Terms</Text> and{' '}
+            <Text style={styles.linkText}>Conditions</Text>
           </Text>
         </View>
       </View>

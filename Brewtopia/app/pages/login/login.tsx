@@ -46,7 +46,7 @@ export default function Login() {
               ? `/pages/login-user/login-user?role=${role}` 
               : "/pages/login-user/login-user")}
           >
-            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Đăng nhập</Text>
+            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Login</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -60,7 +60,7 @@ export default function Login() {
               ? `/pages/register/register?role=${role}` 
               : "/pages/register/register")}
           >
-            <Text style={[styles.buttonText, { color: '#000000' }]}>Tạo tài khoản</Text>
+            <Text style={[styles.buttonText, { color: '#000000' }]}>Create Account</Text>
           </TouchableOpacity>
         </View>
       </View>
