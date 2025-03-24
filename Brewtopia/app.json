@@ -16,7 +16,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions."
       },
       "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w"
       }
     },
     "android": {
@@ -32,7 +32,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w"
         }
       }
     },

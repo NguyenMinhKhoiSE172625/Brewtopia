@@ -8,7 +8,7 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import BottomBar from '../../components/BottomBar';
 
 // Thay thế bằng Google Maps API key của bạn
-const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
 
 interface Cafe {
   id: string;
