@@ -1,7 +1,7 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, FlatList, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, FlatList, Dimensions, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useRef, useEffect } from "react";
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
 
@@ -23,12 +23,14 @@ interface Post {
 
 export default function News() {
   const router = useRouter();
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [newPostContent, setNewPostContent] = useState('');
   const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
       user: {
         name: 'John Weed',
-        avatar: require('../../../assets/images/profile1.png'),
+        avatar: require('../../../assets/images/avatar1.png'),
       },
       location: 'Highway coffee',
       rating: 5,
@@ -46,7 +48,7 @@ export default function News() {
       id: '2',
       user: {
         name: 'Daniel',
-        avatar: require('../../../assets/images/profile1.png'),
+        avatar: require('../../../assets/images/avatar2.png'),
       },
       location: 'Haz coffeeshop',
       rating: 4,
@@ -62,9 +64,9 @@ export default function News() {
   ]);
 
   const sponsorBanners = [
-    require('../../../assets/images/special1.png'),
-    require('../../../assets/images/special2.png'),
-    require('../../../assets/images/special3.png'),
+    require('../../../assets/images/ads1.png'),
+    require('../../../assets/images/ads2.png'),
+    require('../../../assets/images/ads3.png'),
   ];
 
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
@@ -94,6 +96,29 @@ export default function News() {
       }
       return post;
     }));
+  };
+
+  const handleCreatePost = () => {
+    if (newPostContent.trim()) {
+      const newPost: Post = {
+        id: (posts.length + 1).toString(),
+        user: {
+          name: 'You',
+          avatar: require('../../../assets/images/avatar3.png'),
+        },
+        location: 'Your location',
+        rating: 5,
+        time: 'Just now',
+        content: newPostContent,
+        images: [],
+        likes: 0,
+        comments: 0,
+        isLiked: false,
+      };
+      setPosts([newPost, ...posts]);
+      setNewPostContent('');
+      setShowPostModal(false);
+    }
   };
 
   const renderPost = ({ item: post }: { item: Post }) => (
@@ -173,13 +198,46 @@ export default function News() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Community</Text>
-        <TouchableOpacity style={styles.postButton}>
+        <TouchableOpacity 
+          style={styles.postButton}
+          onPress={() => setShowPostModal(true)}
+        >
           <MaterialIcons name="add" size={24} color="#6E543C" />
           <Text style={styles.postButtonText}>Post</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Create Post Card */}
+        <View style={styles.createPostCard}>
+          <View style={styles.createPostHeader}>
+            <Image 
+              source={require('../../../assets/images/avatar3.png')} 
+              style={styles.createPostAvatar} 
+            />
+            <TouchableOpacity 
+              style={styles.createPostInput}
+              onPress={() => setShowPostModal(true)}
+            >
+              <Text style={styles.createPostPlaceholder}>What's on your mind?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.createPostActions}>
+            <TouchableOpacity style={styles.createPostAction}>
+              <MaterialIcons name="photo-library" size={24} color="#6E543C" />
+              <Text style={styles.createPostActionText}>Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.createPostAction}>
+              <MaterialIcons name="location-on" size={24} color="#6E543C" />
+              <Text style={styles.createPostActionText}>Check in</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.createPostAction}>
+              <MaterialIcons name="star" size={24} color="#6E543C" />
+              <Text style={styles.createPostActionText}>Rate</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Posts */}
         {posts.map((post) => (
           <View key={post.id}>
@@ -209,6 +267,67 @@ export default function News() {
           />
         </View>
       </ScrollView>
+
+      {/* Create Post Modal */}
+      <Modal
+        visible={showPostModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPostModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowPostModal(false)}>
+                <MaterialIcons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Create Post</Text>
+              <TouchableOpacity 
+                style={[
+                  styles.postButton,
+                  !newPostContent.trim() && styles.postButtonDisabled
+                ]}
+                onPress={handleCreatePost}
+                disabled={!newPostContent.trim()}
+              >
+                <Text style={styles.postButtonText}>Post</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalUserInfo}>
+              <Image 
+                source={require('../../../assets/images/avatar3.png')} 
+                style={styles.modalAvatar} 
+              />
+              <View>
+                <Text style={styles.modalUserName}>You</Text>
+                <View style={styles.modalLocationPicker}>
+                  <MaterialIcons name="location-on" size={16} color="#6E543C" />
+                  <Text style={styles.modalLocationText}>Add location</Text>
+                </View>
+              </View>
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="What's on your mind?"
+              placeholderTextColor="#999"
+              multiline
+              value={newPostContent}
+              onChangeText={setNewPostContent}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalAction}>
+                <MaterialIcons name="photo-library" size={24} color="#6E543C" />
+                <Text style={styles.modalActionText}>Add Photos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalAction}>
+                <MaterialIcons name="star" size={24} color="#6E543C" />
+                <Text style={styles.modalActionText}>Add Rating</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <BottomBar />
     </SafeAreaView>
@@ -241,6 +360,9 @@ const styles = StyleSheet.create({
     padding: moderateScale(8),
     borderRadius: moderateScale(20),
   },
+  postButtonDisabled: {
+    opacity: 0.5,
+  },
   postButtonText: {
     marginLeft: horizontalScale(4),
     color: '#6E543C',
@@ -248,6 +370,49 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  createPostCard: {
+    backgroundColor: '#FFFFFF',
+    padding: moderateScale(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  createPostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(12),
+  },
+  createPostAvatar: {
+    width: horizontalScale(40),
+    height: verticalScale(40),
+    borderRadius: moderateScale(20),
+    marginRight: horizontalScale(12),
+  },
+  createPostInput: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+    padding: moderateScale(12),
+    borderRadius: moderateScale(20),
+  },
+  createPostPlaceholder: {
+    color: '#999',
+    fontSize: fontScale(14),
+  },
+  createPostActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+    paddingTop: verticalScale(12),
+  },
+  createPostAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  createPostActionText: {
+    marginLeft: horizontalScale(4),
+    color: '#6E543C',
+    fontSize: fontScale(14),
   },
   postContainer: {
     backgroundColor: '#FFFFFF',
@@ -360,5 +525,73 @@ const styles = StyleSheet.create({
     height: verticalScale(150),
     borderRadius: moderateScale(12),
     marginRight: horizontalScale(16),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: moderateScale(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  modalTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#000000',
+  },
+  modalUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: moderateScale(16),
+  },
+  modalAvatar: {
+    width: horizontalScale(40),
+    height: verticalScale(40),
+    borderRadius: moderateScale(20),
+    marginRight: horizontalScale(12),
+  },
+  modalUserName: {
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    color: '#000000',
+  },
+  modalLocationPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: verticalScale(4),
+  },
+  modalLocationText: {
+    fontSize: fontScale(14),
+    color: '#6E543C',
+    marginLeft: horizontalScale(4),
+  },
+  modalInput: {
+    flex: 1,
+    padding: moderateScale(16),
+    fontSize: fontScale(16),
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: moderateScale(16),
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+  },
+  modalAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalActionText: {
+    marginLeft: horizontalScale(4),
+    color: '#6E543C',
+    fontSize: fontScale(14),
   },
 }); 
