@@ -2,6 +2,9 @@ import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaVie
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
+import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 
 export default function Register() {
   const router = useRouter();
@@ -42,28 +45,22 @@ export default function Register() {
         userData.role = 'admin';
       }
       
-      const response = await fetch('http://10.0.2.2:4000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (response.ok) {
-        // Registration successful
-        setIsError(false);
-        router.push("/pages/verify-code/verify-code");
-      } else {
-        // Registration failed
-        const errorData = await response.json();
-        setIsError(true);
-        setErrorMessage(errorData.message || 'Đăng ký thất bại');
-      }
+      // Using ApiService for registration
+      const data = await ApiService.auth.register(userData);
+      
+      // Store email for verification
+      await AsyncStorage.setItem('registration_email', email);
+      
+      // Registration successful
+      setIsError(false);
+      router.push("/pages/verify-code/verify-code");
     } catch (error) {
-      console.error('Registration error:', error);
       setIsError(true);
-      setErrorMessage('Lỗi kết nối đến máy chủ');
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        setErrorMessage(error.message as string);
+      } else {
+        setErrorMessage('Đăng ký thất bại');
+      }
     }
   };
 

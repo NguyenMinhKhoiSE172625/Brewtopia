@@ -1,18 +1,52 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { AntDesign } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
+import DebugService from '../../utils/DebugService';
 
 export default function VerifyCode() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
-  const [timeLeft, setTimeLeft] = useState(20);
-  const [code, setCode] = useState(['', '', '', '', '']);
+  
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [code, setCode] = useState(['', '', '', '']); // Changed to 4 digits
   const [isError, setIsError] = useState(false);
-  const inputRefs = useRef([]);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Create a ref array for TextInputs
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
+  // Get email from registration
+  useEffect(() => {
+    const getEmail = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem('registration_email');
+        if (savedEmail) {
+          setEmail(savedEmail);
+          DebugService.log('Retrieved email for verification', savedEmail);
+        } else {
+          setIsError(true);
+          setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+        }
+      } catch (error) {
+        DebugService.logError('Error retrieving email', error);
+        setIsError(true);
+        setErrorMessage('Đã xảy ra lỗi khi lấy thông tin email.');
+      }
+    };
+    
+    getEmail();
+  }, []);
+
+  // Timer for resend code
   useEffect(() => {
     if (timeLeft > 0) {
       const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -20,31 +54,131 @@ export default function VerifyCode() {
     }
   }, [timeLeft]);
 
-  const handleCodeChange = (text, index) => {
+  const handleCodeChange = (text: string, index: number) => {
+    // Only allow numeric input
+    if (text && !/^\d+$/.test(text)) {
+      return;
+    }
+    
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
-    setIsError(false);
-
-    // Auto-focus next input
-    if (text && index < 4) {
-      inputRefs.current[index + 1].focus();
+    
+    if (isError) {
+      setIsError(false);
+      setErrorMessage('');
     }
 
-    // Check if code is complete
-    if (index === 4 && text) {
+    // Auto-focus next input
+    if (text && index < 3 && inputRefs.current[index + 1]) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Check if code is complete and submit
+    if (index === 3 && text) {
       const fullCode = newCode.join('');
-      if (fullCode === '12345') {
-        router.push("/pages/login-user/login-user");
-      } else {
-        setIsError(true);
+      if (fullCode.length === 4) {
+        verifyCode(fullCode);
       }
     }
   };
 
-  const handleKeyPress = (e, index) => {
-    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0 && inputRefs.current[index - 1]) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const verifyCode = async (verificationCode: string) => {
+    if (!email) {
+      setIsError(true);
+      setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Call verification API
+      const response = await fetch('http://10.0.2.2:4000/api/auth/verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          code: verificationCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Verification successful
+        setIsSuccess(true);
+        setIsError(false);
+        
+        // Clear stored email after successful verification
+        await AsyncStorage.removeItem('registration_email');
+        
+        // Navigate to login after 2 seconds
+        setTimeout(() => {
+          router.push("/pages/login-user/login-user");
+        }, 2000);
+      } else {
+        // Verification failed
+        setIsError(true);
+        setErrorMessage(data.message || 'Mã xác thực không đúng');
+      }
+    } catch (error) {
+      DebugService.logError('Verification API error', error);
+      setIsError(true);
+      setErrorMessage('Không thể kết nối đến máy chủ xác thực');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (!email) {
+      setIsError(true);
+      setErrorMessage('Email không được tìm thấy. Vui lòng đăng ký lại.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Call resend code API (you might need to implement this endpoint)
+      const response = await fetch('http://10.0.2.2:4000/api/auth/resend-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Code resent successfully
+        setTimeLeft(60);
+        setCode(['', '', '', '']);
+        setIsError(false);
+        setErrorMessage('');
+      } else {
+        // Resend failed
+        setIsError(true);
+        setErrorMessage(data.message || 'Không thể gửi lại mã xác thực');
+      }
+    } catch (error) {
+      DebugService.logError('Resend code API error', error);
+      setIsError(true);
+      setErrorMessage('Không thể kết nối đến máy chủ');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,12 +218,14 @@ export default function VerifyCode() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Enter code</Text>
-          <Text style={styles.subtitle}>We've sent an SMS with an activation code to your phone +33 2 94 27 84 11</Text>
+          <Text style={styles.title}>Nhập mã xác thực</Text>
+          <Text style={styles.subtitle}>
+            Chúng tôi đã gửi mã xác thực đến email của bạn{email ? `: ${email}` : ''}
+          </Text>
 
           {/* Code Input Container */}
           <View style={styles.codeContainer}>
-            {[0, 1, 2, 3, 4].map((index) => (
+            {[0, 1, 2, 3].map((index) => (
               <View 
                 key={index} 
                 style={[
@@ -105,29 +241,39 @@ export default function VerifyCode() {
                   value={code[index]}
                   onChangeText={(text) => handleCodeChange(text, index)}
                   onKeyPress={(e) => handleKeyPress(e, index)}
+                  editable={!isLoading && !isSuccess}
                 />
               </View>
             ))}
           </View>
 
+          {/* Success Message */}
+          {isSuccess && (
+            <Text style={styles.successText}>Xác thực thành công! Đang chuyển hướng...</Text>
+          )}
+
           {/* Error Message */}
           {isError && (
-            <Text style={styles.errorText}>Wrong code</Text>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          )}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
           )}
 
           {/* Resend Code */}
           <View style={styles.resendContainer}>
             <TouchableOpacity 
               style={styles.resendButton}
-              onPress={() => {
-                setTimeLeft(20);
-                setCode(['', '', '', '', '']);
-                setIsError(false);
-              }}
-              disabled={timeLeft > 0}
+              onPress={resendCode}
+              disabled={timeLeft > 0 || isLoading || isSuccess}
             >
-              <Text style={[styles.resendText, timeLeft > 0 && styles.resendTextDisabled]}>
-                Send code again
+              <Text style={[
+                styles.resendText, 
+                (timeLeft > 0 || isLoading || isSuccess) && styles.resendTextDisabled
+              ]}>
+                Gửi lại mã
               </Text>
             </TouchableOpacity>
             {timeLeft > 0 && (
@@ -189,8 +335,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   codeBox: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     borderWidth: 1,
     borderColor: '#FFFFFF',
     borderRadius: 10,
@@ -211,6 +357,18 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF0000',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  successText: {
+    color: '#4CAF50',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 5,
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 10,
@@ -234,5 +392,8 @@ const styles = StyleSheet.create({
   timer: {
     color: '#FFFFFF',
     fontSize: 14,
+  },
+  loader: {
+    marginVertical: 10,
   },
 }); 
