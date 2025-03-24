@@ -12,17 +12,40 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
 // Base API URL with fallback
 // Use 10.0.2.2 for Android emulators to refer to host machine
 // Use localhost for iOS simulators
+// Use physical device IP when running on real devices
+
+/**
+ * Smart API URL selection:
+ * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
+ * 2. PHYSICAL DEVICE: Use computer's IP address on the network (192.168.2.125)
+ */
+const COMPUTER_IP = '192.168.2.125'; // Your computer's IP on the network
+const API_PORT = '4000';
+const API_PATH = '/api';
+
+// Simple approach that works on Android emulators, iOS simulators, and physical devices
 const DEFAULT_API_URL = Platform.select({
-  android: 'http://10.0.2.2:4000/api',
-  ios: 'http://localhost:4000/api',
-  default: 'http://10.0.2.2:4000/api'
+  // Android emulator uses 10.0.2.2, physical devices use the computer's actual IP
+  android: __DEV__ ? `http://10.0.2.2:${API_PORT}${API_PATH}` : `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`,
+  
+  // iOS simulator uses localhost, physical devices use the computer's actual IP
+  ios: __DEV__ ? `http://localhost:${API_PORT}${API_PATH}` : `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`,
+  
+  // Default fallback, use computer's IP to support physical devices
+  default: `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`
 });
 
-// Get API URL from environment or use default
-const API_BASE_URL = Config.API_URL || DEFAULT_API_URL;
+// For easier debugging, dynamically check if on physical device using a dedicated environment variable
+// This can be set to 'true' when testing on physical devices
+const USE_PHYSICAL_DEVICE_URL = true; // Set to true for physical device testing
+const PHYSICAL_DEVICE_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
 
-// Default timeout for requests in milliseconds (10 seconds)
-const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 10000;
+// Final API URL selection, prioritizing explicit config for physical devices
+const API_BASE_URL = Config.API_URL || 
+                    (USE_PHYSICAL_DEVICE_URL ? PHYSICAL_DEVICE_URL : DEFAULT_API_URL);
+
+// Increase default timeout for slower network connections (15 seconds)
+const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 15000;
 
 // Maximum number of retry attempts
 const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 2;
