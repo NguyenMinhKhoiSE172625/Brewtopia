@@ -74,7 +74,7 @@ export default function Role() {
                   height: 89 * scale,
                   borderRadius: 10 * scale,
                 }]}
-                onPress={() => {/* Xử lý đăng nhập doanh nghiệp */}}
+                onPress={() => router.push("/pages/login/login?role=admin")}
               >
                 <Text style={styles.buttonText}>DOANH NGHIỆP</Text>
               </TouchableOpacity>

@@ -1,8 +1,10 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 export default function Login() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const role = params.role as string;
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 904.74);
@@ -40,7 +42,9 @@ export default function Login() {
               backgroundColor: '#6E543C',
               marginBottom: 20 * scale,
             }]}
-            onPress={() => router.push("/pages/login-user/login-user")}
+            onPress={() => router.push(role === 'admin' 
+              ? `/pages/login-user/login-user?role=${role}` 
+              : "/pages/login-user/login-user")}
           >
             <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Đăng nhập</Text>
           </TouchableOpacity>
@@ -52,7 +56,9 @@ export default function Login() {
               borderColor: '#000000',
               borderWidth: 1,
             }]}
-            onPress={() => router.push("/pages/register/register")}
+            onPress={() => router.push(role === 'admin' 
+              ? `/pages/register/register?role=${role}` 
+              : "/pages/register/register")}
           >
             <Text style={[styles.buttonText, { color: '#000000' }]}>Tạo tài khoản</Text>
           </TouchableOpacity>

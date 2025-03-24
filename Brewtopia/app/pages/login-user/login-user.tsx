@@ -1,11 +1,13 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginUser() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const role = params.role as string;
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
@@ -13,14 +15,44 @@ export default function LoginUser() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleLogin = () => {
-    if (email === 'user@gmail.com' && password === '123') {
-      // Login successful
-      setIsError(false);
-      router.push("/pages/home/home");
-    } else {
+  const handleLogin = async () => {
+    if (!email || !password) {
       setIsError(true);
+      setErrorMessage('Vui lòng nhập email và mật khẩu');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Login successful
+        setIsError(false);
+        // Store the token if returned by API
+        // You might want to use AsyncStorage for this
+        router.push("/pages/home/home");
+      } else {
+        // Login failed
+        const errorData = await response.json();
+        setIsError(true);
+        setErrorMessage(errorData.message || 'Đăng nhập thất bại');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setIsError(true);
+      setErrorMessage('Lỗi kết nối đến máy chủ');
     }
   };
 
@@ -52,7 +84,7 @@ export default function LoginUser() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Log In</Text>
+          <Text style={styles.title}>Đăng nhập {role === 'admin' ? 'Doanh Nghiệp' : 'Người Dùng'}</Text>
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
@@ -109,7 +141,7 @@ export default function LoginUser() {
 
           {/* Error Message */}
           {isError && (
-            <Text style={styles.errorText}>Please check your email and password</Text>
+            <Text style={styles.errorText}>{errorMessage}</Text>
           )}
 
           {/* Login Button */}
@@ -143,7 +175,9 @@ export default function LoginUser() {
           {/* Sign up link */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/pages/register/register")}>
+            <TouchableOpacity onPress={() => router.push(role === 'admin' 
+              ? `/pages/register/register?role=${role}` 
+              : "/pages/register/register")}>
               <Text style={styles.signupLink}>Sign up</Text>
             </TouchableOpacity>
           </View>

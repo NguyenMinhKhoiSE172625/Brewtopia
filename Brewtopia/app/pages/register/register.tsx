@@ -1,14 +1,71 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Register() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const role = params.role as string;
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleRegister = async () => {
+    if (!name || !email || !password) {
+      setIsError(true);
+      setErrorMessage('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    try {
+      // Prepare registration data
+      const userData: { 
+        email: string; 
+        name: string; 
+        password: string; 
+        role?: string;
+      } = {
+        email: email,
+        name: name,
+        password: password,
+      };
+      
+      // If role is provided (for business accounts), add it to the request
+      if (role === 'admin') {
+        userData.role = 'admin';
+      }
+      
+      const response = await fetch('http://localhost:4000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        // Registration successful
+        setIsError(false);
+        router.push("/pages/verify-code/verify-code");
+      } else {
+        // Registration failed
+        const errorData = await response.json();
+        setIsError(true);
+        setErrorMessage(errorData.message || 'Đăng ký thất bại');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setIsError(true);
+      setErrorMessage('Lỗi kết nối đến máy chủ');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -38,7 +95,7 @@ export default function Register() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Tạo tài khoản</Text>
+          <Text style={styles.title}>Tạo tài khoản {role === 'admin' ? 'Doanh Nghiệp' : 'Người Dùng'}</Text>
 
           {/* Username Input */}
           <View style={styles.inputGroup}>
@@ -47,6 +104,8 @@ export default function Register() {
               style={styles.input}
               placeholder="Tên đăng nhập của bạn"
               placeholderTextColor="#999"
+              value={name}
+              onChangeText={setName}
             />
           </View>
 
@@ -58,6 +117,8 @@ export default function Register() {
               placeholder="Email của bạn"
               placeholderTextColor="#999"
               keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
             />
           </View>
 
@@ -70,6 +131,8 @@ export default function Register() {
                 placeholder="••••••••"
                 placeholderTextColor="#999"
                 secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
               />
               <TouchableOpacity 
                 style={styles.eyeButton}
@@ -84,6 +147,11 @@ export default function Register() {
             </View>
           </View>
 
+          {/* Error message */}
+          {isError && (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          )}
+
           <Text style={styles.terms}>
             Tôi chấp nhận các điều khoản và chính sách bảo mật
           </Text>
@@ -94,7 +162,7 @@ export default function Register() {
               height: 50 * scale,
               borderRadius: 10 * scale,
             }]}
-            onPress={() => router.push("/pages/verify-code/verify-code")}
+            onPress={handleRegister}
           >
             <Text style={styles.buttonText}>Đăng Ký</Text>
           </TouchableOpacity>
@@ -185,5 +253,14 @@ const styles = StyleSheet.create({
   },
   linkText: {
     textDecorationLine: 'underline',
+  },
+  errorText: {
+    color: '#FF0000',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });
