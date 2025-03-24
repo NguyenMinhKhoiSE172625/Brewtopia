@@ -3,11 +3,19 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
+import DebugService from '../../utils/DebugService';
+import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 
 export default function LoginUser() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const role = params.role as string;
+  
+  // Debug info
+  DebugService.log('Login User Screen - Role', role);
+  
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const scale = Math.min(screenWidth / 431, screenHeight / 956);
@@ -25,34 +33,20 @@ export default function LoginUser() {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Login successful
-        setIsError(false);
-        // Store the token if returned by API
-        // You might want to use AsyncStorage for this
-        router.push("/pages/home/home");
-      } else {
-        // Login failed
-        const errorData = await response.json();
-        setIsError(true);
-        setErrorMessage(errorData.message || 'Đăng nhập thất bại');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
+      // Use ApiService with role validation
+      const expectedRole = role === 'admin' ? UserRole.ADMIN : UserRole.USER;
+      const data = await ApiService.auth.login(email, password, expectedRole);
+      
+      // Login successful
+      setIsError(false);
+      router.push("/pages/home/home");
+    } catch (error: any) {
       setIsError(true);
-      setErrorMessage('Lỗi kết nối đến máy chủ');
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        setErrorMessage(error.message as string);
+      } else {
+        setErrorMessage('Đăng nhập thất bại');
+      }
     }
   };
 

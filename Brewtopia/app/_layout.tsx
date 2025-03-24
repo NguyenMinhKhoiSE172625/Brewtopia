@@ -2,6 +2,16 @@ import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import 'react-native-gesture-handler';
+import { LogBox, Platform } from 'react-native';
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  'Warning: Failed prop type: Invalid prop `textStyle` of type `array` supplied to `Cell`, expected `object`.',
+  'Warning: Cannot update a component (`BubbleMenuComponent`) while rendering a different component (`TextInput`)',
+  // Network errors that may appear during development
+  'Network request failed',
+]);
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();

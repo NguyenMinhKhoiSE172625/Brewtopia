@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import UserRoleHelper from '../../utils/UserRoleHelper';
 
 export default function Home() {
   const router = useRouter();
@@ -22,6 +24,8 @@ export default function Home() {
     {text: "Welcome", isUser: true},
   ]);
   const [newMessage, setNewMessage] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const specialOffers = [
     require('../../../assets/images/special1.png'),
@@ -76,6 +80,24 @@ export default function Home() {
     return () => clearTimeout(messageTimer);
   }, []);
 
+  useEffect(() => {
+    // Get user data when component mounts
+    const getUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user_data');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setUserRole(user.role || 'user');
+          setUserName(user.name || '');
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+      }
+    };
+
+    getUserData();
+  }, []);
+
   const renderSpecialOffer = ({ item, index }: { item: any; index: number }) => (
     <TouchableOpacity
       onPress={() => {
@@ -100,6 +122,14 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* User Role Display for Testing */}
+      {userRole && (
+        <View style={styles.userInfoContainer}>
+          <Text style={styles.userInfoText}>
+            Xin chào, {userName || 'Người dùng'} ({UserRoleHelper.getDisplayName(userRole)})
+          </Text>
+        </View>
+      )}
       <ScrollView style={styles.content}>
         <View style={styles.topSection}>
           {/* Header */}
@@ -694,5 +724,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: horizontalScale(16),
     marginRight: horizontalScale(12),
     fontSize: fontScale(16),
+  },
+  userInfoContainer: {
+    backgroundColor: '#6E543C',
+    padding: 10,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  userInfoText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 }); 
