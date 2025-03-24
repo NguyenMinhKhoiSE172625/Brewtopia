@@ -2,6 +2,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
+import { globalStyles } from '../utils/styles';
 
 export default function BottomBar() {
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function BottomBar() {
           <Text
             style={[
               styles.tabText,
+              globalStyles.text,
               isActiveTab(tab.route) && styles.tabTextActive,
             ]}
           >
