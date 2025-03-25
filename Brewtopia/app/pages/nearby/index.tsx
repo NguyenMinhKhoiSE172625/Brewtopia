@@ -170,8 +170,8 @@ export default function Nearby() {
             initialRegion={{
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
             }}
             showsUserLocation={true}
             showsMyLocationButton={false}
