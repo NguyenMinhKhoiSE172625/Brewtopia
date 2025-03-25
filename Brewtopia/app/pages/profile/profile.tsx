@@ -4,11 +4,34 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import { useState, useEffect } from 'react';
+import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userName, setUserName] = useState('');
 
-  const menuItems = [
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const role = await UserRoleHelper.getCurrentRole();
+        setIsAdmin(role === UserRole.ADMIN);
+        const userData = await AsyncStorage.getItem('user_data');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setUserName(user.name || '');
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+      }
+    };
+    
+    checkUserRole();
+  }, []);
+
+  const userMenuItems = [
     {
       id: '1',
       title: 'Account Details',
@@ -35,6 +58,39 @@ export default function Profile() {
     }
   ];
 
+  const adminMenuItems = [
+    {
+      id: '1',
+      title: 'Shop Management',
+      icon: 'store',
+      onPress: () => console.log('Shop Management')
+    },
+    {
+      id: '2',
+      title: 'Product Menu',
+      icon: 'restaurant-menu',
+      onPress: () => console.log('Product Menu')
+    },
+    {
+      id: '3',
+      title: 'Customer Feedback',
+      icon: 'feedback',
+      onPress: () => console.log('Customer Feedback')
+    },
+    {
+      id: '4',
+      title: 'Event Management',
+      icon: 'event',
+      onPress: () => console.log('Event Management')
+    },
+    {
+      id: '5',
+      title: 'Account Settings',
+      icon: 'settings',
+      onPress: () => console.log('Account Settings')
+    }
+  ];
+
   const chatItems = [
     {
       id: '1',
@@ -55,7 +111,6 @@ export default function Profile() {
   ];
 
   const handleLogout = () => {
-    // Navigate to roles page
     router.replace('/pages/roles/role');
   };
 
@@ -77,27 +132,29 @@ export default function Profile() {
               style={styles.profileImage} 
             />
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Ngô Văn A</Text>
+              <Text style={styles.profileName}>{userName}</Text>
               <View style={styles.statusContainer}>
-                <View style={styles.freeStatus}>
-                  <Text style={styles.freeText}>Limited User</Text>
+                <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
+                  <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
                 </View>
-                <TouchableOpacity 
-                  style={styles.buyPremiumButton}
-                  onPress={() => router.push('/pages/premium/premium')}
-                >
-                  <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
-                </TouchableOpacity>
+                {!isAdmin && (
+                  <TouchableOpacity 
+                    style={styles.buyPremiumButton}
+                    onPress={() => router.push('/pages/premium/premium')}
+                  >
+                    <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </View>
 
-          {/* Account Section */}
+          {/* Menu Section */}
           <View style={styles.mainContent}>
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Account</Text>
+              <Text style={styles.sectionTitle}>{isAdmin ? 'Business Management' : 'Account'}</Text>
               <View style={styles.menuContainer}>
-                {menuItems.map((item) => (
+                {(isAdmin ? adminMenuItems : userMenuItems).map((item) => (
                   <TouchableOpacity 
                     key={item.id} 
                     style={styles.menuItem}
@@ -191,37 +248,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: horizontalScale(8),
   },
-  freeStatus: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  statusBadge: {
     paddingHorizontal: horizontalScale(12),
     paddingVertical: verticalScale(4),
     borderRadius: moderateScale(12),
   },
-  freeText: {
-    fontSize: fontScale(14),
-    color: '#FFFFFF',
+  userBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  adminBadge: {
+    backgroundColor: '#FFD700',
+  },
+  statusText: {
+    color: '#000000',
+    fontSize: fontScale(12),
     fontWeight: '500',
   },
   buyPremiumButton: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: '#FFD700',
     paddingHorizontal: horizontalScale(12),
     paddingVertical: verticalScale(4),
     borderRadius: moderateScale(12),
   },
   buyPremiumText: {
-    fontSize: fontScale(14),
-    color: '#FFD700',
+    color: '#000000',
+    fontSize: fontScale(12),
     fontWeight: '500',
   },
   mainContent: {
-    backgroundColor: '#F5F5F5',
+    flex: 1,
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: moderateScale(30),
     borderTopRightRadius: moderateScale(30),
-    flex: 1,
-    paddingTop: verticalScale(20),
+    padding: moderateScale(16),
   },
   section: {
-    padding: moderateScale(16),
+    marginBottom: verticalScale(24),
   },
   sectionTitle: {
     fontSize: fontScale(18),
@@ -231,37 +293,42 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(16),
-    overflow: 'hidden',
+    borderRadius: moderateScale(12),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: moderateScale(16),
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
   menuText: {
     flex: 1,
-    fontSize: fontScale(16),
-    color: '#000000',
     marginLeft: horizontalScale(16),
+    fontSize: fontScale(16),
+    color: '#333333',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFE5E5',
     padding: moderateScale(16),
-    marginHorizontal: horizontalScale(16),
-    marginVertical: verticalScale(24),
-    backgroundColor: '#FFE4E4',
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(12),
+    marginTop: verticalScale(24),
   },
   logoutText: {
+    marginLeft: horizontalScale(8),
     fontSize: fontScale(16),
     fontWeight: '600',
     color: '#FF0000',
-    marginLeft: horizontalScale(8),
   },
 }); 
