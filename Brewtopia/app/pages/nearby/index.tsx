@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import { useRouter } from 'expo-router';
 
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
@@ -32,6 +33,7 @@ export default function Nearby() {
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const router = useRouter();
 
   // Dữ liệu mẫu cho các quán cafe
   const cafes: Cafe[] = [
@@ -301,6 +303,16 @@ export default function Nearby() {
               </TouchableOpacity>
             </View>
 
+            <TouchableOpacity 
+              style={styles.detailButton}
+              onPress={() => router.push({
+                pathname: 'pages/shop/detail' as any,
+                params: { shopId: selectedCafe.id }
+              })}
+            >
+              <Text style={styles.detailButtonText}>Detail</Text>
+            </TouchableOpacity>
+
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
@@ -438,5 +450,18 @@ const styles = StyleSheet.create({
     width: horizontalScale(200),
     height: verticalScale(150),
     borderRadius: moderateScale(12),
+  },
+  detailButton: {
+    backgroundColor: '#6E543C',
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: horizontalScale(20),
+    borderRadius: moderateScale(25),
+    alignItems: 'center',
+    marginTop: verticalScale(16),
+  },
+  detailButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(16),
+    fontWeight: '600',
   },
 }); 
