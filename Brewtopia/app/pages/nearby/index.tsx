@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated, FlatList } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
@@ -313,21 +313,25 @@ export default function Nearby() {
               <Text style={styles.detailButtonText}>Detail</Text>
             </TouchableOpacity>
 
-            <ScrollView 
+            <FlatList 
               horizontal 
               showsHorizontalScrollIndicator={false}
               style={styles.cafeImagesContainer}
               contentContainerStyle={styles.cafeImagesContent}
-            >
-              {selectedCafe.images.map((image, index) => (
+              data={selectedCafe.images}
+              keyExtractor={(_, index) => `cafe-image-${index}`}
+              renderItem={({ item, index }) => (
                 <Image
-                  key={index}
-                  source={image}
+                  source={item}
                   style={styles.cafeImage}
                   resizeMode="cover"
                 />
-              ))}
-            </ScrollView>
+              )}
+              initialNumToRender={2}
+              maxToRenderPerBatch={3}
+              windowSize={3}
+              removeClippedSubviews={true}
+            />
           </Animated.View>
         )}
       </View>

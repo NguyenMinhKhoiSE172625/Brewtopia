@@ -1,6 +1,6 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
@@ -143,20 +143,17 @@ export default function Home() {
     getUserData();
   }, []);
 
-  const renderSpecialOffer = ({ item, index }: { item: any; index: number }) => (
+  const renderSpecialOffer = useCallback(({ item }: { item: any }) => (
     <TouchableOpacity
+      style={styles.specialOfferContainer}
       onPress={() => {
         setSelectedImage(item);
         setShowImageModal(true);
       }}
     >
-      <Image
-        source={item}
-        style={styles.specialOfferImage}
-        resizeMode="cover"
-      />
+      <Image source={item} style={styles.specialOfferImage} resizeMode="cover" />
     </TouchableOpacity>
-  );
+  ), []);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -257,7 +254,11 @@ export default function Home() {
             showsHorizontalScrollIndicator={false}
             snapToInterval={Dimensions.get('window').width - horizontalScale(16)}
             decelerationRate="fast"
-            keyExtractor={(_, index) => index.toString()}
+            keyExtractor={(_, index) => `special-offer-${index}`}
+            initialNumToRender={2}
+            maxToRenderPerBatch={3}
+            windowSize={3}
+            removeClippedSubviews={true}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(
                 event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32))

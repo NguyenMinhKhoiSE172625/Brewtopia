@@ -32,11 +32,16 @@ export default function PaymentMethod() {
     // Show success modal
     setShowSuccessModal(true);
     
-    // Navigate back to nearby screen after delay
-    setTimeout(() => {
-      setShowSuccessModal(false);
-      router.push('pages/nearby' as any);
-    }, 3000);
+    // Remove the automatic timer
+    // setTimeout(() => {
+    //   setShowSuccessModal(false);
+    //   router.push('pages/nearby' as any);
+    // }, 3000);
+  };
+  
+  const handleUnderstand = () => {
+    setShowSuccessModal(false);
+    router.push('pages/nearby' as any);
   };
   
   return (
@@ -203,6 +208,20 @@ export default function PaymentMethod() {
             <Text style={styles.successMessage}>
               Your order has been successfully placed. You will receive a notification when it's ready.
             </Text>
+            
+            <View style={styles.warningContainer}>
+              <MaterialIcons name="warning" size={24} color="#E67700" />
+              <Text style={styles.warningText}>
+                If you arrive more than 5 minutes after the appointment time, your drink will still be kept until the end of the session, but the quality will not be guaranteed as expected. You will be responsible for any problems.
+              </Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.understandButton}
+              onPress={handleUnderstand}
+            >
+              <Text style={styles.understandButtonText}>I Understand</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -430,5 +449,35 @@ const styles = StyleSheet.create({
     color: '#333333',
     textAlign: 'center',
     lineHeight: verticalScale(24),
+    marginBottom: verticalScale(16),
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF3E0',
+    borderRadius: moderateScale(8),
+    padding: moderateScale(12),
+    marginTop: verticalScale(8),
+    alignItems: 'flex-start',
+  },
+  warningText: {
+    flex: 1,
+    fontSize: fontScale(14),
+    color: '#E67700',
+    marginLeft: horizontalScale(8),
+    lineHeight: verticalScale(20),
+  },
+  understandButton: {
+    backgroundColor: '#6E543C',
+    borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: horizontalScale(32),
+    marginTop: verticalScale(24),
+    width: '100%',
+    alignItems: 'center',
+  },
+  understandButtonText: {
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 }); 
