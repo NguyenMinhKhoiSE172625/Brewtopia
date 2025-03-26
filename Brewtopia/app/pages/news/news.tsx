@@ -1,197 +1,215 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, FlatList, Dimensions, Modal } from "react-native";
-import { useRouter } from "expo-router";
-import { useState, useRef, useEffect } from "react";
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal } from 'react-native';
+import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import Post from '../../components/Post';
 import BottomBar from '../../components/BottomBar';
-
-interface Post {
-  id: string;
-  user: {
-    name: string;
-    avatar: any;
-  };
-  location: string;
-  rating: number;
-  time: string;
-  content: string;
-  images: any[];
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-}
 
 export default function News() {
   const router = useRouter();
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [newPostContent, setNewPostContent] = useState('');
-  const [posts, setPosts] = useState<Post[]>([
+
+  const samplePosts = [
     {
       id: '1',
-      user: {
-        name: 'John Weed',
-        avatar: require('../../../assets/images/avatar1.png'),
-      },
-      location: 'Highway coffee',
-      rating: 5,
-      time: '1 day ago',
-      content: 'Chillax with my hot coffee ☕',
-      images: [
-        require('../../../assets/images/cafe1.png'),
-        require('../../../assets/images/cafe2.png'),
-      ],
-      likes: 12,
-      comments: 3,
-      isLiked: false,
+      username: 'Coffee Lover',
+      timestamp: '2 hours ago',
+      imageUrl: require('../../../assets/images/cafe1.png'),
+      caption: "Starting my day with the perfect cup of coffee ☕️ #MorningCoffee #CoffeeLover",
+      likes: 245,
+      comments: [
+        {
+          id: '1',
+          username: 'John',
+          text: 'Looks delicious! Which blend is this?',
+          timestamp: '1 hour ago'
+        },
+        {
+          id: '2',
+          username: 'Sarah',
+          text: "Perfect morning vibes! 😍",
+          timestamp: '30 minutes ago'
+        }
+      ]
     },
     {
       id: '2',
-      user: {
-        name: 'Daniel',
-        avatar: require('../../../assets/images/avatar2.png'),
-      },
-      location: 'Haz coffeeshop',
-      rating: 4,
-      time: '1 day ago',
-      content: 'Just enjoy this time ...',
-      images: [
-        require('../../../assets/images/cafe3.png'),
-      ],
-      likes: 8,
-      comments: 1,
-      isLiked: false,
+      username: 'Cafe Explorer',
+      timestamp: '3 hours ago',
+      imageUrl: require('../../../assets/images/cafe2.png'),
+      caption: "Found this hidden gem today! The atmosphere is amazing 🌟 #CafeHopping",
+      likes: 189,
+      comments: [
+        {
+          id: '1',
+          username: 'Mike',
+          text: 'Where is this place? Looks cozy!',
+          timestamp: '2 hours ago'
+        }
+      ]
     },
-  ]);
-
-  const sponsorBanners = [
-    require('../../../assets/images/ads1.png'),
-    require('../../../assets/images/ads2.png'),
-    require('../../../assets/images/ads3.png'),
+    {
+      id: '3',
+      username: 'Barista Pro',
+      timestamp: '5 hours ago',
+      imageUrl: require('../../../assets/images/cafe3.png'),
+      caption: "Latte art of the day 🎨 #LatteArt #BaristaLife",
+      likes: 567,
+      comments: [
+        {
+          id: '1',
+          username: 'Emma',
+          text: "Your latte art skills are amazing! 👏",
+          timestamp: '4 hours ago'
+        },
+        {
+          id: '2',
+          username: 'David',
+          text: "Teach me your ways! 🙏",
+          timestamp: '3 hours ago'
+        }
+      ]
+    },
+    {
+      id: '4',
+      username: 'Food Critic',
+      timestamp: '6 hours ago',
+      imageUrl: require('../../../assets/images/cafe4.png'),
+      caption: "Best brunch spot in town! The eggs benedict here is to die for 🍳 #FoodieLife",
+      likes: 432,
+      comments: [
+        {
+          id: '1',
+          username: 'Lisa',
+          text: 'Added to my must-visit list!',
+          timestamp: '5 hours ago'
+        }
+      ]
+    },
+    {
+      id: '5',
+      username: 'Sweet Tooth',
+      timestamp: '8 hours ago',
+      imageUrl: require('../../../assets/images/cafe5.png'),
+      caption: "This chocolate cake is pure heaven 🍫 #DessertLover",
+      likes: 678,
+      comments: [
+        {
+          id: '1',
+          username: 'Peter',
+          text: "Looks incredible! Save me a slice 😋",
+          timestamp: '7 hours ago'
+        }
+      ]
+    },
+    {
+      id: '6',
+      username: 'Coffee Artisan',
+      timestamp: '10 hours ago',
+      imageUrl: require('../../../assets/images/mon1.png'),
+      caption: "Fresh beans just arrived! Can't wait to brew these 🌱 #CoffeeRoasting",
+      likes: 345,
+      comments: [
+        {
+          id: '1',
+          username: 'Alex',
+          text: 'Which origin are these beans from?',
+          timestamp: '9 hours ago'
+        }
+      ]
+    },
+    {
+      id: '7',
+      username: 'Cafe Hopper',
+      timestamp: '12 hours ago',
+      imageUrl: require('../../../assets/images/mon2.png'),
+      caption: "Weekend vibes at this beautiful cafe ✨ #WeekendMood",
+      likes: 289,
+      comments: [
+        {
+          id: '1',
+          username: 'Rachel',
+          text: "Such a lovely spot! 😍",
+          timestamp: '11 hours ago'
+        }
+      ]
+    },
+    {
+      id: '8',
+      username: 'Tea Master',
+      timestamp: '1 day ago',
+      imageUrl: require('../../../assets/images/mon3.png'),
+      caption: "Exploring new tea blends today 🍵 #TeaTime",
+      likes: 234,
+      comments: [
+        {
+          id: '1',
+          username: 'Sophie',
+          text: "Love a good tea tasting! 🫖",
+          timestamp: '23 hours ago'
+        }
+      ]
+    },
+    {
+      id: '9',
+      username: 'Pastry Chef',
+      timestamp: '1 day ago',
+      imageUrl: require('../../../assets/images/mon4.png'),
+      caption: "Fresh croissants hot from the oven 🥐 #BakeryLife",
+      likes: 456,
+      comments: [
+        {
+          id: '1',
+          username: 'Tom',
+          text: "These look perfectly flaky! 👌",
+          timestamp: '23 hours ago'
+        }
+      ]
+    },
+    {
+      id: '10',
+      username: 'Coffee Shop',
+      timestamp: '1 day ago',
+      imageUrl: require('../../../assets/images/mon5.png'),
+      caption: "New seasonal menu launching tomorrow! 🎉 #NewMenu #Excited",
+      likes: 567,
+      comments: [
+        {
+          id: '1',
+          username: 'Anna',
+          text: "Can't wait to try everything! 😋",
+          timestamp: '22 hours ago'
+        },
+        {
+          id: '2',
+          username: 'James',
+          text: 'The preview looks amazing!',
+          timestamp: '21 hours ago'
+        }
+      ]
+    }
   ];
 
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const bannerRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const nextIndex = (currentBannerIndex + 1) % sponsorBanners.length;
-      bannerRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
-      });
-      setCurrentBannerIndex(nextIndex);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [currentBannerIndex]);
-
-  const handleLike = (postId: string) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        };
-      }
-      return post;
-    }));
-  };
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [posts, setPosts] = useState(samplePosts);
 
   const handleCreatePost = () => {
     if (newPostContent.trim()) {
-      const newPost: Post = {
+      const newPost = {
         id: (posts.length + 1).toString(),
-        user: {
-          name: 'You',
-          avatar: require('../../../assets/images/avatar3.png'),
-        },
-        location: 'Your location',
-        rating: 5,
-        time: 'Just now',
-        content: newPostContent,
-        images: [],
+        username: 'You',
+        timestamp: 'Just now',
+        imageUrl: require('../../../assets/images/avatar3.png'),
+        caption: newPostContent,
         likes: 0,
-        comments: 0,
-        isLiked: false,
+        comments: []
       };
       setPosts([newPost, ...posts]);
       setNewPostContent('');
       setShowPostModal(false);
     }
   };
-
-  const renderPost = ({ item: post }: { item: Post }) => (
-    <View style={styles.postContainer}>
-      {/* Post Header */}
-      <View style={styles.postHeader}>
-        <View style={styles.userInfo}>
-          <Image source={post.user.avatar} style={styles.avatar} />
-          <View>
-            <Text style={styles.userName}>{post.user.name}</Text>
-            <View style={styles.locationContainer}>
-              <Text style={styles.timeText}>was at</Text>
-              <MaterialIcons name="location-on" size={16} color="#FF0000" />
-              <Text style={styles.locationText}>{post.location}</Text>
-            </View>
-            <View style={styles.ratingContainer}>
-              <Text style={styles.timeText}>{post.time}</Text>
-              <View style={styles.stars}>
-                {[...Array(5)].map((_, index) => (
-                  <MaterialIcons
-                    key={index}
-                    name="star"
-                    size={16}
-                    color={index < post.rating ? '#FFD700' : '#D3D3D3'}
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <MaterialIcons name="more-vert" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Post Content */}
-      <Text style={styles.postContent}>{post.content}</Text>
-
-      {/* Post Images */}
-      <View style={styles.imageGrid}>
-        {post.images.map((image, index) => (
-          <Image key={index} source={image} style={styles.postImage} />
-        ))}
-      </View>
-
-      {/* Post Actions */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => handleLike(post.id)}
-        >
-          <MaterialIcons 
-            name={post.isLiked ? "favorite" : "favorite-border"} 
-            size={24} 
-            color={post.isLiked ? "#FF0000" : "#000"} 
-          />
-          <Text style={styles.actionText}>{post.likes}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <MaterialIcons name="chat-bubble-outline" size={24} color="#000" />
-          <Text style={styles.actionText}>{post.comments}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderSponsorBanner = ({ item }: { item: any }) => (
-    <Image
-      source={item}
-      style={styles.sponsorBanner}
-      resizeMode="cover"
-    />
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -239,43 +257,9 @@ export default function News() {
         </View>
 
         {/* Posts */}
-        {posts.map((post) => (
-          <View key={post.id}>
-            {renderPost({ item: post })}
-          </View>
+        {posts.map(post => (
+          <Post key={post.id} {...post} />
         ))}
-
-        {/* Sponsored Section */}
-        <View style={styles.sponsoredSection}>
-          <Text style={styles.sponsoredTitle}>Discover now</Text>
-          <View style={styles.sponsoredLabel}>
-            <Text style={styles.sponsoredText}>Sponsored</Text>
-          </View>
-          <FlatList
-            ref={bannerRef}
-            data={sponsorBanners}
-            renderItem={renderSponsorBanner}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            initialNumToRender={1}
-            maxToRenderPerBatch={1}
-            windowSize={2}
-            removeClippedSubviews={true}
-            updateCellsBatchingPeriod={50}
-            getItemLayout={(data, index) => ({
-              length: Dimensions.get('window').width,
-              offset: Dimensions.get('window').width * index,
-              index,
-            })}
-            onMomentumScrollEnd={(event) => {
-              const index = Math.round(
-                event.nativeEvent.contentOffset.x / Dimensions.get('window').width
-              );
-              setCurrentBannerIndex(index);
-            }}
-          />
-        </View>
       </ScrollView>
 
       {/* Create Post Modal */}
@@ -347,7 +331,7 @@ export default function News() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
@@ -380,12 +364,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: moderateScale(16),
   },
   createPostCard: {
     backgroundColor: '#FFFFFF',
     padding: moderateScale(16),
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(16),
   },
   createPostHeader: {
     flexDirection: 'row',
@@ -423,118 +408,6 @@ const styles = StyleSheet.create({
     marginLeft: horizontalScale(4),
     color: '#6E543C',
     fontSize: fontScale(14),
-  },
-  postContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: moderateScale(16),
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: verticalScale(12),
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  avatar: {
-    width: horizontalScale(40),
-    height: verticalScale(40),
-    borderRadius: moderateScale(20),
-    marginRight: horizontalScale(12),
-  },
-  userName: {
-    fontSize: fontScale(16),
-    fontWeight: '600',
-    color: '#000000',
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: verticalScale(2),
-  },
-  locationText: {
-    fontSize: fontScale(14),
-    color: '#000000',
-    marginLeft: horizontalScale(4),
-  },
-  timeText: {
-    fontSize: fontScale(14),
-    color: '#666666',
-    marginRight: horizontalScale(4),
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: verticalScale(2),
-  },
-  stars: {
-    flexDirection: 'row',
-    marginLeft: horizontalScale(8),
-  },
-  moreButton: {
-    padding: moderateScale(4),
-  },
-  postContent: {
-    fontSize: fontScale(16),
-    color: '#000000',
-    marginBottom: verticalScale(12),
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: moderateScale(8),
-    marginBottom: verticalScale(12),
-  },
-  postImage: {
-    width: '48%',
-    height: verticalScale(150),
-    borderRadius: moderateScale(8),
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    gap: horizontalScale(16),
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionText: {
-    marginLeft: horizontalScale(4),
-    fontSize: fontScale(14),
-    color: '#666666',
-  },
-  sponsoredSection: {
-    padding: moderateScale(16),
-  },
-  sponsoredTitle: {
-    fontSize: fontScale(18),
-    fontWeight: '600',
-    color: '#6E543C',
-    marginBottom: verticalScale(8),
-  },
-  sponsoredLabel: {
-    position: 'absolute',
-    top: moderateScale(16),
-    right: moderateScale(16),
-    backgroundColor: '#FFFFFF80',
-    padding: moderateScale(4),
-    paddingHorizontal: moderateScale(8),
-    borderRadius: moderateScale(12),
-    zIndex: 1,
-  },
-  sponsoredText: {
-    fontSize: fontScale(12),
-    color: '#666666',
-  },
-  sponsorBanner: {
-    width: Dimensions.get('window').width - horizontalScale(32),
-    height: verticalScale(150),
-    borderRadius: moderateScale(12),
-    marginRight: horizontalScale(16),
   },
   modalOverlay: {
     flex: 1,
