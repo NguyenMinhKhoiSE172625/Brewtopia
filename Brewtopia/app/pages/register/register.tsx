@@ -55,8 +55,11 @@ export default function Register() {
       // Using ApiService for registration
       const data = await ApiService.auth.register(userData);
       
-      // Store email for verification
+      // Store email and role for verification
       await AsyncStorage.setItem('registration_email', email);
+      if (role === 'admin') {
+        await AsyncStorage.setItem('registration_role', 'admin');
+      }
       
       // Registration successful
       setIsError(false);

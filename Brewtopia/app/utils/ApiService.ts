@@ -188,6 +188,22 @@ class ApiService {
       });
     },
     
+    // Verify email with code
+    verifyCode: async (email: string, code: string) => {
+      return this.fetch('/auth/verification', {
+        method: 'POST',
+        body: JSON.stringify({ email, code }),
+      });
+    },
+    
+    // Resend verification code
+    resendVerificationCode: async (email: string) => {
+      return this.fetch('/auth/verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+    
     // Logout
     logout: async () => {
       await AsyncStorage.removeItem('auth_token');

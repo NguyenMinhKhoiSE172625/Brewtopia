@@ -25,26 +25,30 @@ export default function VerifyCode() {
   // Create a ref array for TextInputs
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  // Get email from registration
+  // Get email and role from registration
   useEffect(() => {
-    const getEmail = async () => {
+    const getEmailAndRole = async () => {
       try {
         const savedEmail = await AsyncStorage.getItem('registration_email');
+        const savedRole = await AsyncStorage.getItem('registration_role');
         if (savedEmail) {
           setEmail(savedEmail);
           DebugService.log('Retrieved email for verification', savedEmail);
+          if (savedRole) {
+            DebugService.log('Retrieved role for verification', savedRole);
+          }
         } else {
           setIsError(true);
           setErrorMessage('Email not found. Please register again.');
         }
       } catch (error) {
-        DebugService.logError('Error retrieving email', error);
+        DebugService.logError('Error retrieving email and role', error);
         setIsError(true);
-        setErrorMessage('An error occurred while retrieving email.');
+        setErrorMessage('An error occurred while retrieving registration data.');
       }
     };
     
-    getEmail();
+    getEmailAndRole();
   }, []);
 
   // Timer for resend code
@@ -100,42 +104,33 @@ export default function VerifyCode() {
     setIsLoading(true);
 
     try {
-      // Call verification API
-      const response = await fetch('http://10.0.2.2:4000/api/auth/verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          code: verificationCode,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Verification successful
-        setIsSuccess(true);
-        setIsError(false);
-        setSuccessMessage('Verification successful! Redirecting...');
-        
-        // Clear stored email after successful verification
-        await AsyncStorage.removeItem('registration_email');
-        
-        // Navigate to login after 2 seconds
-        setTimeout(() => {
+      // Call verification API using ApiService
+      await ApiService.auth.verifyCode(email, verificationCode);
+      
+      // Verification successful
+      setIsSuccess(true);
+      setIsError(false);
+      setSuccessMessage('Verification successful! Redirecting...');
+      
+      // Get saved role
+      const savedRole = await AsyncStorage.getItem('registration_role');
+      
+      // Clear stored data after successful verification
+      await AsyncStorage.removeItem('registration_email');
+      await AsyncStorage.removeItem('registration_role');
+      
+      // Navigate to welcome page if admin, otherwise to login
+      setTimeout(() => {
+        if (savedRole === 'admin') {
+          router.push("/pages/business-registration/welcome");
+        } else {
           router.push("/pages/login-user/login-user");
-        }, 2000);
-      } else {
-        // Verification failed
-        setIsError(true);
-        setErrorMessage(data.message || 'Invalid verification code');
-      }
-    } catch (error) {
+        }
+      }, 2000);
+    } catch (error: any) {
       DebugService.logError('Verification API error', error);
       setIsError(true);
-      setErrorMessage('Unable to connect to verification server');
+      setErrorMessage(error.message || 'Invalid verification code');
     } finally {
       setIsLoading(false);
     }
@@ -151,44 +146,24 @@ export default function VerifyCode() {
     setIsLoading(true);
 
     try {
-      // Get JWT token if available
-      const token = await AsyncStorage.getItem('auth_token');
+      // Call verification API to resend code using ApiService
+      await ApiService.auth.resendVerificationCode(email);
       
-      // Call verification API to resend code
-      const response = await fetch('http://10.0.2.2:4000/api/auth/verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          email: email,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Code resent successfully
-        setTimeLeft(60);
-        setCode(['', '', '', '']);
-        setIsError(false);
-        setIsSuccess(true);
-        setSuccessMessage('Verification code has been resent to your email');
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setIsSuccess(false);
-        }, 3000);
-      } else {
-        // Resend failed
-        setIsError(true);
-        setErrorMessage(data.message || 'Failed to resend verification code');
-      }
-    } catch (error) {
+      // Code resent successfully
+      setTimeLeft(60);
+      setCode(['', '', '', '']);
+      setIsError(false);
+      setIsSuccess(true);
+      setSuccessMessage('Verification code has been resent to your email');
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 3000);
+    } catch (error: any) {
       DebugService.logError('Resend verification code error', error);
       setIsError(true);
-      setErrorMessage('Unable to connect to server');
+      setErrorMessage(error.message || 'Failed to resend verification code');
     } finally {
       setIsLoading(false);
     }
