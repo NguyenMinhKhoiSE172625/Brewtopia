@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper from '../../utils/UserRoleHelper';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function Home() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function Home() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const scaleAnim = useRef(new Animated.Value(0)).current;
   
   // Animation values for welcome popup
   const welcomePopupOpacity = useRef(new Animated.Value(0)).current;
@@ -44,7 +47,6 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const scrollInterval = setInterval(() => {
@@ -59,7 +61,7 @@ export default function Home() {
     }, 3000);
 
     return () => clearInterval(scrollInterval);
-  }, []);
+  }, [specialOffers.length]);
 
   // Show bot message after 5 seconds with animation
   useEffect(() => {
@@ -162,6 +164,28 @@ export default function Home() {
     }
   };
 
+  const handleCameraPress = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (permissionResult.status !== 'granted') {
+        Alert.alert('Permission Required', 'Camera permission is required to use this feature');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        console.log('Photo captured:', result.assets[0].uri);
+        // Handle the captured photo here
+      }
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Animated Welcome Popup */}
@@ -199,16 +223,21 @@ export default function Home() {
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>
-            <TouchableOpacity 
-              style={styles.searchBar}
-              onPress={() => router.push('pages/search/search' as any)}
-            >
-              <Ionicons name="search" size={20} color="#999" />
-              <Text style={styles.searchText}>Search your coffee...</Text>
-              <TouchableOpacity style={styles.filterButton}>
-                <MaterialIcons name="filter-list" size={20} color="#000" />
+            <View style={styles.searchBar}>
+              <MaterialIcons name="search" size={24} color="#6E543C" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search for drinks..."
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+              <TouchableOpacity 
+                style={styles.filterButton}
+                onPress={handleCameraPress}
+              >
+                <MaterialIcons name="camera-alt" size={24} color="#6E543C" />
               </TouchableOpacity>
-            </TouchableOpacity>
+            </View>
           </View>
 
           {/* Quick Actions */}
@@ -485,7 +514,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(12),
     borderRadius: moderateScale(10),
   },
-  searchText: {
+  searchInput: {
     flex: 1,
     marginLeft: horizontalScale(8),
     fontSize: fontScale(14),
