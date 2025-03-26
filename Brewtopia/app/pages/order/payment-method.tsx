@@ -35,7 +35,7 @@ export default function PaymentMethod() {
   
   const handleUnderstand = () => {
     setShowSuccessModal(false);
-    router.push('pages/nearby' as any);
+    router.push('/pages/congrats/congrats');
   };
   
   return (

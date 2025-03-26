@@ -252,7 +252,10 @@ export default function Home() {
                 <MaterialIcons name="credit-card" size={24} color="#000000" style={styles.paymentIcon} />
               </View>
             </TouchableOpacity>
-            <View style={styles.rewardsCard}>
+            <TouchableOpacity 
+              style={styles.rewardsCard}
+              onPress={() => router.push("/pages/rewards/rewards")}
+            >
               <Text style={styles.rewardsTitle}>Brewtopia Rewards</Text>
               <View style={styles.rewardsPointsContainer}>
                 <Text style={styles.rewardsPoints}>100</Text>
@@ -262,7 +265,7 @@ export default function Home() {
                   resizeMode="contain"
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
