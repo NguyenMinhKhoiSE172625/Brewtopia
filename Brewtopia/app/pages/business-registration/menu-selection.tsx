@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert, Modal, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,8 +12,15 @@ export default function MenuSelection() {
     { id: 2, image: require('../../../assets/images/mon2.png'), name: 'Cherry Lemonade' },
     { id: 3, image: require('../../../assets/images/mon3.png'), name: 'Fruit & Yogurt Parfait' },
   ]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemImage, setNewItemImage] = useState(null);
 
-  const handleAddMenuItem = async () => {
+  const handleAddMenuItem = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleImagePick = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permissionResult.status !== 'granted') {
@@ -29,16 +36,32 @@ export default function MenuSelection() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        const newItem = {
-          id: menuItems.length + 1,
-          image: { uri: result.assets[0].uri },
-          name: `New Item ${menuItems.length + 1}`,
-        };
-        setMenuItems([...menuItems, newItem]);
+        setNewItemImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not add menu item');
+      Alert.alert('Error', 'Could not pick image');
     }
+  };
+
+  const handleSaveItem = () => {
+    if (!newItemName.trim()) {
+      Alert.alert('Error', 'Please enter a name for the menu item');
+      return;
+    }
+    if (!newItemImage) {
+      Alert.alert('Error', 'Please upload an image for the menu item');
+      return;
+    }
+
+    const newItem = {
+      id: menuItems.length + 1,
+      image: { uri: newItemImage },
+      name: newItemName.trim(),
+    };
+    setMenuItems([...menuItems, newItem]);
+    setIsModalVisible(false);
+    setNewItemName('');
+    setNewItemImage(null);
   };
 
   const handleNext = () => {
@@ -103,6 +126,63 @@ export default function MenuSelection() {
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add New Menu Item</Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#6E543C" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Item Name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newItemName}
+                onChangeText={setNewItemName}
+                placeholder="Enter item name"
+                maxLength={50}
+              />
+              <Text style={styles.charCount}>{newItemName.length}/50</Text>
+
+              <Text style={styles.modalLabel}>Item Image *</Text>
+              <TouchableOpacity style={styles.uploadContainer} onPress={handleImagePick}>
+                {newItemImage ? (
+                  <Image source={{ uri: newItemImage }} style={styles.uploadedImage} />
+                ) : (
+                  <>
+                    <MaterialIcons name="add-photo-alternate" size={40} color="#6E543C" />
+                    <Text style={styles.uploadText}>Upload photo</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={() => setIsModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]} 
+                onPress={handleSaveItem}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -232,6 +312,101 @@ const styles = StyleSheet.create({
     color: '#6E543C',
   },
   nextButtonText: {
+    fontSize: fontScale(16),
+    color: '#FFFFFF',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(16),
+    width: '90%',
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: moderateScale(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  modalTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+  },
+  modalBody: {
+    padding: moderateScale(16),
+  },
+  modalLabel: {
+    fontSize: fontScale(14),
+    color: '#6E543C',
+    marginBottom: verticalScale(8),
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: moderateScale(8),
+    padding: moderateScale(12),
+    fontSize: fontScale(16),
+    marginBottom: verticalScale(4),
+  },
+  charCount: {
+    fontSize: fontScale(12),
+    color: '#999',
+    textAlign: 'right',
+    marginBottom: verticalScale(16),
+  },
+  uploadContainer: {
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderStyle: 'dashed',
+    borderRadius: moderateScale(8),
+    padding: moderateScale(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: verticalScale(200),
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: moderateScale(8),
+  },
+  uploadText: {
+    fontSize: fontScale(16),
+    color: '#6E543C',
+    marginTop: verticalScale(8),
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: moderateScale(16),
+    borderTopWidth: 1,
+    borderTopColor: '#E8E8E8',
+  },
+  modalButton: {
+    flex: 1,
+    padding: moderateScale(12),
+    borderRadius: moderateScale(8),
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(8),
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  saveButton: {
+    backgroundColor: '#6E543C',
+  },
+  cancelButtonText: {
+    fontSize: fontScale(16),
+    color: '#6E543C',
+  },
+  saveButtonText: {
     fontSize: fontScale(16),
     color: '#FFFFFF',
   },
