@@ -1,5 +1,6 @@
-import { View, StyleSheet, Text, Image, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
+import { useRouter } from 'expo-router';
 
 type CoffeeItem = {
   id: string;
@@ -10,6 +11,8 @@ type CoffeeItem = {
 };
 
 export default function CafeMenu({ cafeId }: { cafeId: string }) {
+  const router = useRouter();
+  
   // Mock coffee menu data
   const coffeeItems: CoffeeItem[] = [
     {
@@ -125,6 +128,17 @@ export default function CafeMenu({ cafeId }: { cafeId: string }) {
           ))}
         </View>
       </View>
+
+      {/* Order button */}
+      <TouchableOpacity 
+        style={styles.orderButton}
+        onPress={() => router.push({
+          pathname: 'pages/order/type-selection' as any,
+          params: { cafeId }
+        })}
+      >
+        <Text style={styles.orderButtonText}>Do you want to order?</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -173,5 +187,18 @@ const styles = StyleSheet.create({
     fontSize: fontScale(14),
     fontWeight: '700',
     color: '#6E543C',
+  },
+  orderButton: {
+    backgroundColor: '#6E543C',
+    padding: moderateScale(16),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    marginTop: verticalScale(32),
+    marginBottom: verticalScale(40),
+  },
+  orderButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(18),
+    fontWeight: '600',
   },
 }); 
