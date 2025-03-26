@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated, FlatList, Modal } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
@@ -23,54 +23,244 @@ interface Cafe {
     latitude: number;
     longitude: number;
   };
+  visitDate?: string;
 }
+
+// Move cafes array outside the component
+const MOCK_CAFES: Cafe[] = [
+  {
+    id: '1',
+    name: 'COFFEE SHOP 1',
+    address: 'ABC St, WCD District, City A',
+    rating: 4.5,
+    status: 'Open',
+    closingTime: '23:00',
+    images: [
+      require('../../../assets/images/cafe1.png'),
+      require('../../../assets/images/cafe2.png'),
+      require('../../../assets/images/cafe3.png'),
+    ],
+    coordinate: {
+      latitude: 10.7769,
+      longitude: 106.7009,
+    },
+  },
+  {
+    id: '2',
+    name: 'Time Cafe',
+    address: 'XYZ St, District 1, HCMC',
+    rating: 4.8,
+    status: 'Open',
+    closingTime: '22:00',
+    images: [
+      require('../../../assets/images/cafe2.png'),
+      require('../../../assets/images/cafe3.png'),
+    ],
+    coordinate: {
+      latitude: 10.7799,
+      longitude: 106.6999,
+    },
+  },
+  {
+    id: '3',
+    name: 'The Coffee House',
+    address: '123 Nguyen Du St, District 1',
+    rating: 4.3,
+    status: 'Open',
+    closingTime: '22:30',
+    images: [
+      require('../../../assets/images/cafe4.png'),
+      require('../../../assets/images/cafe3.png'),
+    ],
+    coordinate: {
+      latitude: 10.7785,
+      longitude: 106.6990,
+    },
+  },
+  {
+    id: '4',
+    name: 'Highlands Coffee',
+    address: '45 Le Loi Blvd, District 1',
+    rating: 4.1,
+    status: 'Open',
+    closingTime: '23:30',
+    images: [
+      require('../../../assets/images/cafe1.png'),
+      require('../../../assets/images/cafe5.png'),
+    ],
+    coordinate: {
+      latitude: 10.7762,
+      longitude: 106.7030,
+    },
+  },
+  {
+    id: '5',
+    name: 'Trung Nguyen Legend',
+    address: '98 Nguyen Hue St, District 1',
+    rating: 4.7,
+    status: 'Open',
+    closingTime: '22:00',
+    images: [
+      require('../../../assets/images/cafe5.png'),
+      require('../../../assets/images/cafe2.png'),
+    ],
+    coordinate: {
+      latitude: 10.7790,
+      longitude: 106.7040,
+    },
+  },
+  {
+    id: '6',
+    name: 'Starbucks Coffee',
+    address: '76 Le Thanh Ton St, District 1',
+    rating: 4.4,
+    status: 'Open',
+    closingTime: '23:00',
+    images: [
+      require('../../../assets/images/cafe3.png'),
+      require('../../../assets/images/cafe4.png'),
+    ],
+    coordinate: {
+      latitude: 10.7740,
+      longitude: 106.7020,
+    },
+  },
+  {
+    id: '7',
+    name: 'Phuc Long Coffee',
+    address: '42 Nguyen Hue St, District 1',
+    rating: 4.6,
+    status: 'Open',
+    closingTime: '22:30',
+    images: [
+      require('../../../assets/images/cafe2.png'),
+      require('../../../assets/images/cafe1.png'),
+    ],
+    coordinate: {
+      latitude: 10.7820,
+      longitude: 106.7000,
+    },
+  },
+  {
+    id: '8',
+    name: 'Cong Caphe',
+    address: '26 Ly Tu Trong St, District 1',
+    rating: 4.5,
+    status: 'Open',
+    closingTime: '23:00',
+    images: [
+      require('../../../assets/images/cafe4.png'),
+      require('../../../assets/images/cafe1.png'),
+    ],
+    coordinate: {
+      latitude: 10.7810,
+      longitude: 106.6960,
+    },
+  },
+  {
+    id: '9',
+    name: 'Cheese Coffee',
+    address: '151 Dong Khoi St, District 1',
+    rating: 4.2,
+    status: 'Open',
+    closingTime: '21:30',
+    images: [
+      require('../../../assets/images/cafe3.png'),
+      require('../../../assets/images/cafe5.png'),
+    ],
+    coordinate: {
+      latitude: 10.7750,
+      longitude: 106.6970,
+    },
+  },
+  {
+    id: '10',
+    name: 'Milano Coffee',
+    address: '33 Pasteur St, District 1',
+    rating: 4.3,
+    status: 'Open',
+    closingTime: '22:00',
+    images: [
+      require('../../../assets/images/cafe5.png'),
+      require('../../../assets/images/cafe3.png'),
+    ],
+    coordinate: {
+      latitude: 10.7730,
+      longitude: 106.7000,
+    },
+  }
+];
 
 export default function Nearby() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [showDirections, setShowDirections] = useState(false);
+  const [allCafes, setAllCafes] = useState<Cafe[]>([]);
+  const [showRecentlyVisited, setShowRecentlyVisited] = useState(false);
+  const [recentlyVisitedCafes, setRecentlyVisitedCafes] = useState<Cafe[]>([]);
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
 
-  // Dữ liệu mẫu cho các quán cafe
-  const cafes: Cafe[] = [
-    {
-      id: '1',
-      name: 'COFFEE SHOP 1',
-      address: 'ABC St, WCD District, City A',
-      rating: 4.5,
-      status: 'Open',
-      closingTime: '23:00',
-      images: [
-        require('../../../assets/images/cafe1.png'),
-        require('../../../assets/images/cafe2.png'),
-        require('../../../assets/images/cafe3.png'),
-      ],
-      coordinate: {
-        latitude: 10.7769,
-        longitude: 106.7009,
-      },
-    },
-    {
-      id: '2',
-      name: 'Time Cafe',
-      address: 'XYZ St, District 1, HCMC',
-      rating: 4.8,
-      status: 'Open',
-      closingTime: '22:00',
-      images: [
-        require('../../../assets/images/cafe2.png'),
-        require('../../../assets/images/cafe3.png'),
-      ],
-      coordinate: {
-        latitude: 10.7799,
-        longitude: 106.6999,
-      },
-    },
-  ];
+  // Use the static cafe data from outside the component
+  const cafes = useMemo(() => MOCK_CAFES, []);
+
+  // Generate random cafes around the user's location
+  const generateRandomCafes = (userLocation: Location.LocationObject, count: number = 10) => {
+    const baseLatitude = userLocation.coords.latitude;
+    const baseLongitude = userLocation.coords.longitude;
+    const cafeNames = [
+      'Espresso Express', 'Morning Brew', 'Coffee Corner', 'Urban Roast',
+      'Cafe Delight', 'Bean Scene', 'Brew Haven', 'Java Junction',
+      'The Daily Grind', 'Cafe Aroma', 'Cup & Saucer', 'Golden Coffee',
+      'The Roasted Bean', 'Coffee Culture', 'Cappuccino Club'
+    ];
+    
+    // Define all cafe images statically
+    const cafeImages = [
+      require('../../../assets/images/cafe1.png'),
+      require('../../../assets/images/cafe2.png'),
+      require('../../../assets/images/cafe3.png'),
+      require('../../../assets/images/cafe4.png'),
+      require('../../../assets/images/cafe5.png'),
+    ];
+    
+    const randomCafes: Cafe[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      // Generate a point within ~500m radius
+      // 0.005 in lat/lng is roughly 500m
+      const randomLat = baseLatitude + (Math.random() - 0.5) * 0.01;
+      const randomLng = baseLongitude + (Math.random() - 0.5) * 0.01;
+      
+      const randomName = cafeNames[Math.floor(Math.random() * cafeNames.length)];
+      const id = `random-${i + 1}`;
+      const randomRating = 3.5 + Math.random() * 1.5; // Rating between 3.5-5.0
+      const randomClosingHour = 20 + Math.floor(Math.random() * 4); // 20:00 - 23:00
+      
+      // Select random images from the predefined array
+      const randomImage1 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
+      const randomImage2 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
+      
+      randomCafes.push({
+        id,
+        name: `${randomName} ${i + 1}`,
+        address: `${Math.floor(Math.random() * 100) + 1} Street, District ${Math.floor(Math.random() * 5) + 1}`,
+        rating: Math.round(randomRating * 10) / 10,
+        status: 'Open',
+        closingTime: `${randomClosingHour}:00`,
+        images: [randomImage1, randomImage2],
+        coordinate: {
+          latitude: randomLat,
+          longitude: randomLng,
+        },
+      });
+    }
+    
+    return randomCafes;
+  };
 
   useEffect(() => {
     (async () => {
@@ -82,7 +272,22 @@ export default function Nearby() {
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
+      
+      // Combine hardcoded cafes with randomly generated ones
+      const randomCafes = generateRandomCafes(location, 15);
+      setAllCafes([...cafes, ...randomCafes]);
     })();
+  }, [cafes]);
+
+  // Initialize recently visited cafes just once on component mount
+  useEffect(() => {
+    // Simulate that the user has visited 3 cafes from the list
+    const visitedCafes = [
+      { ...MOCK_CAFES[0], visitDate: 'Today' },
+      { ...MOCK_CAFES[2], visitDate: 'Yesterday' },
+      { ...MOCK_CAFES[5], visitDate: 'Last Week' }
+    ];
+    setRecentlyVisitedCafes(visitedCafes);
   }, []);
 
   const handleMarkerPress = (cafe: Cafe) => {
@@ -161,6 +366,21 @@ export default function Nearby() {
     }
   };
 
+  const handleToggleRecentlyVisited = () => {
+    setShowRecentlyVisited(!showRecentlyVisited);
+  };
+
+  const handleSelectRecentCafe = (cafe: Cafe) => {
+    setShowRecentlyVisited(false);
+    handleMarkerPress(cafe);
+    mapRef.current?.animateToRegion({
+      latitude: cafe.coordinate.latitude,
+      longitude: cafe.coordinate.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mapContainer}>
@@ -183,7 +403,7 @@ export default function Nearby() {
             showsTraffic={false}
             showsIndoors={true}
           >
-            {cafes.map((cafe) => (
+            {allCafes.map((cafe) => (
               <Marker
                 key={cafe.id}
                 coordinate={cafe.coordinate}
@@ -214,6 +434,20 @@ export default function Nearby() {
           </MapView>
         )}
 
+        {/* Recently Visited Button */}
+        <TouchableOpacity 
+          style={[
+            styles.currentLocationButton,
+            styles.recentlyVisitedButton,
+            {
+              bottom: selectedCafe ? verticalScale(460) : verticalScale(90)
+            }
+          ]}
+          onPress={handleToggleRecentlyVisited}
+        >
+          <MaterialIcons name="history" size={24} color="#6E543C" />
+        </TouchableOpacity>
+
         {/* Current Location Button */}
         <TouchableOpacity 
           style={[
@@ -226,6 +460,43 @@ export default function Nearby() {
         >
           <MaterialIcons name="my-location" size={24} color="#6E543C" />
         </TouchableOpacity>
+
+        {/* Recently Visited Popup */}
+        {showRecentlyVisited && (
+          <View style={styles.recentlyVisitedContainer}>
+            <View style={styles.recentlyVisitedHeader}>
+              <Text style={styles.recentlyVisitedTitle}>Recently Visited</Text>
+              <TouchableOpacity onPress={handleToggleRecentlyVisited}>
+                <MaterialIcons name="close" size={24} color="#666666" />
+              </TouchableOpacity>
+            </View>
+
+            {recentlyVisitedCafes.length === 0 ? (
+              <Text style={styles.noRecentText}>You haven't visited any cafes in the past week.</Text>
+            ) : (
+              <ScrollView style={styles.recentlyVisitedList}>
+                {recentlyVisitedCafes.map((cafe, index) => (
+                  <TouchableOpacity 
+                    key={`recent-${cafe.id}`}
+                    style={styles.recentlyVisitedItem}
+                    onPress={() => handleSelectRecentCafe(cafe)}
+                  >
+                    <Image 
+                      source={cafe.images[0]} 
+                      style={styles.recentlyVisitedImage} 
+                      resizeMode="cover"
+                    />
+                    <View style={styles.recentlyVisitedInfo}>
+                      <Text style={styles.recentlyVisitedName}>{cafe.name}</Text>
+                      <Text style={styles.recentlyVisitedDate}>{cafe.visitDate}</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
 
         {/* Map Overlay for tap outside */}
         {selectedCafe && (
@@ -325,12 +596,20 @@ export default function Nearby() {
                   source={item}
                   style={styles.cafeImage}
                   resizeMode="cover"
+                  progressiveRenderingEnabled={true}
+                  fadeDuration={200}
                 />
               )}
-              initialNumToRender={2}
-              maxToRenderPerBatch={3}
-              windowSize={3}
+              initialNumToRender={1}
+              maxToRenderPerBatch={2}
+              windowSize={2}
               removeClippedSubviews={true}
+              updateCellsBatchingPeriod={50}
+              getItemLayout={(data, index) => ({
+                length: horizontalScale(200),
+                offset: horizontalScale(200) * index,
+                index,
+              })}
             />
           </Animated.View>
         )}
@@ -467,5 +746,75 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(16),
     fontWeight: '600',
+  },
+  recentlyVisitedButton: {
+    right: horizontalScale(16),
+  },
+  recentlyVisitedContainer: {
+    position: 'absolute',
+    top: verticalScale(80),
+    right: horizontalScale(16),
+    left: horizontalScale(16),
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
+    maxHeight: verticalScale(300),
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  recentlyVisitedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: verticalScale(12),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    marginBottom: verticalScale(12),
+  },
+  recentlyVisitedTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+  },
+  recentlyVisitedList: {
+    maxHeight: verticalScale(230),
+  },
+  recentlyVisitedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: verticalScale(12),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  recentlyVisitedImage: {
+    width: horizontalScale(50),
+    height: horizontalScale(50),
+    borderRadius: moderateScale(8),
+    marginRight: horizontalScale(12),
+  },
+  recentlyVisitedInfo: {
+    flex: 1,
+  },
+  recentlyVisitedName: {
+    fontSize: fontScale(16),
+    fontWeight: '500',
+    color: '#333333',
+    marginBottom: verticalScale(4),
+  },
+  recentlyVisitedDate: {
+    fontSize: fontScale(14),
+    color: '#666666',
+  },
+  noRecentText: {
+    fontSize: fontScale(14),
+    color: '#666666',
+    textAlign: 'center',
+    paddingVertical: verticalScale(20),
   },
 }); 

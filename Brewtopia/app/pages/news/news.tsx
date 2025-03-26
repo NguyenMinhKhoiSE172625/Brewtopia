@@ -258,6 +258,16 @@ export default function News() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            initialNumToRender={1}
+            maxToRenderPerBatch={1}
+            windowSize={2}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
+            getItemLayout={(data, index) => ({
+              length: Dimensions.get('window').width,
+              offset: Dimensions.get('window').width * index,
+              index,
+            })}
             onMomentumScrollEnd={(event) => {
               const index = Math.round(
                 event.nativeEvent.contentOffset.x / Dimensions.get('window').width

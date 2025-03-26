@@ -68,7 +68,7 @@ export default function OrderTypeSelection() {
         
         <View style={styles.imageContainer}>
           <Image 
-            source={require('../../../assets/images/cafe1.png')}
+            source={require('../../../assets/images/Logo2.png')}
             style={styles.cafeImage}
             resizeMode="contain"
           />
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(48),
   },
   cafeImage: {
-    width: horizontalScale(200),
-    height: verticalScale(150),
-    opacity: 0.8,
+    width: horizontalScale(350),
+    height: verticalScale(250),
+    opacity: 1,
   },
 }); 

@@ -255,10 +255,16 @@ export default function Home() {
             snapToInterval={Dimensions.get('window').width - horizontalScale(16)}
             decelerationRate="fast"
             keyExtractor={(_, index) => `special-offer-${index}`}
-            initialNumToRender={2}
-            maxToRenderPerBatch={3}
-            windowSize={3}
+            initialNumToRender={1}
+            maxToRenderPerBatch={2}
+            windowSize={2}
             removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
+            getItemLayout={(data, index) => ({
+              length: Dimensions.get('window').width - horizontalScale(32),
+              offset: (Dimensions.get('window').width - horizontalScale(32)) * index,
+              index,
+            })}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(
                 event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32))
@@ -380,8 +386,11 @@ export default function Home() {
             </View>
 
             {/* Chat Messages */}
-            <ScrollView style={styles.chatMessages}>
-              {messages.map((message, index) => (
+            <FlatList
+              data={messages}
+              keyExtractor={(item, index) => `message-${index}`}
+              style={styles.chatMessages}
+              renderItem={({ item: message, index }) => (
                 <View 
                   key={index} 
                   style={[
@@ -405,8 +414,12 @@ export default function Home() {
                     ]}>{message.text}</Text>
                   </View>
                 </View>
-              ))}
-            </ScrollView>
+              )}
+              initialNumToRender={10}
+              maxToRenderPerBatch={5}
+              windowSize={5}
+              removeClippedSubviews={true}
+            />
 
             {/* Chat Input */}
             <View style={styles.chatInputContainer}>

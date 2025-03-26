@@ -270,7 +270,7 @@ export default function Search() {
             {recommendedDrinks.map((drink) => (
               <TouchableOpacity 
                 key={drink.id}
-                style={styles.drinkCard}
+                style={styles.drinkCardGrid}
                 onPress={() => setSelectedProduct(drink)}
               >
                 <Image source={drink.image} style={styles.drinkImage} />
@@ -335,6 +335,16 @@ export default function Search() {
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.recommendedList}
+                    initialNumToRender={2}
+                    maxToRenderPerBatch={2}
+                    windowSize={2}
+                    removeClippedSubviews={true}
+                    updateCellsBatchingPeriod={50}
+                    getItemLayout={(data, index) => ({
+                      length: horizontalScale(120), // Adjust this based on your item width
+                      offset: horizontalScale(120) * index,
+                      index,
+                    })}
                   />
                 </View>
               </ScrollView>
@@ -626,7 +636,7 @@ const styles = StyleSheet.create({
     gap: moderateScale(12),
     marginBottom: verticalScale(24),
   },
-  drinkCard: {
+  drinkCardGrid: {
     width: '48%',
     height: verticalScale(200),
     borderRadius: moderateScale(20),
