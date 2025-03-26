@@ -13,7 +13,6 @@ export default function PaymentMethod() {
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [voucher, setVoucher] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showQRScanner, setShowQRScanner] = useState(false);
   
   const creditCards = [
     { id: 1, type: 'Visa', last4: '4242', expiry: '12/24' },
@@ -29,23 +28,9 @@ export default function PaymentMethod() {
     setSelectedCard(cardId);
   };
   
-  const handleOpenQRScanner = () => {
-    setShowQRScanner(true);
-  };
-  
-  const handleCloseQRScanner = () => {
-    setShowQRScanner(false);
-  };
-  
   const handlePlaceOrder = () => {
     // Show success modal
     setShowSuccessModal(true);
-    
-    // Remove the automatic timer
-    // setTimeout(() => {
-    //   setShowSuccessModal(false);
-    //   router.push('pages/nearby' as any);
-    // }, 3000);
   };
   
   const handleUnderstand = () => {
@@ -55,7 +40,7 @@ export default function PaymentMethod() {
   
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with back button and QR scanner button */}
+      {/* Header with back button */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -64,12 +49,6 @@ export default function PaymentMethod() {
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment Method</Text>
-        <TouchableOpacity 
-          style={styles.qrScanButton}
-          onPress={handleOpenQRScanner}
-        >
-          <MaterialIcons name="qr-code-scanner" size={24} color="#6E543C" />
-        </TouchableOpacity>
       </View>
       
       <ScrollView style={styles.content}>
@@ -222,38 +201,6 @@ export default function PaymentMethod() {
         </TouchableOpacity>
       </ScrollView>
       
-      {/* QR Code Scanner Modal */}
-      <Modal
-        visible={showQRScanner}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={handleCloseQRScanner}
-      >
-        <View style={styles.qrScannerContainer}>
-          <View style={styles.qrScannerHeader}>
-            <TouchableOpacity
-              style={styles.closeScannerButton}
-              onPress={handleCloseQRScanner}
-            >
-              <MaterialIcons name="close" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.scannerTitle}>Scan QR Code for Payment</Text>
-          </View>
-          
-          <View style={styles.cameraContainer}>
-            <View style={styles.qrFrame}>
-              <View style={styles.cornerTL} />
-              <View style={styles.cornerTR} />
-              <View style={styles.cornerBL} />
-              <View style={styles.cornerBR} />
-            </View>
-            <Text style={styles.scanInstructionText}>
-              Position the QR code within the frame
-            </Text>
-          </View>
-        </View>
-      </Modal>
-      
       {showSuccessModal && (
         <View style={styles.successModal}>
           <View style={styles.successContent}>
@@ -297,10 +244,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F5F5F5',
   },
   backButton: {
-    padding: moderateScale(8),
-    width: horizontalScale(40),
-  },
-  qrScanButton: {
     padding: moderateScale(8),
     width: horizontalScale(40),
   },
@@ -548,84 +491,5 @@ const styles = StyleSheet.create({
     width: horizontalScale(30),
     height: verticalScale(30),
     marginRight: horizontalScale(16),
-  },
-  // QR Scanner Styles
-  qrScannerContainer: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  qrScannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: moderateScale(16),
-    paddingTop: verticalScale(40),
-  },
-  closeScannerButton: {
-    padding: moderateScale(8),
-    marginRight: horizontalScale(16),
-  },
-  scannerTitle: {
-    fontSize: fontScale(18),
-    fontWeight: '600',
-    color: '#FFFFFF',
-    flex: 1,
-  },
-  cameraContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qrFrame: {
-    width: horizontalScale(250),
-    height: horizontalScale(250),
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cornerTL: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: horizontalScale(30),
-    height: verticalScale(30),
-    borderLeftWidth: 3,
-    borderTopWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  cornerTR: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: horizontalScale(30),
-    height: verticalScale(30),
-    borderRightWidth: 3,
-    borderTopWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  cornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: horizontalScale(30),
-    height: verticalScale(30),
-    borderLeftWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  cornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: horizontalScale(30),
-    height: verticalScale(30),
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  scanInstructionText: {
-    color: '#FFFFFF',
-    fontSize: fontScale(16),
-    marginTop: verticalScale(40),
-    textAlign: 'center',
   },
 }); 
