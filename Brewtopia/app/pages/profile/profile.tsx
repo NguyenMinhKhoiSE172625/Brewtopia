@@ -137,7 +137,14 @@ export default function Profile() {
                 <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
                   <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
                 </View>
-                {!isAdmin && (
+                {isAdmin ? (
+                  <TouchableOpacity 
+                    style={styles.bookingAdsButton}
+                    onPress={() => router.push('/pages/booking-ads/booking-ads')}
+                  >
+                    <Text style={styles.bookingAdsText}>Booking Ads</Text>
+                  </TouchableOpacity>
+                ) : (
                   <TouchableOpacity 
                     style={styles.buyPremiumButton}
                     onPress={() => router.push('/pages/premium/premium')}
@@ -330,5 +337,16 @@ const styles = StyleSheet.create({
     fontSize: fontScale(16),
     fontWeight: '600',
     color: '#FF0000',
+  },
+  bookingAdsButton: {
+    backgroundColor: '#FF0000',
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(12),
+  },
+  bookingAdsText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(12),
+    fontWeight: '500',
   },
 }); 
