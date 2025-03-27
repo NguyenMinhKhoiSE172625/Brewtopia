@@ -143,9 +143,15 @@ export default function PackageDetails() {
   };
 
   const handlePay = () => {
-    // Handle payment logic
-    console.log('Selected upgrades:', selectedUpgrades);
-    console.log('Total:', total);
+    router.push({
+      pathname: '/pages/order/payment-method',
+      params: { 
+        amount: total.toFixed(2),
+        type: 'ads',
+        packageName: selectedPackage.name,
+        upgrades: JSON.stringify(selectedUpgrades)
+      }
+    });
   };
 
   return (

@@ -13,16 +13,18 @@ interface Message {
   isUser: boolean;
 }
 
-const SpecialOfferItem = memo(({ item }: { item: any }) => (
-  <Image
-    source={item}
-    style={{
-      width: Dimensions.get('window').width - horizontalScale(32),
-      height: verticalScale(200),
-      borderRadius: moderateScale(16),
-    }}
-    resizeMode="cover"
-  />
+const SpecialOfferItem = memo(({ item, onPress }: { item: any; onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress}>
+    <Image
+      source={item}
+      style={{
+        width: Dimensions.get('window').width - horizontalScale(32),
+        height: verticalScale(200),
+        borderRadius: moderateScale(16),
+      }}
+      resizeMode="cover"
+    />
+  </TouchableOpacity>
 ));
 
 const MessageItem = memo(({ message, userRole }: { message: Message; userRole: string | null }) => (
@@ -99,8 +101,17 @@ export default function Home() {
     index,
   }), []);
 
+  const [selectedSpecialOffer, setSelectedSpecialOffer] = useState<any>(null);
+  const [showSpecialOfferModal, setShowSpecialOfferModal] = useState(false);
+
   const renderSpecialOffer = useCallback(({ item }: { item: any }) => (
-    <SpecialOfferItem item={item} />
+    <SpecialOfferItem 
+      item={item} 
+      onPress={() => {
+        setSelectedSpecialOffer(item);
+        setShowSpecialOfferModal(true);
+      }}
+    />
   ), []);
 
   const renderMessage = useCallback(({ item: message }: { item: Message }) => (
@@ -270,21 +281,19 @@ export default function Home() {
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
+            <TouchableOpacity 
+              style={styles.searchBar}
+              onPress={() => router.push("/pages/search/search")}
+            >
               <MaterialIcons name="search" size={24} color="#6E543C" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search for drinks..."
-                value={searchText}
-                onChangeText={setSearchText}
-              />
+              <Text style={styles.searchInput}>Search for drinks...</Text>
               <TouchableOpacity 
                 style={styles.filterButton}
                 onPress={handleCameraPress}
               >
                 <MaterialIcons name="camera-alt" size={24} color="#6E543C" />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Quick Actions */}
@@ -492,6 +501,36 @@ export default function Home() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Special Offer Modal */}
+      <Modal
+        visible={showSpecialOfferModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSpecialOfferModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSpecialOfferModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Image
+                source={selectedSpecialOffer}
+                style={styles.modalImage}
+                resizeMode="contain"
+              />
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setShowSpecialOfferModal(false)}
+              >
+                <MaterialIcons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );

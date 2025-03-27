@@ -7,12 +7,14 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 export default function PaymentMethod() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { amount, type, duration } = params;
+  const { amount, type, duration, packageName, upgrades } = params;
   
   const [paymentMethod, setPaymentMethod] = useState<'momo' | 'bank' | 'my_card' | 'zalopay' | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [voucher, setVoucher] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPremiumSuccessModal, setShowPremiumSuccessModal] = useState(false);
+  const [showAdsSuccessModal, setShowAdsSuccessModal] = useState(false);
   
   const creditCards = [
     { id: 1, type: 'Visa', last4: '4242', expiry: '12/24' },
@@ -29,13 +31,28 @@ export default function PaymentMethod() {
   };
   
   const handlePlaceOrder = () => {
-    // Show success modal
-    setShowSuccessModal(true);
+    if (type === 'premium') {
+      setShowPremiumSuccessModal(true);
+    } else if (type === 'ads') {
+      setShowAdsSuccessModal(true);
+    } else {
+      setShowSuccessModal(true);
+    }
+  };
+  
+  const handlePremiumSuccess = () => {
+    setShowPremiumSuccessModal(false);
+    router.push('/pages/home/home');
   };
   
   const handleUnderstand = () => {
     setShowSuccessModal(false);
     router.push('/pages/congrats/congrats');
+  };
+  
+  const handleAdsSuccess = () => {
+    setShowAdsSuccessModal(false);
+    router.push('/pages/home/home');
   };
   
   return (
@@ -180,7 +197,12 @@ export default function PaymentMethod() {
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>
-              {type === 'premium' ? `Premium (${duration} month${parseInt(duration as string) > 1 ? 's' : ''})` : 'Subtotal'}
+              {type === 'premium' 
+                ? `Premium (${duration} month${parseInt(duration as string) > 1 ? 's' : ''})`
+                : type === 'ads'
+                ? `${packageName} Package`
+                : 'Subtotal'
+              }
             </Text>
             <Text style={styles.summaryValue}>${amount}</Text>
           </View>
@@ -223,7 +245,7 @@ export default function PaymentMethod() {
         </TouchableOpacity>
       </ScrollView>
       
-      {showSuccessModal && (
+      {showSuccessModal && type !== 'premium' && (
         <View style={styles.successModal}>
           <View style={styles.successContent}>
             <MaterialIcons name="check-circle" size={60} color="#6E543C" />
@@ -244,6 +266,44 @@ export default function PaymentMethod() {
               onPress={handleUnderstand}
             >
               <Text style={styles.understandButtonText}>I Understand</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {showPremiumSuccessModal && type === 'premium' && (
+        <View style={styles.successModal}>
+          <View style={styles.successContent}>
+            <MaterialIcons name="check-circle" size={60} color="#6E543C" />
+            <Text style={styles.successTitle}>Premium Purchased Successfully!</Text>
+            <Text style={styles.successMessage}>
+              Thank you for purchasing Premium! You now have access to all premium features for {duration} month{parseInt(duration as string) > 1 ? 's' : ''}.
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.understandButton}
+              onPress={handlePremiumSuccess}
+            >
+              <Text style={styles.understandButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {showAdsSuccessModal && type === 'ads' && (
+        <View style={styles.successModal}>
+          <View style={styles.successContent}>
+            <MaterialIcons name="check-circle" size={60} color="#6E543C" />
+            <Text style={styles.successTitle}>Advertisement Package Purchased!</Text>
+            <Text style={styles.successMessage}>
+              Thank you for purchasing the {packageName} Package! Your advertisement campaign will be activated within 24 hours.
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.understandButton}
+              onPress={handleAdsSuccess}
+            >
+              <Text style={styles.understandButtonText}>Continue</Text>
             </TouchableOpacity>
           </View>
         </View>
