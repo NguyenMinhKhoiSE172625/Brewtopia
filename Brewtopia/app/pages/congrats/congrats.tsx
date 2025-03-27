@@ -17,7 +17,7 @@ export default function Congrats() {
         <Image 
           source={require('../../../assets/images/coinbackground.png')}
           style={styles.backgroundImage}
-          resizeMode="contain"
+          resizeMode="cover"
         />
         <MaterialIcons name="check-circle" size={80} color="#4CAF50" />
         <Text style={styles.title}>Payment Successful!</Text>
@@ -49,12 +49,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: moderateScale(20),
+    position: 'relative',
+    overflow: 'hidden',
   },
   backgroundImage: {
     position: 'absolute',
-    width: '100%',
-    height: '100%',
-    opacity: 0.1,
+    width: horizontalScale(500),
+    height: verticalScale(500),
+    opacity: 1,
+    top: '10%',
+    left: '50%',
+    transform: [
+      { translateX: -250 },
+      { translateY: -100 }
+    ],
   },
   title: {
     fontSize: fontScale(28),

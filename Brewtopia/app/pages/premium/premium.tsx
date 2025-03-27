@@ -21,13 +21,6 @@ export default function Premium() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.productsButton}
-          onPress={() => console.log('Products')}
-        >
-          <MaterialIcons name="shopping-bag" size={24} color="#000" />
-          <Text style={styles.productsText}>Products</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Premium Badge */}
@@ -74,16 +67,20 @@ export default function Premium() {
       {/* Add to Order Button */}
       <TouchableOpacity 
         style={styles.addButton}
-        onPress={() => console.log('Add to Order')}
+        onPress={() => {
+          const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
+          router.push({
+            pathname: '/pages/order/payment-method',
+            params: { 
+              amount: selectedPlanData?.price,
+              type: 'premium',
+              duration: selectedPlanData?.months
+            }
+          });
+        }}
       >
         <MaterialIcons name="add-shopping-cart" size={24} color="#FFF" />
         <Text style={styles.addButtonText}>Add to Order</Text>
-      </TouchableOpacity>
-
-      {/* Information Button */}
-      <TouchableOpacity style={styles.infoButton}>
-        <MaterialIcons name="info" size={24} color="#000" />
-        <Text style={styles.infoButtonText}>Information</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -180,25 +177,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#6E543C',
     padding: moderateScale(16),
     borderRadius: moderateScale(12),
-    marginBottom: verticalScale(16),
   },
   addButtonText: {
     color: '#FFF',
     fontSize: fontScale(16),
     fontWeight: '600',
-    marginLeft: horizontalScale(8),
-  },
-  infoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: moderateScale(16),
-    borderRadius: moderateScale(12),
-  },
-  infoButtonText: {
-    fontSize: fontScale(16),
-    fontWeight: '500',
     marginLeft: horizontalScale(8),
   },
 }); 

@@ -7,9 +7,9 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 export default function PaymentMethod() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { cafeId } = params;
+  const { amount, type, duration } = params;
   
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'momo' | 'bank' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'momo' | 'bank' | 'my_card' | 'zalopay' | null>(null);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [voucher, setVoucher] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -20,7 +20,7 @@ export default function PaymentMethod() {
     { id: 3, type: 'American Express', last4: '0123', expiry: '09/23' }
   ];
   
-  const handleSelectPaymentMethod = (method: 'credit_card' | 'momo' | 'bank') => {
+  const handleSelectPaymentMethod = (method: 'momo' | 'bank' | 'my_card' | 'zalopay') => {
     setPaymentMethod(method);
   };
   
@@ -58,19 +58,19 @@ export default function PaymentMethod() {
           <TouchableOpacity
             style={[
               styles.paymentOption,
-              paymentMethod === 'credit_card' && styles.selectedPaymentOption
+              paymentMethod === 'my_card' && styles.selectedPaymentOption
             ]}
-            onPress={() => handleSelectPaymentMethod('credit_card')}
+            onPress={() => handleSelectPaymentMethod('my_card')}
           >
             <Image 
-              source={require('../../../assets/images/creditcard.png')} 
+              source={require('../../../assets/images/card.png')} 
               style={styles.paymentIcon} 
               resizeMode="contain"
             />
             <Text style={[
               styles.paymentOptionText,
-              paymentMethod === 'credit_card' && styles.selectedPaymentOptionText
-            ]}>Credit Card</Text>
+              paymentMethod === 'my_card' && styles.selectedPaymentOptionText
+            ]}>My Card</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -94,6 +94,24 @@ export default function PaymentMethod() {
           <TouchableOpacity
             style={[
               styles.paymentOption,
+              paymentMethod === 'zalopay' && styles.selectedPaymentOption
+            ]}
+            onPress={() => handleSelectPaymentMethod('zalopay')}
+          >
+            <Image 
+              source={require('../../../assets/images/zalopay.png')} 
+              style={styles.paymentIcon} 
+              resizeMode="contain"
+            />
+            <Text style={[
+              styles.paymentOptionText,
+              paymentMethod === 'zalopay' && styles.selectedPaymentOptionText
+            ]}>ZaloPay</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
               paymentMethod === 'bank' && styles.selectedPaymentOption
             ]}
             onPress={() => handleSelectPaymentMethod('bank')}
@@ -106,7 +124,7 @@ export default function PaymentMethod() {
           </TouchableOpacity>
         </View>
         
-        {paymentMethod === 'credit_card' && (
+        {paymentMethod === 'my_card' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Select Card</Text>
             
@@ -161,13 +179,15 @@ export default function PaymentMethod() {
           <Text style={styles.summaryTitle}>Order Summary</Text>
           
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>$11.50</Text>
+            <Text style={styles.summaryLabel}>
+              {type === 'premium' ? `Premium (${duration} month${parseInt(duration as string) > 1 ? 's' : ''})` : 'Subtotal'}
+            </Text>
+            <Text style={styles.summaryValue}>${amount}</Text>
           </View>
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax</Text>
-            <Text style={styles.summaryValue}>$1.15</Text>
+            <Text style={styles.summaryValue}>${(parseFloat(amount as string) * 0.1).toFixed(2)}</Text>
           </View>
           
           <View style={styles.summaryRow}>
@@ -177,7 +197,9 @@ export default function PaymentMethod() {
           
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>$12.65</Text>
+            <Text style={styles.totalValue}>
+              ${(parseFloat(amount as string) * 1.1).toFixed(2)}
+            </Text>
           </View>
         </View>
         
@@ -191,10 +213,10 @@ export default function PaymentMethod() {
         <TouchableOpacity 
           style={[
             styles.placeOrderButton,
-            (!paymentMethod || (paymentMethod === 'credit_card' && !selectedCard)) && styles.disabledButton
+            (!paymentMethod || (paymentMethod === 'my_card' && !selectedCard)) && styles.disabledButton
           ]}
           onPress={handlePlaceOrder}
-          disabled={!paymentMethod || (paymentMethod === 'credit_card' && !selectedCard)}
+          disabled={!paymentMethod || (paymentMethod === 'my_card' && !selectedCard)}
         >
           <Text style={styles.placeOrderButtonText}>Place Order</Text>
           <MaterialIcons name="check-circle" size={24} color="#FFFFFF" />
