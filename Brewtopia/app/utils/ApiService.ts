@@ -19,25 +19,16 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
  * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
  * 2. PHYSICAL DEVICE: Use computer's IP address on the network (192.168.2.125)
  */
-const COMPUTER_IP = '192.168.2.125'; // Your computer's IP on the network
+const COMPUTER_IP = '161.35.229.29'; // Production server IP
 const API_PORT = '4000';
 const API_PATH = '/api';
 
-// Simple approach that works on Android emulators, iOS simulators, and physical devices
-const DEFAULT_API_URL = Platform.select({
-  // Android emulator uses 10.0.2.2, physical devices use the computer's actual IP
-  android: __DEV__ ? `http://10.0.2.2:${API_PORT}${API_PATH}` : `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`,
-  
-  // iOS simulator uses localhost, physical devices use the computer's actual IP
-  ios: __DEV__ ? `http://localhost:${API_PORT}${API_PATH}` : `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`,
-  
-  // Default fallback, use computer's IP to support physical devices
-  default: `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`
-});
+// Simple approach that works on all environments
+const DEFAULT_API_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
 
 // For easier debugging, dynamically check if on physical device using a dedicated environment variable
 // This can be set to 'true' when testing on physical devices
-const USE_PHYSICAL_DEVICE_URL = true; // Set to true for physical device testing
+const USE_PHYSICAL_DEVICE_URL = true; // Set to true for production
 const PHYSICAL_DEVICE_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
 
 // Final API URL selection, prioritizing explicit config for physical devices
