@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
 
 interface Comment {
@@ -20,12 +20,15 @@ interface PostProps {
   comments: Comment[];
 }
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function Post({ id, username, timestamp, imageUrl, caption, likes: initialLikes, comments: initialComments }: PostProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likes, setLikes] = useState(initialLikes);
   const [comments, setComments] = useState(initialComments);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [imageViewVisible, setImageViewVisible] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -45,6 +48,14 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     }
   };
 
+  const openImageViewer = () => {
+    setImageViewVisible(true);
+  };
+
+  const closeImageViewer = () => {
+    setImageViewVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -58,11 +69,16 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         </View>
       </View>
 
-      <Image 
-        source={imageUrl}
-        style={styles.postImage}
-        resizeMode="cover"
-      />
+      <TouchableOpacity 
+        activeOpacity={0.9}
+        onPress={openImageViewer}
+      >
+        <Image 
+          source={imageUrl}
+          style={styles.postImage}
+          resizeMode="cover"
+        />
+      </TouchableOpacity>
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
@@ -111,6 +127,31 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
           </View>
         </View>
       )}
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={imageViewVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageViewer}
+      >
+        <TouchableWithoutFeedback onPress={closeImageViewer}>
+          <View style={styles.imageViewerContainer}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={closeImageViewer}
+            >
+              <Ionicons name="close-circle" size={30} color="#FFFFFF" />
+            </TouchableOpacity>
+            
+            <Image 
+              source={imageUrl}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 }
@@ -222,5 +263,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(14),
     fontWeight: '600',
+  },
+  // Image viewer styles
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.7,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
   },
 }); 

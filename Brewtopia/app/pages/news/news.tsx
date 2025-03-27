@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal, Alert, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import Post from '../../components/Post';
 import BottomBar from '../../components/BottomBar';
 import SponsorBanner from '../../components/SponsorBanner';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function News() {
   const router = useRouter();
@@ -194,22 +195,97 @@ export default function News() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [posts, setPosts] = useState(samplePosts);
+  
+  // New states for photo and rating features
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratedCafe, setRatedCafe] = useState('');
+
+  const requestPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Please allow access to your photo library to select images.');
+      return false;
+    }
+    return true;
+  };
+
+  const pickImages = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 5,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const newImages = result.assets.map(asset => asset.uri);
+        setSelectedImages([...selectedImages, ...newImages]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while selecting images.');
+      console.error(error);
+    }
+  };
+
+  const removeImage = (uri: string) => {
+    setSelectedImages(selectedImages.filter(imageUri => imageUri !== uri));
+  };
 
   const handleCreatePost = () => {
-    if (newPostContent.trim()) {
+    if (newPostContent.trim() || selectedImages.length > 0) {
       const newPost = {
         id: (posts.length + 1).toString(),
         username: 'You',
         timestamp: 'Just now',
-        imageUrl: require('../../../assets/images/avatar3.png'),
-        caption: newPostContent,
+        imageUrl: selectedImages.length > 0 
+          ? { uri: selectedImages[0] } 
+          : require('../../../assets/images/avatar3.png'),
+        caption: newPostContent + (rating > 0 ? `\n\nRated ${ratedCafe}: ${rating}⭐` : ''),
         likes: 0,
         comments: []
       };
       setPosts([newPost, ...posts]);
       setNewPostContent('');
+      setSelectedImages([]);
+      setRating(0);
+      setRatedCafe('');
       setShowPostModal(false);
     }
+  };
+
+  const openRatingModal = () => {
+    setShowRatingModal(true);
+  };
+
+  const renderStars = () => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <TouchableOpacity 
+          key={i} 
+          onPress={() => setRating(i)}
+          style={styles.starContainer}
+        >
+          <FontAwesome 
+            name={i <= rating ? 'star' : 'star-o'} 
+            size={30} 
+            color="#F8B740" 
+          />
+        </TouchableOpacity>
+      );
+    }
+    return (
+      <View style={styles.starsContainer}>
+        {stars}
+      </View>
+    );
   };
 
   // Function to render posts with sponsor banners in between
@@ -232,7 +308,13 @@ export default function News() {
           </TouchableOpacity>
         </View>
         <View style={styles.createPostActions}>
-          <TouchableOpacity style={styles.createPostAction}>
+          <TouchableOpacity 
+            style={styles.createPostAction}
+            onPress={() => {
+              setShowPostModal(true);
+              setTimeout(pickImages, 500);
+            }}
+          >
             <MaterialIcons name="photo-library" size={24} color="#6E543C" />
             <Text style={styles.createPostActionText}>Photo</Text>
           </TouchableOpacity>
@@ -240,7 +322,13 @@ export default function News() {
             <MaterialIcons name="location-on" size={24} color="#6E543C" />
             <Text style={styles.createPostActionText}>Check in</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.createPostAction}>
+          <TouchableOpacity 
+            style={styles.createPostAction}
+            onPress={() => {
+              setShowPostModal(true);
+              setTimeout(openRatingModal, 500);
+            }}
+          >
             <MaterialIcons name="star" size={24} color="#6E543C" />
             <Text style={styles.createPostActionText}>Rate</Text>
           </TouchableOpacity>
@@ -266,6 +354,18 @@ export default function News() {
     
     return result;
   };
+
+  const renderImageItem = ({ item }: { item: string }) => (
+    <View style={styles.selectedImageContainer}>
+      <Image source={{ uri: item }} style={styles.selectedImage} />
+      <TouchableOpacity 
+        style={styles.removeImageButton}
+        onPress={() => removeImage(item)}
+      >
+        <MaterialIcons name="close" size={20} color="#FFF" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -303,10 +403,10 @@ export default function News() {
               <TouchableOpacity 
                 style={[
                   styles.postButton,
-                  !newPostContent.trim() && styles.postButtonDisabled
+                  (!newPostContent.trim() && selectedImages.length === 0) && styles.postButtonDisabled
                 ]}
                 onPress={handleCreatePost}
-                disabled={!newPostContent.trim()}
+                disabled={!newPostContent.trim() && selectedImages.length === 0}
               >
                 <Text style={styles.postButtonText}>Post</Text>
               </TouchableOpacity>
@@ -324,6 +424,25 @@ export default function News() {
                 </View>
               </View>
             </View>
+            
+            {selectedImages.length > 0 && (
+              <View style={styles.selectedImagesContainer}>
+                <FlatList
+                  data={selectedImages}
+                  renderItem={renderImageItem}
+                  keyExtractor={(item, index) => index.toString()}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                />
+              </View>
+            )}
+            
+            {rating > 0 && (
+              <View style={styles.ratingPreview}>
+                <Text style={styles.ratingText}>Your rating for {ratedCafe || 'this cafe'}: {rating} ⭐</Text>
+              </View>
+            )}
+            
             <TextInput
               style={styles.modalInput}
               placeholder="What's on your mind?"
@@ -334,13 +453,64 @@ export default function News() {
               autoFocus
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalAction}>
+              <TouchableOpacity 
+                style={styles.modalAction}
+                onPress={pickImages}
+              >
                 <MaterialIcons name="photo-library" size={24} color="#6E543C" />
                 <Text style={styles.modalActionText}>Add Photos</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalAction}>
+              <TouchableOpacity 
+                style={styles.modalAction}
+                onPress={openRatingModal}
+              >
                 <MaterialIcons name="star" size={24} color="#6E543C" />
                 <Text style={styles.modalActionText}>Add Rating</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rating Modal */}
+      <Modal
+        visible={showRatingModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowRatingModal(false)}
+      >
+        <View style={styles.ratingModalOverlay}>
+          <View style={styles.ratingModalContent}>
+            <Text style={styles.ratingModalTitle}>Rate this cafe</Text>
+            
+            <TextInput
+              style={styles.ratingCafeInput}
+              placeholder="Cafe name"
+              placeholderTextColor="#999"
+              value={ratedCafe}
+              onChangeText={setRatedCafe}
+            />
+            
+            {renderStars()}
+            
+            <View style={styles.ratingModalActions}>
+              <TouchableOpacity 
+                style={[styles.ratingModalButton, styles.ratingModalCancelButton]}
+                onPress={() => setShowRatingModal(false)}
+              >
+                <Text style={styles.ratingModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.ratingModalButton, 
+                  styles.ratingModalSubmitButton,
+                  rating === 0 && styles.ratingModalSubmitButtonDisabled
+                ]}
+                onPress={() => setShowRatingModal(false)}
+                disabled={rating === 0}
+              >
+                <Text style={styles.ratingModalSubmitText}>Submit</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -500,5 +670,111 @@ const styles = StyleSheet.create({
     marginLeft: horizontalScale(4),
     color: '#6E543C',
     fontSize: fontScale(14),
+  },
+  // New styles for images and rating
+  selectedImagesContainer: {
+    padding: moderateScale(10),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
+  },
+  selectedImageContainer: {
+    marginRight: horizontalScale(10),
+    position: 'relative',
+  },
+  selectedImage: {
+    width: horizontalScale(80),
+    height: verticalScale(80),
+    borderRadius: moderateScale(10),
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: verticalScale(5),
+    right: horizontalScale(5),
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: horizontalScale(24),
+    height: verticalScale(24),
+    borderRadius: moderateScale(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ratingPreview: {
+    backgroundColor: '#FFF9E6',
+    padding: moderateScale(10),
+    borderRadius: moderateScale(10),
+    marginHorizontal: horizontalScale(16),
+    marginTop: verticalScale(10),
+  },
+  ratingText: {
+    fontSize: fontScale(14),
+    color: '#6E543C',
+  },
+  ratingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ratingModalContent: {
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(15),
+    padding: moderateScale(20),
+    alignItems: 'center',
+  },
+  ratingModalTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+    marginBottom: verticalScale(20),
+  },
+  ratingCafeInput: {
+    width: '100%',
+    height: verticalScale(45),
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    borderRadius: moderateScale(10),
+    paddingHorizontal: horizontalScale(15),
+    fontSize: fontScale(16),
+    marginBottom: verticalScale(20),
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: verticalScale(20),
+  },
+  starContainer: {
+    padding: moderateScale(5),
+  },
+  ratingModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  ratingModalButton: {
+    flex: 1,
+    height: verticalScale(45),
+    borderRadius: moderateScale(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(5),
+  },
+  ratingModalCancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  ratingModalCancelText: {
+    color: '#6E543C',
+    fontSize: fontScale(16),
+    fontWeight: '500',
+  },
+  ratingModalSubmitButton: {
+    backgroundColor: '#6E543C',
+  },
+  ratingModalSubmitButtonDisabled: {
+    opacity: 0.5,
+  },
+  ratingModalSubmitText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(16),
+    fontWeight: '500',
   },
 }); 

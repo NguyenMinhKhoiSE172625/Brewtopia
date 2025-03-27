@@ -6,7 +6,8 @@ import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
@@ -204,6 +205,13 @@ const CafeImage = memo(({ image }: { image: any }) => (
   />
 ));
 
+// Interface for share recipient
+interface ShareRecipient {
+  id: string;
+  name: string;
+  isGroup: boolean;
+}
+
 export default function Nearby() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -212,10 +220,13 @@ export default function Nearby() {
   const [allCafes, setAllCafes] = useState<Cafe[]>([]);
   const [showRecentlyVisited, setShowRecentlyVisited] = useState(false);
   const [recentlyVisitedCafes, setRecentlyVisitedCafes] = useState<Cafe[]>([]);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareRecipients, setShareRecipients] = useState<ShareRecipient[]>([]);
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   // Use the static cafe data from outside the component
   const cafes = useMemo(() => MOCK_CAFES, []);
@@ -347,6 +358,75 @@ export default function Nearby() {
     setRecentlyVisitedCafes(visitedCafes);
   }, []);
 
+  // Initialize share recipients (similar to chatItems in profile)
+  useEffect(() => {
+    const recipients = [
+      {
+        id: '1',
+        name: 'Group đi cà phê đê',
+        isGroup: true
+      },
+      {
+        id: '2',
+        name: 'John Weed',
+        isGroup: false
+      }
+    ];
+    setShareRecipients(recipients);
+  }, []);
+
+  // Focus on shared cafe if navigated from profile
+  useEffect(() => {
+    const focusCafeId = params.focusCafeId as string;
+    const latitude = params.latitude ? parseFloat(params.latitude as string) : null;
+    const longitude = params.longitude ? parseFloat(params.longitude as string) : null;
+    
+    if (focusCafeId && latitude && longitude && allCafes.length > 0) {
+      // Try to find the cafe by ID first
+      const cafe = allCafes.find(c => c.id === focusCafeId);
+      
+      if (cafe) {
+        // If found, select this cafe
+        handleMarkerPress(cafe);
+      } else {
+        // If not found (might be a case where the actual cafe is not in our list),
+        // create a temporary cafe object to show
+        const tempCafe: Cafe = {
+          id: focusCafeId,
+          name: 'Shared Coffee Shop',
+          address: 'Address from shared location',
+          rating: 4.5,
+          status: 'Open',
+          closingTime: '22:00',
+          images: [
+            require('../../../assets/images/cafe1.png'),
+            require('../../../assets/images/cafe2.png'),
+          ],
+          coordinate: {
+            latitude,
+            longitude,
+          },
+        };
+        
+        // Add this cafe to allCafes
+        setAllCafes(prev => [...prev, tempCafe]);
+        
+        // Select this cafe
+        setTimeout(() => {
+          handleMarkerPress(tempCafe);
+        }, 500);
+      }
+      
+      // Animate map to this location
+      mapRef.current?.animateToRegion({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 1000);
+    }
+  }, [params, allCafes]);
+
   const handleMarkerPress = (cafe: Cafe) => {
     setSelectedCafe(cafe);
     setShowDirections(false);
@@ -436,6 +516,79 @@ export default function Nearby() {
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
+  };
+
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
+
+  const handleCloseShareModal = () => {
+    setShowShareModal(false);
+  };
+
+  const handleShareWithRecipient = async (recipient: ShareRecipient) => {
+    if (!selectedCafe) return;
+    
+    try {
+      // Get existing shared cafes or initialize an empty array
+      const sharedCafesStr = await AsyncStorage.getItem('shared_cafes') || '[]';
+      const sharedCafes = JSON.parse(sharedCafesStr);
+      
+      // Add the new shared cafe with recipient info
+      const sharedCafe = {
+        cafeId: selectedCafe.id,
+        cafeName: selectedCafe.name,
+        cafeAddress: selectedCafe.address,
+        cafeImage: selectedCafe.images[0],
+        coordinate: selectedCafe.coordinate,
+        recipientId: recipient.id,
+        recipientName: recipient.name,
+        sharedAt: new Date().toISOString(),
+      };
+      
+      sharedCafes.push(sharedCafe);
+      
+      // Save updated shared cafes
+      await AsyncStorage.setItem('shared_cafes', JSON.stringify(sharedCafes));
+      
+      // Save as a chat message
+      const chatMessagesKey = `chat_messages_${recipient.id}`;
+      const messagesStr = await AsyncStorage.getItem(chatMessagesKey) || '[]';
+      const messages = JSON.parse(messagesStr);
+      
+      // Create a shared cafe message
+      const cafeMessage = {
+        id: Date.now().toString(),
+        sender: 'me',
+        text: `I want to share this cafe with you: ${selectedCafe.name}`,
+        timestamp: new Date().toISOString(),
+        sharedCafe: {
+          cafeId: selectedCafe.id,
+          cafeName: selectedCafe.name,
+          cafeAddress: selectedCafe.address,
+          coordinate: selectedCafe.coordinate,
+        }
+      };
+      
+      messages.push(cafeMessage);
+      await AsyncStorage.setItem(chatMessagesKey, JSON.stringify(messages));
+      
+      // Close modal
+      setShowShareModal(false);
+      
+      // Navigate to chat page
+      router.push({
+        pathname: '/pages/chat/chat',
+        params: { 
+          chatId: recipient.id, 
+          chatName: recipient.name, 
+          isGroup: recipient.isGroup.toString()
+        }
+      });
+    } catch (error) {
+      console.error('Error sharing cafe:', error);
+      alert('Failed to share cafe. Please try again.');
+    }
   };
 
   const renderCafeImage = useCallback(({ item }: { item: any }) => (
@@ -645,7 +798,7 @@ export default function Nearby() {
 
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => {/* Share cafe */}}
+                onPress={handleShare}
               >
                 <MaterialIcons name="share" size={24} color="#6E543C" />
                 <Text style={styles.actionText}>Share</Text>
@@ -680,6 +833,44 @@ export default function Nearby() {
             />
           </Animated.View>
         )}
+
+        {/* Share Modal */}
+        <Modal
+          visible={showShareModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={handleCloseShareModal}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.shareModalContent}>
+              <View style={styles.shareModalHeader}>
+                <Text style={styles.shareModalTitle}>Chọn Người Gửi</Text>
+                <TouchableOpacity onPress={handleCloseShareModal}>
+                  <MaterialIcons name="close" size={24} color="#666666" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.recipientsList}>
+                {shareRecipients.map((recipient) => (
+                  <TouchableOpacity 
+                    key={recipient.id}
+                    style={styles.recipientItem}
+                    onPress={() => handleShareWithRecipient(recipient)}
+                  >
+                    <Image 
+                      source={recipient.isGroup 
+                        ? require('../../../assets/images/profile1.png') 
+                        : require('../../../assets/images/avatar1.png')}
+                      style={styles.recipientAvatar}
+                    />
+                    <Text style={styles.recipientName}>{recipient.name}</Text>
+                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
 
       <BottomBar />
@@ -898,5 +1089,53 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(16),
     fontWeight: '600',
+  },
+  // Share modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  shareModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: moderateScale(20),
+    borderTopRightRadius: moderateScale(20),
+    padding: moderateScale(16),
+    maxHeight: '70%',
+  },
+  shareModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: verticalScale(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    marginBottom: verticalScale(16),
+  },
+  shareModalTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+  },
+  recipientsList: {
+    maxHeight: verticalScale(400),
+  },
+  recipientItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: verticalScale(12),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  recipientAvatar: {
+    width: horizontalScale(40),
+    height: horizontalScale(40),
+    borderRadius: horizontalScale(20),
+    marginRight: horizontalScale(12),
+  },
+  recipientName: {
+    flex: 1,
+    fontSize: fontScale(16),
+    color: '#333333',
   },
 }); 

@@ -156,8 +156,9 @@ export default function Profile() {
             </View>
           </View>
 
-          {/* Menu Section */}
+          {/* Main Content */}
           <View style={styles.mainContent}>
+            {/* Menu Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{isAdmin ? 'Business Management' : 'Account'}</Text>
               <View style={styles.menuContainer}>

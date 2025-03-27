@@ -2,12 +2,23 @@ import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInpu
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SharedItem {
   image: any;
   title: string;
   location: string;
+}
+
+interface SharedCafe {
+  cafeId: string;
+  cafeName: string;
+  cafeAddress: string;
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface Message {
@@ -17,7 +28,9 @@ interface Message {
   text?: string;
   images?: any[];
   sharedItem?: SharedItem;
+  sharedCafe?: SharedCafe;
   icon?: string;
+  timestamp?: string;
 }
 
 export default function Chat() {
@@ -26,56 +39,93 @@ export default function Chat() {
   const [message, setMessage] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Sample messages
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'What is the most popular meal in Japan?',
-      sender: 'user',
-      time: '11:40'
-    },
-    {
-      id: '2',
-      text: 'Do you like it?',
-      sender: 'user',
-      time: '11:41'
-    },
-    {
-      id: '3',
-      text: 'I think top two are:',
-      sender: 'me',
-      time: '11:42',
-      images: [
-        require('../../../assets/images/mon1.png'),
-        require('../../../assets/images/mon2.png')
-      ]
-    },
-    {
-      id: '4',
-      sender: 'me',
-      time: '11:43',
-      sharedItem: {
-        image: require('../../../assets/images/cafe1.png'),
-        title: 'COFFEE SHOP 1',
-        location: '10 Km Left'
-      }
-    }
-  ]);
+  // Initialize with empty messages
+  const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSendMessage = () => {
+  // Load messages from AsyncStorage
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        const chatMessagesKey = `chat_messages_${chatId}`;
+        const messagesStr = await AsyncStorage.getItem(chatMessagesKey);
+        
+        if (messagesStr) {
+          const loadedMessages = JSON.parse(messagesStr);
+          
+          // Format messages for display
+          const formattedMessages = loadedMessages.map((msg: any) => {
+            const messageTime = msg.timestamp 
+              ? new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: false 
+                })
+              : msg.time || '00:00';
+              
+            return {
+              ...msg,
+              time: messageTime
+            };
+          });
+          
+          setMessages(formattedMessages);
+        } else {
+          // Sample messages if no saved messages
+          setMessages([
+            {
+              id: '1',
+              text: 'Hi there!',
+              sender: 'user',
+              time: '11:40'
+            },
+            {
+              id: '2',
+              text: 'How are you?',
+              sender: 'me',
+              time: '11:41'
+            }
+          ]);
+        }
+        
+        // Scroll to bottom after loading messages
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }, 200);
+      } catch (error) {
+        console.error('Error loading messages:', error);
+      }
+    };
+    
+    loadMessages();
+  }, [chatId]);
+
+  const handleSendMessage = async () => {
     if (message.trim()) {
-      const newMessage = {
-        id: (messages.length + 1).toString(),
+      // Create new message
+      const newMessage: Message = {
+        id: Date.now().toString(),
         text: message,
         sender: 'me',
         time: new Date().toLocaleTimeString('en-US', { 
           hour: '2-digit', 
           minute: '2-digit',
           hour12: false 
-        })
+        }),
+        timestamp: new Date().toISOString()
       };
-      setMessages([...messages, newMessage]);
+      
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
       setMessage('');
+      
+      // Save to AsyncStorage
+      try {
+        const chatMessagesKey = `chat_messages_${chatId}`;
+        await AsyncStorage.setItem(chatMessagesKey, JSON.stringify(updatedMessages));
+      } catch (error) {
+        console.error('Error saving message:', error);
+      }
+      
       // Scroll to bottom after sending message
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -83,22 +133,46 @@ export default function Chat() {
     }
   };
 
-  const handleSendLike = () => {
+  const handleSendLike = async () => {
     const newMessage: Message = {
-      id: (messages.length + 1).toString(),
+      id: Date.now().toString(),
       icon: 'thumb-up' as const,
       sender: 'me',
       time: new Date().toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: false 
-      })
+      }),
+      timestamp: new Date().toISOString()
     };
-    setMessages([...messages, newMessage]);
+    
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    
+    // Save to AsyncStorage
+    try {
+      const chatMessagesKey = `chat_messages_${chatId}`;
+      await AsyncStorage.setItem(chatMessagesKey, JSON.stringify(updatedMessages));
+    } catch (error) {
+      console.error('Error saving like message:', error);
+    }
+    
     // Scroll to bottom after sending message
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+  };
+  
+  const handleViewSharedCafe = (cafe: SharedCafe) => {
+    // Navigate to map screen with cafe location
+    router.push({
+      pathname: '/pages/nearby',
+      params: { 
+        focusCafeId: cafe.cafeId,
+        latitude: cafe.coordinate.latitude,
+        longitude: cafe.coordinate.longitude
+      }
+    });
   };
 
   return (
@@ -180,6 +254,25 @@ export default function Chat() {
                   </View>
                 </View>
               )}
+              
+              {msg.sharedCafe && (
+                <TouchableOpacity 
+                  style={styles.sharedCafeContainer}
+                  onPress={() => handleViewSharedCafe(msg.sharedCafe!)}
+                >
+                  <View style={styles.sharedCafeContent}>
+                    <View style={styles.sharedCafeHeader}>
+                      <MaterialIcons name="store" size={20} color="#6E543C" />
+                      <Text style={styles.sharedCafeTitle}>{msg.sharedCafe.cafeName}</Text>
+                    </View>
+                    <Text style={styles.sharedCafeAddress}>{msg.sharedCafe.cafeAddress}</Text>
+                    <View style={styles.sharedCafeFooter}>
+                      <MaterialIcons name="place" size={16} color="#6E543C" />
+                      <Text style={styles.viewOnMapText}>View on map</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {msg.icon && (
                 <View style={[
@@ -209,7 +302,7 @@ export default function Chat() {
             style={styles.input}
             value={message}
             onChangeText={setMessage}
-            placeholder="the"
+            placeholder="Message"
             placeholderTextColor="#999"
             onSubmitEditing={handleSendMessage}
             returnKeyType="send"
@@ -324,60 +417,104 @@ const styles = StyleSheet.create({
   },
   sharedItemContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFEB3B20',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(8),
     alignItems: 'center',
-    marginBottom: verticalScale(8),
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
   },
   sharedItemImage: {
-    width: horizontalScale(50),
-    height: horizontalScale(50),
-    borderRadius: moderateScale(4),
+    width: horizontalScale(60),
+    height: horizontalScale(60),
+    borderRadius: moderateScale(8),
+    marginRight: horizontalScale(12),
   },
   sharedItemInfo: {
     flex: 1,
-    marginLeft: horizontalScale(8),
   },
   sharedItemTitle: {
-    fontSize: fontScale(14),
+    fontSize: fontScale(16),
     fontWeight: '600',
+    color: '#000000',
+    marginBottom: verticalScale(4),
   },
   sharedItemLocation: {
-    fontSize: fontScale(12),
-    color: '#666',
+    fontSize: fontScale(14),
+    color: '#666666',
   },
   checkmark: {
     position: 'absolute',
-    bottom: -8,
-    right: -8,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
+    bottom: moderateScale(4),
+    right: moderateScale(4),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: moderateScale(8),
+    padding: moderateScale(12),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
   },
-  attachButton: {
-    padding: moderateScale(8),
-  },
   input: {
     flex: 1,
     height: verticalScale(40),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F2F2F7',
     borderRadius: moderateScale(20),
     paddingHorizontal: horizontalScale(16),
-    marginHorizontal: horizontalScale(8),
     fontSize: fontScale(16),
+  },
+  attachButton: {
+    marginRight: horizontalScale(8),
   },
   inputActions: {
     flexDirection: 'row',
+    marginLeft: horizontalScale(8),
   },
   actionButton: {
-    padding: moderateScale(8),
+    marginLeft: horizontalScale(12),
   },
+  // Shared cafe styling
+  sharedCafeContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: moderateScale(12),
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    overflow: 'hidden',
+    marginBottom: verticalScale(4),
+  },
+  sharedCafeContent: {
+    padding: moderateScale(12),
+  },
+  sharedCafeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(4),
+  },
+  sharedCafeTitle: {
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    color: '#6E543C',
+    marginLeft: horizontalScale(6),
+  },
+  sharedCafeAddress: {
+    fontSize: fontScale(14),
+    color: '#666',
+    marginBottom: verticalScale(8),
+    paddingLeft: horizontalScale(26),
+  },
+  sharedCafeFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: verticalScale(4),
+    paddingTop: verticalScale(8),
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  viewOnMapText: {
+    fontSize: fontScale(14),
+    color: '#6E543C',
+    fontWeight: '500',
+    marginLeft: horizontalScale(6),
+  }
 }); 
