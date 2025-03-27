@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import Post from '../../components/Post';
 import BottomBar from '../../components/BottomBar';
+import SponsorBanner from '../../components/SponsorBanner';
 
 export default function News() {
   const router = useRouter();
@@ -211,6 +212,61 @@ export default function News() {
     }
   };
 
+  // Function to render posts with sponsor banners in between
+  const renderPostsWithSponsors = () => {
+    const result = [];
+    
+    // Add create post card
+    result.push(
+      <View key="create-post" style={styles.createPostCard}>
+        <View style={styles.createPostHeader}>
+          <Image 
+            source={require('../../../assets/images/avatar3.png')} 
+            style={styles.createPostAvatar} 
+          />
+          <TouchableOpacity 
+            style={styles.createPostInput}
+            onPress={() => setShowPostModal(true)}
+          >
+            <Text style={styles.createPostPlaceholder}>What's on your mind?</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.createPostActions}>
+          <TouchableOpacity style={styles.createPostAction}>
+            <MaterialIcons name="photo-library" size={24} color="#6E543C" />
+            <Text style={styles.createPostActionText}>Photo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.createPostAction}>
+            <MaterialIcons name="location-on" size={24} color="#6E543C" />
+            <Text style={styles.createPostActionText}>Check in</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.createPostAction}>
+            <MaterialIcons name="star" size={24} color="#6E543C" />
+            <Text style={styles.createPostActionText}>Rate</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+    
+    // Add posts with sponsor banners in between
+    posts.forEach((post, index) => {
+      // Add the post
+      result.push(<Post key={post.id} {...post} />);
+      
+      // After every 2 posts (0, 2, 4, etc.), add a sponsor banner
+      if (index % 2 === 1 && index < posts.length - 1) {
+        result.push(
+          <SponsorBanner 
+            key={`sponsor-${index}`} 
+            title={index === 1 ? "Sponsored Cafes" : "Discover New Flavors"} 
+          />
+        );
+      }
+    });
+    
+    return result;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -226,40 +282,8 @@ export default function News() {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Create Post Card */}
-        <View style={styles.createPostCard}>
-          <View style={styles.createPostHeader}>
-            <Image 
-              source={require('../../../assets/images/avatar3.png')} 
-              style={styles.createPostAvatar} 
-            />
-            <TouchableOpacity 
-              style={styles.createPostInput}
-              onPress={() => setShowPostModal(true)}
-            >
-              <Text style={styles.createPostPlaceholder}>What's on your mind?</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.createPostActions}>
-            <TouchableOpacity style={styles.createPostAction}>
-              <MaterialIcons name="photo-library" size={24} color="#6E543C" />
-              <Text style={styles.createPostActionText}>Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.createPostAction}>
-              <MaterialIcons name="location-on" size={24} color="#6E543C" />
-              <Text style={styles.createPostActionText}>Check in</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.createPostAction}>
-              <MaterialIcons name="star" size={24} color="#6E543C" />
-              <Text style={styles.createPostActionText}>Rate</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Posts */}
-        {posts.map(post => (
-          <Post key={post.id} {...post} />
-        ))}
+        {/* Render posts with sponsor banners */}
+        {renderPostsWithSponsors()}
       </ScrollView>
 
       {/* Create Post Modal */}
