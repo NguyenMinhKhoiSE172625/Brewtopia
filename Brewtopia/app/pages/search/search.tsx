@@ -1,37 +1,78 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, FlatList, Modal } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
 interface RecommendedItem {
   id: string;
+  name: string;
+  price: string;
   image: any;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  image: any;
-  price: string;
+interface Product extends RecommendedItem {
   description: string;
   recommended: RecommendedItem[];
 }
+
+const RecentHotItem = memo(({ item, onSelect }: { item: RecommendedItem; onSelect: (item: RecommendedItem) => void }) => (
+  <TouchableOpacity 
+    style={styles.recentHotItem}
+    onPress={() => onSelect(item)}
+  >
+    <Image source={item.image} style={styles.recentHotImage} />
+    <View style={styles.recentHotInfo}>
+      <Text style={styles.recentHotName}>{item.name}</Text>
+      <Text style={styles.recentHotPrice}>{item.price}</Text>
+    </View>
+  </TouchableOpacity>
+));
+
+const RecommendedItem = memo(({ item, onSelect }: { item: RecommendedItem; onSelect: (item: RecommendedItem) => void }) => (
+  <TouchableOpacity 
+    style={styles.recommendedItem}
+    onPress={() => onSelect(item)}
+  >
+    <Image source={item.image} style={styles.recommendedImage} />
+    <Text style={styles.recommendedName}>{item.name}</Text>
+    <Text style={styles.recommendedPrice}>{item.price}</Text>
+  </TouchableOpacity>
+));
 
 export default function Search() {
   const router = useRouter();
   const [searchText, setSearchText] = useState("");
 
   // Filter states
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedFilter, setSelectedFilter] = useState('all');
 
   // Recent hot items
-  const recentHotItems = [
-    { id: '1', name: 'matcha latte', trending: true },
-    { id: '2', name: 'flat white', trending: true },
-    { id: '3', name: 'cappuccino', trending: true },
-    { id: '4', name: 'oreo chocolate', trending: true },
-    { id: '5', name: 'banana smoothie', trending: true },
+  const recentHotItems: RecommendedItem[] = [
+    {
+      id: '1',
+      name: 'Cappuccino',
+      price: '$4.99',
+      image: require('../../../assets/images/cafe1.png'),
+    },
+    {
+      id: '2',
+      name: 'Latte',
+      price: '$5.99',
+      image: require('../../../assets/images/cafe2.png'),
+    },
+    {
+      id: '3',
+      name: 'Espresso',
+      price: '$3.99',
+      image: require('../../../assets/images/cafe3.png'),
+    },
+    {
+      id: '4',
+      name: 'Mocha',
+      price: '$5.49',
+      image: require('../../../assets/images/cafe4.png'),
+    },
   ];
 
   // Recommended cafes
@@ -124,14 +165,27 @@ export default function Search() {
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const renderRecentHotItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.recentHotItem}>
-      <View style={styles.trendingIcon}>
-        <MaterialIcons name="trending-up" size={16} color="#FF0000" />
-      </View>
-      <Text style={styles.recentHotText}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const handleSelectProduct = useCallback((item: RecommendedItem) => {
+    const otherItems = recentHotItems
+      .filter(rec => rec.id !== item.id)
+      .slice(0, 3)
+      .map(rec => ({
+        id: rec.id,
+        name: rec.name,
+        price: rec.price,
+        image: rec.image
+      }));
+
+    setSelectedProduct({
+      ...item,
+      description: 'A delicious beverage made with care.',
+      recommended: otherItems
+    });
+  }, [recentHotItems]);
+
+  const renderRecentHotItem = useCallback(({ item }: { item: RecommendedItem }) => (
+    <RecentHotItem item={item} onSelect={handleSelectProduct} />
+  ), [handleSelectProduct]);
 
   const renderCafeItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.cafeCard}>
@@ -158,11 +212,17 @@ export default function Search() {
     </TouchableOpacity>
   );
 
-  const renderRecommendedItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.recommendedItem}>
-      <Image source={item.image} style={styles.recommendedImage} />
-    </TouchableOpacity>
-  );
+  const renderRecommendedItem = useCallback(({ item }: { item: RecommendedItem }) => (
+    <RecommendedItem item={item} onSelect={handleSelectProduct} />
+  ), [handleSelectProduct]);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: horizontalScale(120),
+    offset: horizontalScale(120) * index,
+    index,
+  }), []);
+
+  const keyExtractor = useCallback((item: RecommendedItem) => item.id, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -245,9 +305,15 @@ export default function Search() {
           <FlatList
             data={recentHotItems}
             renderItem={renderRecentHotItem}
-            keyExtractor={item => item.id}
+            keyExtractor={keyExtractor}
             horizontal
             showsHorizontalScrollIndicator={false}
+            initialNumToRender={3}
+            maxToRenderPerBatch={3}
+            windowSize={3}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
+            getItemLayout={getItemLayout}
           />
         </View>
 
@@ -331,7 +397,7 @@ export default function Search() {
                   <FlatList
                     data={selectedProduct.recommended}
                     renderItem={renderRecommendedItem}
-                    keyExtractor={item => item.id}
+                    keyExtractor={keyExtractor}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.recommendedList}
@@ -340,11 +406,7 @@ export default function Search() {
                     windowSize={2}
                     removeClippedSubviews={true}
                     updateCellsBatchingPeriod={50}
-                    getItemLayout={(data, index) => ({
-                      length: horizontalScale(120), // Adjust this based on your item width
-                      offset: horizontalScale(120) * index,
-                      index,
-                    })}
+                    getItemLayout={getItemLayout}
                   />
                 </View>
               </ScrollView>
@@ -443,12 +505,23 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
     marginRight: horizontalScale(8),
   },
-  trendingIcon: {
-    marginRight: horizontalScale(4),
+  recentHotImage: {
+    width: horizontalScale(80),
+    height: verticalScale(80),
+    borderRadius: moderateScale(16),
+    marginRight: horizontalScale(8),
   },
-  recentHotText: {
+  recentHotInfo: {
+    flex: 1,
+  },
+  recentHotName: {
     fontSize: fontScale(14),
     color: '#000',
+  },
+  recentHotPrice: {
+    fontSize: fontScale(14),
+    color: '#00B207',
+    fontWeight: '500',
   },
   recommendHeader: {
     flexDirection: 'row',
@@ -621,6 +694,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  recommendedName: {
+    fontSize: fontScale(14),
+    fontWeight: '500',
+    color: '#6E543C',
+  },
+  recommendedPrice: {
+    fontSize: fontScale(14),
+    fontWeight: '600',
+    color: '#00B207',
   },
   subSectionTitle: {
     fontSize: fontScale(16),

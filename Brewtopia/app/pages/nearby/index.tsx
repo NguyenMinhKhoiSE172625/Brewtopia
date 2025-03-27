@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated, FlatList, Modal } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -191,6 +191,16 @@ const MOCK_CAFES: Cafe[] = [
   }
 ];
 
+const CafeImage = memo(({ image }: { image: any }) => (
+  <Image
+    source={image}
+    style={styles.cafeImage}
+    resizeMode="cover"
+    progressiveRenderingEnabled={true}
+    fadeDuration={200}
+  />
+));
+
 export default function Nearby() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -380,6 +390,18 @@ export default function Nearby() {
       longitudeDelta: 0.01,
     });
   };
+
+  const renderCafeImage = useCallback(({ item }: { item: any }) => (
+    <CafeImage image={item} />
+  ), []);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: horizontalScale(200),
+    offset: horizontalScale(200) * index,
+    index,
+  }), []);
+
+  const keyExtractor = useCallback((item: any, index: number) => `cafe-image-${index}`, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -590,26 +612,15 @@ export default function Nearby() {
               style={styles.cafeImagesContainer}
               contentContainerStyle={styles.cafeImagesContent}
               data={selectedCafe.images}
-              keyExtractor={(_, index) => `cafe-image-${index}`}
-              renderItem={({ item, index }) => (
-                <Image
-                  source={item}
-                  style={styles.cafeImage}
-                  resizeMode="cover"
-                  progressiveRenderingEnabled={true}
-                  fadeDuration={200}
-                />
-              )}
+              keyExtractor={keyExtractor}
+              renderItem={renderCafeImage}
               initialNumToRender={1}
               maxToRenderPerBatch={2}
               windowSize={2}
               removeClippedSubviews={true}
               updateCellsBatchingPeriod={50}
-              getItemLayout={(data, index) => ({
-                length: horizontalScale(200),
-                offset: horizontalScale(200) * index,
-                index,
-              })}
+              getItemLayout={getItemLayout}
+              progressViewOffset={1}
             />
           </Animated.View>
         )}

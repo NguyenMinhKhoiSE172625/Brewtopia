@@ -1,28 +1,19 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, FlatList, Modal, StatusBar } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useRef, useEffect } from "react";
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useState, useEffect } from "react";
+import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
-
-interface LiveStream {
-  id: string;
-  shopName: string;
-  shopLogo: any;
-  streamTitle: string;
-  thumbnail: any;
-  isLive: boolean;
-  viewerCount: number;
-}
 
 export default function Stream() {
   const router = useRouter();
   const [showStartModal, setShowStartModal] = useState(false);
   const [streamTitle, setStreamTitle] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  
+  const [selectedCategory, setSelectedCategory] = useState('1');
+
   // Check user role when component mounts
   useEffect(() => {
     const checkUserRole = async () => {
@@ -36,86 +27,13 @@ export default function Stream() {
     
     checkUserRole();
   }, []);
-  
-  // Featured live streams
-  const liveStreams: LiveStream[] = [
-    {
-      id: '1',
-      shopName: 'COFFEE SHOP 1',
-      shopLogo: require('../../../assets/images/iconcafe2.png'),
-      streamTitle: 'Lorem ipsum is simply dummy text',
-      thumbnail: require('../../../assets/images/live1.png'),
-      isLive: true,
-      viewerCount: 100
-    },
-    {
-      id: '2',
-      shopName: 'COFFEE 22',
-      shopLogo: require('../../../assets/images/iconcafe3.png'),
-      streamTitle: 'Lorem ipsum is simply dummy text',
-      thumbnail: require('../../../assets/images/live2.png'),
-      isLive: true,
-      viewerCount: 150
-    },
-    {
-      id: '3',
-      shopName: 'StayAwayHouse',
-      shopLogo: require('../../../assets/images/iconcafe4.png'),
-      streamTitle: 'Lorem ipsum is simply dummy text',
-      thumbnail: require('../../../assets/images/live3.png'),
-      isLive: true,
-      viewerCount: 80
-    },
-    {
-      id: '4',
-      shopName: 'QUESTO CAFÉ',
-      shopLogo: require('../../../assets/images/iconcafe5.png'),
-      streamTitle: 'Lorem ipsum is simply dummy text',
-      thumbnail: require('../../../assets/images/live4.png'),
-      isLive: true,
-      viewerCount: 75
-    },
-  ];
 
-  // Categories for streams
   const categories = [
     { id: '1', name: 'Popular', icon: '🔥' },
     { id: '2', name: 'Acoustic', icon: '🎸' },
     { id: '3', name: 'Bartending', icon: '🍹' },
     { id: '4', name: 'Coffee Art', icon: '☕' },
   ];
-
-  // The currently selected category
-  const [selectedCategory, setSelectedCategory] = useState('1');
-
-  const renderLiveStreamItem = ({ item }: { item: LiveStream }) => (
-    <TouchableOpacity 
-      style={styles.streamCard}
-      onPress={() => router.push({
-        pathname: '/pages/stream/livestream-view',
-        params: { streamId: item.id }
-      })}
-    >
-      <View style={styles.thumbnailContainer}>
-        <Image source={item.thumbnail} style={styles.thumbnail} />
-        <View style={styles.liveIndicator}>
-          <Text style={styles.liveText}>Live</Text>
-        </View>
-        <View style={styles.viewerCountContainer}>
-          <Ionicons name="eye" size={16} color="#FFFFFF" />
-          <Text style={styles.viewerCount}>{item.viewerCount}</Text>
-        </View>
-      </View>
-      <Text style={styles.streamTitle}>{item.streamTitle}</Text>
-      <View style={styles.shopContainer}>
-        <Image source={item.shopLogo} style={styles.shopLogo} />
-        <Text style={styles.shopName}>{item.shopName}</Text>
-        <TouchableOpacity style={styles.optionsButton}>
-          <MaterialIcons name="more-vert" size={20} color="#6E543C" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -131,131 +49,222 @@ export default function Stream() {
         <Text style={styles.headerTitle}>BrewLive</Text>
       </View>
 
-      {/* Cafe Icons Scroll */}
-      <View style={styles.cafeIconsContainer}>
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cafeIconsScroll}
-        >
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Cafe Icons Scroll */}
+        <View style={styles.cafeIconsContainer}>
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cafeIconsScroll}
+          >
+            <TouchableOpacity 
+              style={styles.cafeIconItem}
+              onPress={() => router.push({
+                pathname: '/pages/stream/livestream-view',
+                params: { streamId: '1' }
+              })}
+            >
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe2.png')} style={styles.cafeIcon} />
+                <View style={styles.liveCircleIndicator}>
+                  <Text style={styles.liveCircleText}>LIVE</Text>
+                </View>
+              </View>
+              <Text style={styles.cafeIconText}>COFFEE SHOP 1</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.cafeIconItem}
+              onPress={() => router.push({
+                pathname: '/pages/stream/livestream-view',
+                params: { streamId: '2' }
+              })}
+            >
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe3.png')} style={styles.cafeIcon} />
+                <View style={styles.liveCircleIndicator}>
+                  <Text style={styles.liveCircleText}>LIVE</Text>
+                </View>
+              </View>
+              <Text style={styles.cafeIconText}>COFFEE 22</Text>
+            </TouchableOpacity>
+            <View style={styles.cafeIconItem}>
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe4.png')} style={styles.cafeIcon} />
+              </View>
+              <Text style={styles.cafeIconText}>StayAwayHouse</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.cafeIconItem}
+              onPress={() => router.push({
+                pathname: '/pages/stream/livestream-view',
+                params: { streamId: '4' }
+              })}
+            >
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe5.png')} style={styles.cafeIcon} />
+                <View style={styles.liveCircleIndicator}>
+                  <Text style={styles.liveCircleText}>LIVE</Text>
+                </View>
+              </View>
+              <Text style={styles.cafeIconText}>QUESTO café</Text>
+            </TouchableOpacity>
+            <View style={styles.cafeIconItem}>
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe6.png')} style={styles.cafeIcon} />
+              </View>
+              <Text style={styles.cafeIconText}>Fradel Bakery café</Text>
+            </View>
+            <View style={styles.cafeIconItem}>
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe5.png')} style={styles.cafeIcon} />
+              </View>
+              <Text style={styles.cafeIconText}>1987 CoffeeShop</Text>
+            </View>
+            <View style={styles.cafeIconItem}>
+              <View style={styles.cafeIconCircle}>
+                <Image source={require('../../../assets/images/iconcafe6.png')} style={styles.cafeIcon} />
+              </View>
+              <Text style={styles.cafeIconText}>Hidden Garden</Text>
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Categories */}
+        <View style={styles.categoriesContainer}>
+          <View style={styles.categoriesHeader}>
+            <Text style={styles.categoriesTitle}>ALL LIVE NOW</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesScroll}
+          >
+            {categories.map((category) => (
+              <TouchableOpacity 
+                key={category.id}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category.id && styles.categoryButtonActive
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={styles.categoryIcon}>{category.icon}</Text>
+                <Text style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive
+                ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Live Streams */}
+        <View style={styles.streamsGrid}>
           <TouchableOpacity 
-            style={styles.cafeIconItem}
+            style={styles.streamCard}
             onPress={() => router.push({
               pathname: '/pages/stream/livestream-view',
               params: { streamId: '1' }
             })}
           >
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe2.png')} style={styles.cafeIcon} />
-              <View style={styles.liveCircleIndicator}>
-                <Text style={styles.liveCircleText}>LIVE</Text>
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../../assets/images/live1.png')}
+                style={styles.thumbnail}
+              />
+              <View style={styles.liveIndicator}>
+                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.viewerCount}>100</Text>
               </View>
             </View>
-            <Text style={styles.cafeIconText}>COFFEE SHOP 1</Text>
+            <View style={styles.streamInfo}>
+              <Text style={styles.streamTitle} numberOfLines={2}>
+                Lorem ipsum is simply dummy text
+              </Text>
+              <Text style={styles.streamerName}>COFFEE SHOP 1</Text>
+            </View>
           </TouchableOpacity>
+
           <TouchableOpacity 
-            style={styles.cafeIconItem}
+            style={styles.streamCard}
             onPress={() => router.push({
               pathname: '/pages/stream/livestream-view',
               params: { streamId: '2' }
             })}
           >
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe3.png')} style={styles.cafeIcon} />
-              <View style={styles.liveCircleIndicator}>
-                <Text style={styles.liveCircleText}>LIVE</Text>
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../../assets/images/live2.png')}
+                style={styles.thumbnail}
+              />
+              <View style={styles.liveIndicator}>
+                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.viewerCount}>150</Text>
               </View>
             </View>
-            <Text style={styles.cafeIconText}>COFFEE 22</Text>
-          </TouchableOpacity>
-          <View style={styles.cafeIconItem}>
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe4.png')} style={styles.cafeIcon} />
+            <View style={styles.streamInfo}>
+              <Text style={styles.streamTitle} numberOfLines={2}>
+                Lorem ipsum is simply dummy text
+              </Text>
+              <Text style={styles.streamerName}>COFFEE 22</Text>
             </View>
-            <Text style={styles.cafeIconText}>StayAwayHouse</Text>
-          </View>
+          </TouchableOpacity>
+
           <TouchableOpacity 
-            style={styles.cafeIconItem}
+            style={styles.streamCard}
+            onPress={() => router.push({
+              pathname: '/pages/stream/livestream-view',
+              params: { streamId: '3' }
+            })}
+          >
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../../assets/images/live3.png')}
+                style={styles.thumbnail}
+              />
+              <View style={styles.liveIndicator}>
+                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.viewerCount}>80</Text>
+              </View>
+            </View>
+            <View style={styles.streamInfo}>
+              <Text style={styles.streamTitle} numberOfLines={2}>
+                Lorem ipsum is simply dummy text
+              </Text>
+              <Text style={styles.streamerName}>StayAwayHouse</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.streamCard}
             onPress={() => router.push({
               pathname: '/pages/stream/livestream-view',
               params: { streamId: '4' }
             })}
           >
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe5.png')} style={styles.cafeIcon} />
-              <View style={styles.liveCircleIndicator}>
-                <Text style={styles.liveCircleText}>LIVE</Text>
+            <View style={styles.thumbnailContainer}>
+              <Image 
+                source={require('../../../assets/images/live4.png')}
+                style={styles.thumbnail}
+              />
+              <View style={styles.liveIndicator}>
+                <Text style={styles.liveText}>LIVE</Text>
+                <Text style={styles.viewerCount}>75</Text>
               </View>
             </View>
-            <Text style={styles.cafeIconText}>QUESTO café</Text>
-          </TouchableOpacity>
-          <View style={styles.cafeIconItem}>
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe6.png')} style={styles.cafeIcon} />
-            </View>
-            <Text style={styles.cafeIconText}>Fradel Bakery café</Text>
-          </View>
-          <View style={styles.cafeIconItem}>
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe5.png')} style={styles.cafeIcon} />
-            </View>
-            <Text style={styles.cafeIconText}>1987 CoffeeShop</Text>
-          </View>
-          <View style={styles.cafeIconItem}>
-            <View style={styles.cafeIconCircle}>
-              <Image source={require('../../../assets/images/iconcafe6.png')} style={styles.cafeIcon} />
-            </View>
-            <Text style={styles.cafeIconText}>Hidden Garden</Text>
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Categories */}
-      <View style={styles.categoriesContainer}>
-        <View style={styles.categoriesHeader}>
-          <Text style={styles.categoriesTitle}>ALL LIVE NOW</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesScroll}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity 
-              key={category.id}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category.id && styles.categoryButtonActive
-              ]}
-              onPress={() => setSelectedCategory(category.id)}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === category.id && styles.categoryTextActive
-              ]}>
-                {category.name}
+            <View style={styles.streamInfo}>
+              <Text style={styles.streamTitle} numberOfLines={2}>
+                Lorem ipsum is simply dummy text
               </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Live Streams */}
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.streamsGrid}>
-          {liveStreams.map((stream) => (
-            <View key={stream.id} style={styles.streamCardWrapper}>
-              {renderLiveStreamItem({ item: stream })}
+              <Text style={styles.streamerName}>QUESTO CAFÉ</Text>
             </View>
-          ))}
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -431,21 +440,17 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: '#FFFFFF',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: horizontalScale(16),
-  },
   streamsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: horizontalScale(16),
     paddingVertical: verticalScale(16),
-  },
-  streamCardWrapper: {
-    width: '48%', 
-    marginBottom: verticalScale(20),
+    paddingBottom: verticalScale(100),
   },
   streamCard: {
+    width: '48%',
+    marginBottom: verticalScale(20),
     backgroundColor: '#FFFFFF',
     borderRadius: moderateScale(16),
     overflow: 'hidden',
@@ -476,53 +481,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: horizontalScale(8),
     paddingVertical: verticalScale(2),
     borderRadius: moderateScale(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: horizontalScale(4),
   },
   liveText: {
     color: '#FFFFFF',
     fontSize: fontScale(12),
     fontWeight: '600',
   },
-  viewerCountContainer: {
-    position: 'absolute',
-    top: verticalScale(8),
-    left: horizontalScale(8),
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: horizontalScale(8),
-    paddingVertical: verticalScale(2),
-    borderRadius: moderateScale(4),
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   viewerCount: {
     color: '#FFFFFF',
     fontSize: fontScale(12),
-    marginLeft: horizontalScale(4),
+  },
+  streamInfo: {
+    padding: moderateScale(12),
   },
   streamTitle: {
-    fontSize: fontScale(12),
-    color: '#000000',
-    padding: moderateScale(10),
-  },
-  shopContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: horizontalScale(10),
-    paddingBottom: verticalScale(10),
-  },
-  shopLogo: {
-    width: horizontalScale(24),
-    height: verticalScale(24),
-    borderRadius: moderateScale(12),
-  },
-  shopName: {
-    fontSize: fontScale(12),
-    color: '#6E543C',
+    fontSize: fontScale(14),
     fontWeight: '500',
-    marginLeft: horizontalScale(8),
-    flex: 1,
+    color: '#000000',
+    marginBottom: verticalScale(4),
   },
-  optionsButton: {
-    padding: moderateScale(4),
+  streamerName: {
+    fontSize: fontScale(12),
+    color: '#666666',
   },
   goLiveButton: {
     position: 'absolute',

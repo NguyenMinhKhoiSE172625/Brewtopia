@@ -1,12 +1,54 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper from '../../utils/UserRoleHelper';
 import * as ImagePicker from 'expo-image-picker';
+
+interface Message {
+  text: string;
+  isUser: boolean;
+}
+
+const SpecialOfferItem = memo(({ item }: { item: any }) => (
+  <Image
+    source={item}
+    style={{
+      width: Dimensions.get('window').width - horizontalScale(32),
+      height: verticalScale(200),
+      borderRadius: moderateScale(16),
+    }}
+    resizeMode="cover"
+  />
+));
+
+const MessageItem = memo(({ message, userRole }: { message: Message; userRole: string | null }) => (
+  <View 
+    style={[
+      styles.messageContainer,
+      message.isUser ? styles.userMessage : styles.botMessage
+    ]}
+  >
+    {!message.isUser && (
+      <Image 
+        source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
+        style={styles.messageBotIcon}
+      />
+    )}
+    <View style={[
+      styles.messageBubble,
+      message.isUser ? styles.userBubble : styles.botBubble
+    ]}>
+      <Text style={[
+        styles.messageText,
+        message.isUser ? styles.userMessageText : styles.botMessageText
+      ]}>{message.text}</Text>
+    </View>
+  </View>
+));
 
 export default function Home() {
   const router = useRouter();
@@ -47,6 +89,23 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+
+  const keyExtractor = useCallback((item: any, index: number) => `special-offer-${index}`, []);
+  const messageKeyExtractor = useCallback((item: Message, index: number) => `message-${index}`, []);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: Dimensions.get('window').width - horizontalScale(32),
+    offset: (Dimensions.get('window').width - horizontalScale(32)) * index,
+    index,
+  }), []);
+
+  const renderSpecialOffer = useCallback(({ item }: { item: any }) => (
+    <SpecialOfferItem item={item} />
+  ), []);
+
+  const renderMessage = useCallback(({ item: message }: { item: Message }) => (
+    <MessageItem message={message} userRole={userRole} />
+  ), [userRole]);
 
   useEffect(() => {
     const scrollInterval = setInterval(() => {
@@ -144,18 +203,6 @@ export default function Home() {
 
     getUserData();
   }, []);
-
-  const renderSpecialOffer = useCallback(({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.specialOfferContainer}
-      onPress={() => {
-        setSelectedImage(item);
-        setShowImageModal(true);
-      }}
-    >
-      <Image source={item} style={styles.specialOfferImage} resizeMode="cover" />
-    </TouchableOpacity>
-  ), []);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -286,17 +333,13 @@ export default function Home() {
             showsHorizontalScrollIndicator={false}
             snapToInterval={Dimensions.get('window').width - horizontalScale(16)}
             decelerationRate="fast"
-            keyExtractor={(_, index) => `special-offer-${index}`}
-            initialNumToRender={1}
+            keyExtractor={keyExtractor}
+            initialNumToRender={2}
             maxToRenderPerBatch={2}
-            windowSize={2}
+            windowSize={3}
             removeClippedSubviews={true}
             updateCellsBatchingPeriod={50}
-            getItemLayout={(data, index) => ({
-              length: Dimensions.get('window').width - horizontalScale(32),
-              offset: (Dimensions.get('window').width - horizontalScale(32)) * index,
-              index,
-            })}
+            getItemLayout={getItemLayout}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(
                 event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32))
@@ -420,37 +463,18 @@ export default function Home() {
             {/* Chat Messages */}
             <FlatList
               data={messages}
-              keyExtractor={(item, index) => `message-${index}`}
+              keyExtractor={messageKeyExtractor}
               style={styles.chatMessages}
-              renderItem={({ item: message, index }) => (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.messageContainer,
-                    message.isUser ? styles.userMessage : styles.botMessage
-                  ]}
-                >
-                  {!message.isUser && (
-                    <Image 
-                      source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
-                      style={styles.messageBotIcon}
-                    />
-                  )}
-                  <View style={[
-                    styles.messageBubble,
-                    message.isUser ? styles.userBubble : styles.botBubble
-                  ]}>
-                    <Text style={[
-                      styles.messageText,
-                      message.isUser ? styles.userMessageText : styles.botMessageText
-                    ]}>{message.text}</Text>
-                  </View>
-                </View>
-              )}
-              initialNumToRender={10}
-              maxToRenderPerBatch={5}
+              renderItem={renderMessage}
+              initialNumToRender={5}
+              maxToRenderPerBatch={3}
               windowSize={5}
               removeClippedSubviews={true}
+              updateCellsBatchingPeriod={50}
+              maintainVisibleContentPosition={{
+                minIndexForVisible: 0,
+                autoscrollToTopThreshold: 10
+              }}
             />
 
             {/* Chat Input */}
