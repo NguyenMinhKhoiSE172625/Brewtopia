@@ -1,12 +1,13 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../../utils/ApiService';
 import DebugService from '../../utils/DebugService';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
+import NetworkHelper from '../../utils/NetworkHelper';
 
 export default function LoginUser() {
   const router = useRouter();
@@ -24,6 +25,23 @@ export default function LoginUser() {
   const [password, setPassword] = useState('');
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
+
+  // Check network connectivity when component mounts
+  useEffect(() => {
+    const checkNetwork = async () => {
+      const connected = await NetworkHelper.isConnected();
+      setIsNetworkAvailable(connected);
+      
+      if (!connected) {
+        setIsError(true);
+        setErrorMessage('No internet connection. Please check your network settings.');
+      }
+    };
+    
+    checkNetwork();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -32,6 +50,17 @@ export default function LoginUser() {
       return;
     }
 
+    // Check network again before attempting login
+    const connected = await NetworkHelper.isConnected();
+    if (!connected) {
+      setIsError(true);
+      setErrorMessage('No internet connection. Please check your network settings.');
+      return;
+    }
+
+    setIsLoading(true);
+    setIsError(false);
+    
     try {
       // Use ApiService with role validation
       const expectedRole = role === 'admin' ? UserRole.ADMIN : UserRole.USER;
@@ -42,11 +71,46 @@ export default function LoginUser() {
       router.push("/pages/home/home");
     } catch (error: any) {
       setIsError(true);
-      if (typeof error === 'object' && error !== null && 'message' in error) {
+      if (error.status === 0) {
+        // Network error
+        setErrorMessage('Unable to connect to the server. Please check your internet connection or try again later.');
+      } else if (typeof error === 'object' && error !== null && 'message' in error) {
         setErrorMessage(error.message as string);
       } else {
-        setErrorMessage('Login failed');
+        setErrorMessage('Login failed. Please try again.');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Retry connection function
+  const retryConnection = async () => {
+    setIsLoading(true);
+    setErrorMessage('Checking network connection...');
+    
+    try {
+      const connected = await NetworkHelper.isConnected();
+      setIsNetworkAvailable(connected);
+      
+      if (connected) {
+        const serverReachable = await NetworkHelper.isServerReachable();
+        if (serverReachable) {
+          setIsError(false);
+          setErrorMessage('');
+        } else {
+          setIsError(true);
+          setErrorMessage('Server is unreachable. Please try again later.');
+        }
+      } else {
+        setIsError(true);
+        setErrorMessage('No internet connection. Please check your network settings.');
+      }
+    } catch (error) {
+      setIsError(true);
+      setErrorMessage('Failed to check network. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,6 +143,17 @@ export default function LoginUser() {
           marginTop: 30 * scale,
         }]}>
           <Text style={styles.title}>Login {role === 'admin' ? 'Business' : 'User'}</Text>
+
+          {/* Network Status Banner */}
+          {!isNetworkAvailable && (
+            <View style={styles.networkBanner}>
+              <Ionicons name="cloud-offline-outline" size={24} color="#fff" />
+              <Text style={styles.networkBannerText}>You are offline</Text>
+              <TouchableOpacity onPress={retryConnection}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Email Input */}
           <View style={styles.inputGroup}>
@@ -135,19 +210,35 @@ export default function LoginUser() {
 
           {/* Error Message */}
           {isError && (
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+              {errorMessage.includes('network') && (
+                <TouchableOpacity onPress={retryConnection}>
+                  <Text style={styles.retryTextInError}>Retry Connection</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
           {/* Login Button */}
           <TouchableOpacity 
-            style={[styles.loginButton, {
-              height: 50 * scale,
-              borderRadius: 10 * scale,
-              marginTop: 20 * scale,
-            }]}
+            style={[
+              styles.loginButton, 
+              {
+                height: 50 * scale,
+                borderRadius: 10 * scale,
+                marginTop: 20 * scale,
+              },
+              (!isNetworkAvailable || isLoading) && styles.disabledButton
+            ]}
             onPress={handleLogin}
+            disabled={!isNetworkAvailable || isLoading}
           >
-            <Text style={styles.buttonText}>Login</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           {/* Social Login */}
@@ -291,5 +382,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  networkBanner: {
+    backgroundColor: '#E74C3C',
+    padding: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  networkBannerText: {
+    color: '#FFFFFF',
+    marginLeft: 10,
+    flex: 1,
+  },
+  retryText: {
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
+  },
+  retryTextInError: {
+    color: '#4A90E2',
+    textDecorationLine: 'underline',
+    marginTop: 5,
+  },
+  errorContainer: {
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

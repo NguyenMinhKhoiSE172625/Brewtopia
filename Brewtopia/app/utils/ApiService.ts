@@ -23,13 +23,17 @@ const COMPUTER_IP = '161.35.229.29'; // Production server IP
 const API_PORT = '4000';
 const API_PATH = '/api';
 
-// Simple approach that works on all environments
-const DEFAULT_API_URL = `https://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+// Try HTTPS first, fallback to HTTP if needed
+const DEFAULT_API_URL_HTTPS = `https://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+const DEFAULT_API_URL_HTTP = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+
+// Simple approach that works on all environments - try HTTPS first
+const DEFAULT_API_URL = DEFAULT_API_URL_HTTP; // Start with HTTP since most dev servers don't have HTTPS
 
 // For easier debugging, dynamically check if on physical device using a dedicated environment variable
 // This can be set to 'true' when testing on physical devices
 const USE_PHYSICAL_DEVICE_URL = true; // Set to true for production
-const PHYSICAL_DEVICE_URL = `https://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+const PHYSICAL_DEVICE_URL = DEFAULT_API_URL;
 
 // Final API URL selection, prioritizing explicit config for physical devices
 const API_BASE_URL = Config.API_URL || 
@@ -38,8 +42,8 @@ const API_BASE_URL = Config.API_URL ||
 // Increase default timeout for slower network connections (15 seconds)
 const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 15000;
 
-// Maximum number of retry attempts
-const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 2;
+// Maximum number of retry attempts - increased for better reliability
+const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 3;
 
 class ApiService {
   // Generic fetch method with debug logging and retry logic
@@ -47,9 +51,20 @@ class ApiService {
     url: string, 
     options: RequestInit = {}, 
     retries = MAX_RETRIES,
-    timeout = DEFAULT_TIMEOUT
+    timeout = DEFAULT_TIMEOUT,
+    useHttps = false // New parameter to track protocol switching
   ): Promise<T> {
-    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    // Determine which protocol to use
+    let baseUrl = API_BASE_URL;
+    
+    // If we're manually switching protocols during retry
+    if (useHttps && baseUrl.startsWith('http:')) {
+      baseUrl = baseUrl.replace('http:', 'https:');
+    } else if (!useHttps && baseUrl.startsWith('https:')) {
+      baseUrl = baseUrl.replace('https:', 'http:');
+    }
+    
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
     const method = options.method || 'GET';
     
     try {
@@ -115,20 +130,43 @@ class ApiService {
       }
       
       // Handle network errors
-      if (error.message && error.message.includes('Network request failed')) {
-        DebugService.logError(`Network error on ${method} ${fullUrl}`, error);
-        DebugService.log(`API Base URL: ${API_BASE_URL}`);
+      if (error.message && (
+          error.message.includes('Network request failed') || 
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('Network error'))) {
         
-        // Retry logic for network errors
+        DebugService.logError(`Network error on ${method} ${fullUrl}`, error);
+        DebugService.log(`API Base URL: ${baseUrl}`);
+        
+        // Retry logic with protocol switching
         if (retries > 0) {
           DebugService.log(`Retrying request (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})...`);
-          return this.fetch(url, options, retries - 1, timeout);
+          
+          // On first retry, try switching protocols (HTTP -> HTTPS or HTTPS -> HTTP)
+          if (retries === MAX_RETRIES - 1) {
+            DebugService.log(`Switching protocol from ${useHttps ? 'HTTPS to HTTP' : 'HTTP to HTTPS'}`);
+            return this.fetch(url, options, retries - 1, timeout, !useHttps);
+          }
+          
+          // Regular retry with the same protocol
+          return this.fetch(url, options, retries - 1, timeout, useHttps);
         }
         
         throw {
           status: 0,
-          message: 'Unable to connect to the server. Please check your network connection.',
+          message: 'Unable to connect to the server. Please check your internet connection or try again later.',
         };
+      }
+      
+      // Handle SSL errors specifically
+      if (error.message && error.message.includes('SSL')) {
+        DebugService.logError(`SSL error on ${method} ${fullUrl}`, error);
+        
+        // If we get an SSL error and we're using HTTPS, try switching to HTTP
+        if (fullUrl.startsWith('https:') && retries > 0) {
+          DebugService.log('SSL error detected, switching to HTTP...');
+          return this.fetch(url, options, retries - 1, timeout, false);
+        }
       }
       
       // Log any other errors
