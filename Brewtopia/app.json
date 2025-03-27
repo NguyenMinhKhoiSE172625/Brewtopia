@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
         "NSLocationAlwaysUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w"

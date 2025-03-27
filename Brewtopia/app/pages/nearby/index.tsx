@@ -11,6 +11,9 @@ import { useRouter } from 'expo-router';
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
 
+// Ensure the API key is visible in logs for debugging
+console.log('Maps API Key:', GOOGLE_MAPS_API_KEY);
+
 interface Cafe {
   id: string;
   name: string;
@@ -274,18 +277,62 @@ export default function Nearby() {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Permission to access location was denied');
+          // Set a default location if permission is denied
+          const defaultLocation = {
+            coords: {
+              latitude: 10.7769,
+              longitude: 106.7009,
+              accuracy: 0,
+              altitude: 0,
+              altitudeAccuracy: 0,
+              heading: 0,
+              speed: 0
+            },
+            timestamp: Date.now()
+          };
+          setLocation(defaultLocation);
+          
+          // Combine hardcoded cafes with randomly generated ones
+          const randomCafes = generateRandomCafes(defaultLocation, 15);
+          setAllCafes([...cafes, ...randomCafes]);
+          return;
+        }
 
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-      
-      // Combine hardcoded cafes with randomly generated ones
-      const randomCafes = generateRandomCafes(location, 15);
-      setAllCafes([...cafes, ...randomCafes]);
+        let location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 5000,
+        });
+        setLocation(location);
+        
+        // Combine hardcoded cafes with randomly generated ones
+        const randomCafes = generateRandomCafes(location, 15);
+        setAllCafes([...cafes, ...randomCafes]);
+      } catch (error) {
+        console.log('Error getting location:', error);
+        setErrorMsg('Failed to get location. Using default location.');
+        
+        // Set a default location if there's an error
+        const defaultLocation = {
+          coords: {
+            latitude: 10.7769,
+            longitude: 106.7009,
+            accuracy: 0,
+            altitude: 0,
+            altitudeAccuracy: 0,
+            heading: 0,
+            speed: 0
+          },
+          timestamp: Date.now()
+        };
+        setLocation(defaultLocation);
+        
+        // Use only hardcoded cafes
+        setAllCafes([...cafes]);
+      }
     })();
   }, [cafes]);
 
@@ -405,6 +452,12 @@ export default function Nearby() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {errorMsg ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
+      
       <View style={styles.mapContainer}>
         {location && (
           <MapView
@@ -424,6 +477,9 @@ export default function Nearby() {
             showsBuildings={true}
             showsTraffic={false}
             showsIndoors={true}
+            onMapReady={() => {
+              console.log('Map is ready');
+            }}
           >
             {allCafes.map((cafe) => (
               <Marker
@@ -827,5 +883,20 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     paddingVertical: verticalScale(20),
+  },
+  errorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(16),
+    fontWeight: '600',
   },
 }); 

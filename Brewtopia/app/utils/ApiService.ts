@@ -24,12 +24,12 @@ const API_PORT = '4000';
 const API_PATH = '/api';
 
 // Simple approach that works on all environments
-const DEFAULT_API_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+const DEFAULT_API_URL = `https://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
 
 // For easier debugging, dynamically check if on physical device using a dedicated environment variable
 // This can be set to 'true' when testing on physical devices
 const USE_PHYSICAL_DEVICE_URL = true; // Set to true for production
-const PHYSICAL_DEVICE_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+const PHYSICAL_DEVICE_URL = `https://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
 
 // Final API URL selection, prioritizing explicit config for physical devices
 const API_BASE_URL = Config.API_URL || 
