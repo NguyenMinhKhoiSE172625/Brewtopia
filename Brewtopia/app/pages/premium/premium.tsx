@@ -1,18 +1,11 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, Dimensions } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
-import { useState } from 'react';
 
 export default function Premium() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState('1');
-
-  const plans = [
-    { id: '1', months: 1, price: '2.99' },
-    { id: '3', months: 3, price: '7.99' },
-    { id: '6', months: 6, price: '14.99' },
-  ];
+  const monthlyPrice = '2.99';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,46 +34,42 @@ export default function Premium() {
       {/* Title */}
       <Text style={styles.title}>BUY PREMIUM TO GET THE BEST FEATURES FROM OUR APP</Text>
 
-      {/* Plan Selection */}
-      <View style={styles.planContainer}>
-        {plans.map((plan) => (
-          <TouchableOpacity
-            key={plan.id}
-            style={[
-              styles.planButton,
-              selectedPlan === plan.id && styles.planButtonActive
-            ]}
-            onPress={() => setSelectedPlan(plan.id)}
-          >
-            <Text style={[
-              styles.planMonths,
-              selectedPlan === plan.id && styles.planTextActive
-            ]}>{plan.months} month</Text>
-            <Text style={[
-              styles.planPrice,
-              selectedPlan === plan.id && styles.planTextActive
-            ]}>{plan.price}$</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Plan Info */}
+      <View style={styles.planInfoContainer}>
+        <View style={styles.planCard}>
+          <Text style={styles.planTitle}>Monthly Plan</Text>
+          <Text style={styles.planPrice}>${monthlyPrice}<Text style={styles.perMonth}>/month</Text></Text>
+          <View style={styles.benefitRow}>
+            <MaterialIcons name="check-circle" size={20} color="#6E543C" />
+            <Text style={styles.benefitText}>Ad-Free Experience</Text>
+          </View>
+          <View style={styles.benefitRow}>
+            <MaterialIcons name="check-circle" size={20} color="#6E543C" />
+            <Text style={styles.benefitText}>Premium Features Access</Text>
+          </View>
+          <View style={styles.benefitRow}>
+            <MaterialIcons name="check-circle" size={20} color="#6E543C" />
+            <Text style={styles.benefitText}>Priority Customer Support</Text>
+          </View>
+        </View>
       </View>
 
       {/* Add to Order Button */}
       <TouchableOpacity 
         style={styles.addButton}
         onPress={() => {
-          const selectedPlanData = plans.find(plan => plan.id === selectedPlan);
           router.push({
             pathname: '/pages/order/payment-method',
             params: { 
-              amount: selectedPlanData?.price,
+              amount: monthlyPrice,
               type: 'premium',
-              duration: selectedPlanData?.months
+              duration: '1'
             }
           });
         }}
       >
         <MaterialIcons name="add-shopping-cart" size={24} color="#FFF" />
-        <Text style={styles.addButtonText}>Add to Order</Text>
+        <Text style={styles.addButtonText}>Subscribe Now</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -97,18 +86,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: verticalScale(24),
-  },
-  productsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    padding: moderateScale(8),
-    borderRadius: moderateScale(20),
-  },
-  productsText: {
-    marginLeft: horizontalScale(8),
-    fontSize: fontScale(14),
-    fontWeight: '500',
   },
   premiumBadge: {
     flexDirection: 'row',
@@ -127,7 +104,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: verticalScale(300),
+    height: verticalScale(200),
     marginBottom: verticalScale(24),
   },
   mainImage: {
@@ -135,40 +112,57 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   title: {
-    fontSize: fontScale(24),
+    fontSize: fontScale(22),
     fontWeight: '700',
     color: '#000',
     textAlign: 'center',
     marginBottom: verticalScale(32),
   },
-  planContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  planInfoContainer: {
+    alignItems: 'center',
     marginBottom: verticalScale(32),
   },
-  planButton: {
-    backgroundColor: '#F5F5F5',
-    padding: moderateScale(16),
-    borderRadius: moderateScale(12),
+  planCard: {
+    backgroundColor: '#F5F1ED',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(20),
+    width: '90%',
     alignItems: 'center',
-    width: '30%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  planButtonActive: {
-    backgroundColor: '#6E543C',
-  },
-  planMonths: {
-    fontSize: fontScale(14),
-    fontWeight: '500',
-    color: '#000',
-    marginBottom: verticalScale(4),
+  planTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+    marginBottom: verticalScale(8),
   },
   planPrice: {
-    fontSize: fontScale(18),
+    fontSize: fontScale(28),
     fontWeight: '700',
     color: '#000',
+    marginBottom: verticalScale(16),
   },
-  planTextActive: {
-    color: '#FFF',
+  perMonth: {
+    fontSize: fontScale(16),
+    fontWeight: '400',
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(12),
+    width: '100%',
+  },
+  benefitText: {
+    fontSize: fontScale(16),
+    color: '#333',
+    marginLeft: horizontalScale(8),
   },
   addButton: {
     flexDirection: 'row',
