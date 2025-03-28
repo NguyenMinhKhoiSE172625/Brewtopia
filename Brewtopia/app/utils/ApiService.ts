@@ -19,7 +19,7 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
  * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
  * 2. PHYSICAL DEVICE: Use computer's IP address on the network (192.168.2.125)
  */
-const COMPUTER_IP = '192.168.2.125'; // Production server IP
+const COMPUTER_IP = '104.248.150.14'; // Production server IP
 const API_PORT = '4000';
 const API_PATH = '/api';
 

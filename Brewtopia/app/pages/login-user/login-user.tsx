@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator, Alert } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator, Alert, KeyboardAvoidingView, ScrollView, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { AntDesign } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import ApiService from '../../utils/ApiService';
 import DebugService from '../../utils/DebugService';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import NetworkHelper from '../../utils/NetworkHelper';
+import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
 export default function LoginUser() {
   const router = useRouter();
@@ -17,9 +18,6 @@ export default function LoginUser() {
   // Debug info
   DebugService.log('Login User Screen - Role', role);
   
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-  const scale = Math.min(screenWidth / 431, screenHeight / 956);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -116,158 +114,149 @@ export default function LoginUser() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={[styles.container, {
-        width: 431 * scale,
-        height: 956 * scale,
-        borderRadius: 50 * scale,
-      }]}>
-        {/* Logo */}
-        <View style={[styles.headerContainer, {
-          marginTop: 50 * scale,
-        }]}>
-          <Image 
-            source={require('../../../assets/images/Logo.png')}
-            style={[styles.logo, {
-              width: 500 * scale,
-              height: 120 * scale,
-            }]}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Form container */}
-        <View style={[styles.formContainer, {
-          width: 407 * scale,
-          padding: 20 * scale,
-          borderRadius: 31 * scale,
-          marginTop: 30 * scale,
-        }]}>
-          <Text style={styles.title}>Login {role === 'admin' ? 'Business' : 'User'}</Text>
-
-          {/* Network Status Banner */}
-          {!isNetworkAvailable && (
-            <View style={styles.networkBanner}>
-              <Ionicons name="cloud-offline-outline" size={24} color="#fff" />
-              <Text style={styles.networkBannerText}>You are offline</Text>
-              <TouchableOpacity onPress={retryConnection}>
-                <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email address</Text>
-            <TextInput
-              style={[
-                styles.input,
-                isError && styles.inputError
-              ]}
-              placeholder="helloworld@gmail.com"
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setIsError(false);
-              }}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollViewContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo */}
+          <View style={styles.headerContainer}>
+            <Image 
+              source={require('../../../assets/images/Logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
             />
           </View>
 
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={[
-              styles.passwordContainer,
-              isError && styles.inputError
-            ]}>
+          {/* Form container */}
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Login {role === 'admin' ? 'Business' : 'User'}</Text>
+
+            {/* Network Status Banner */}
+            {!isNetworkAvailable && (
+              <View style={styles.networkBanner}>
+                <Ionicons name="cloud-offline-outline" size={24} color="#fff" />
+                <Text style={styles.networkBannerText}>You are offline</Text>
+                <TouchableOpacity onPress={retryConnection}>
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email address</Text>
               <TextInput
-                style={[styles.input, { flex: 1, borderWidth: 0 }]}
-                placeholder="••••••••"
+                style={[
+                  styles.input,
+                  isError && styles.inputError
+                ]}
+                placeholder="helloworld@gmail.com"
                 placeholderTextColor="#999"
-                secureTextEntry={!showPassword}
-                value={password}
+                keyboardType="email-address"
+                value={email}
                 onChangeText={(text) => {
-                  setPassword(text);
+                  setEmail(text);
                   setIsError(false);
                 }}
+                autoCapitalize="none"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons 
-                  name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                  size={24} 
-                  color="#999"
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={[
+                styles.passwordContainer,
+                isError && styles.inputError
+              ]}>
+                <TextInput
+                  style={[styles.input, { flex: 1, borderWidth: 0 }]}
+                  placeholder="••••••••"
+                  placeholderTextColor="#999"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    setIsError(false);
+                  }}
                 />
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity 
-              style={styles.forgotPassword}
-              onPress={() => router.push("/pages/forgot-password/forgot-password")}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Error Message */}
-          {isError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{errorMessage}</Text>
-              {errorMessage.includes('network') && (
-                <TouchableOpacity onPress={retryConnection}>
-                  <Text style={styles.retryTextInError}>Retry Connection</Text>
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons 
+                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                    size={24} 
+                    color="#999"
+                  />
                 </TouchableOpacity>
-              )}
+              </View>
+              <TouchableOpacity 
+                style={styles.forgotPassword}
+                onPress={() => router.push("/pages/forgot-password/forgot-password")}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
             </View>
-          )}
 
-          {/* Login Button */}
-          <TouchableOpacity 
-            style={[
-              styles.loginButton, 
-              {
-                height: 50 * scale,
-                borderRadius: 10 * scale,
-                marginTop: 20 * scale,
-              },
-              (!isNetworkAvailable || isLoading) && styles.disabledButton
-            ]}
-            onPress={handleLogin}
-            disabled={!isNetworkAvailable || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
+            {/* Error Message */}
+            {isError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+                {errorMessage.includes('network') && (
+                  <TouchableOpacity onPress={retryConnection}>
+                    <Text style={styles.retryTextInError}>Retry Connection</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
-          </TouchableOpacity>
 
-          {/* Social Login */}
-          <View style={styles.socialContainer}>
-            <Text style={styles.orText}>Or Login with</Text>
-            <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text>f</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Text>G</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <AntDesign name="apple1" size={24} color="black" />
+            {/* Login Button */}
+            <TouchableOpacity 
+              style={[
+                styles.loginButton,
+                (!isNetworkAvailable || isLoading) && styles.disabledButton
+              ]}
+              onPress={handleLogin}
+              disabled={!isNetworkAvailable || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Social Login */}
+            <View style={styles.socialContainer}>
+              <Text style={styles.orText}>Or Login with</Text>
+              <View style={styles.socialButtons}>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Text>f</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialButton}>
+                  <Text>G</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.socialButton}>
+                  <AntDesign name="apple1" size={24} color="black" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sign up link */}
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push(role === 'admin' 
+                ? `/pages/register/register?role=${role}` 
+                : "/pages/register/register")}>
+                <Text style={styles.signupLink}>Sign up</Text>
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* Sign up link */}
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push(role === 'admin' 
-              ? `/pages/register/register?role=${role}` 
-              : "/pages/register/register")}>
-              <Text style={styles.signupLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -276,43 +265,49 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
   },
-  container: {
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    position: 'relative',
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: moderateScale(16),
   },
   headerContainer: {
     alignItems: 'center',
+    marginBottom: verticalScale(30),
   },
   logo: {
-    marginBottom: 20,
+    width: horizontalScale(300),
+    height: verticalScale(80),
   },
   formContainer: {
     backgroundColor: '#6E543C',
-    alignItems: 'stretch',
+    borderRadius: moderateScale(31),
+    padding: moderateScale(20),
+    width: '100%',
   },
   title: {
-    fontSize: 24,
+    fontSize: fontScale(24),
     fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
     textAlign: 'center',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   label: {
     color: '#FFFFFF',
-    marginBottom: 8,
-    fontSize: 16,
+    marginBottom: verticalScale(8),
+    fontSize: fontScale(16),
   },
   input: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
+    borderRadius: moderateScale(10),
+    padding: moderateScale(15),
+    fontSize: fontScale(16),
   },
   inputError: {
     borderColor: '#FF0000',
@@ -322,79 +317,87 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingRight: 15,
+    borderRadius: moderateScale(10),
+    paddingRight: moderateScale(15),
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginTop: 8,
+    marginTop: verticalScale(8),
   },
   forgotPasswordText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: fontScale(14),
+  },
+  errorContainer: {
+    alignItems: 'center',
+    marginBottom: verticalScale(15),
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 14,
+    fontSize: fontScale(14),
     textAlign: 'center',
-    marginBottom: 10,
   },
   loginButton: {
     backgroundColor: '#B68D5F',
+    height: verticalScale(50),
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: moderateScale(10),
+    marginTop: verticalScale(20),
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: fontScale(16),
     fontWeight: '600',
     color: '#FFFFFF',
   },
   socialContainer: {
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: verticalScale(30),
   },
   orText: {
     color: '#FFFFFF',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   socialButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    gap: horizontalScale(20),
   },
   socialButton: {
-    width: 40,
-    height: 40,
+    width: horizontalScale(40),
+    height: horizontalScale(40),
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: horizontalScale(20),
     justifyContent: 'center',
     alignItems: 'center',
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 30,
+    marginTop: verticalScale(30),
   },
   signupText: {
     color: '#FFFFFF',
+    fontSize: fontScale(14),
   },
   signupLink: {
     color: '#FFFFFF',
     fontWeight: '600',
     textDecorationLine: 'underline',
+    fontSize: fontScale(14),
   },
   networkBanner: {
     backgroundColor: '#E74C3C',
-    padding: 10,
-    borderRadius: 5,
+    padding: moderateScale(10),
+    borderRadius: moderateScale(5),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   networkBannerText: {
     color: '#FFFFFF',
-    marginLeft: 10,
+    marginLeft: horizontalScale(10),
     flex: 1,
   },
   retryText: {
@@ -405,10 +408,7 @@ const styles = StyleSheet.create({
   retryTextInError: {
     color: '#4A90E2',
     textDecorationLine: 'underline',
-    marginTop: 5,
-  },
-  errorContainer: {
-    alignItems: 'center',
+    marginTop: verticalScale(5),
   },
   disabledButton: {
     opacity: 0.6,
