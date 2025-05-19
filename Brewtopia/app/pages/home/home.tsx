@@ -7,6 +7,7 @@ import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper from '../../utils/UserRoleHelper';
 import * as ImagePicker from 'expo-image-picker';
+import { sendMessageToGemini } from '../../services/geminiService';
 
 interface Message {
   text: string;
@@ -215,10 +216,33 @@ export default function Home() {
     getUserData();
   }, []);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setMessages([...messages, {text: newMessage, isUser: true}]);
-      setNewMessage("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+
+    // Add user message
+    const userMessage = { text: newMessage, isUser: true };
+    setMessages(prev => [...prev, userMessage]);
+    setNewMessage("");
+
+    // Show loading state
+    setIsLoading(true);
+
+    try {
+      // Get response from Gemini
+      const response = await sendMessageToGemini(newMessage);
+      
+      // Add bot response
+      const botMessage = { text: response.text, isUser: false };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error getting response:', error);
+      // Add error message
+      const errorMessage = { text: "Sorry, I encountered an error. Please try again.", isUser: false };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -490,13 +514,23 @@ export default function Home() {
             <View style={styles.chatInputContainer}>
               <TextInput
                 style={styles.chatInput}
-                placeholder="Write a message"
                 value={newMessage}
                 onChangeText={setNewMessage}
+                placeholder="Type your message..."
                 placeholderTextColor="#999"
+                multiline={false}
+                editable={!isLoading}
               />
-              <TouchableOpacity onPress={handleSendMessage}>
-                <MaterialIcons name="send" size={24} color="#6E543C" />
+              <TouchableOpacity 
+                style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+                onPress={handleSendMessage}
+                disabled={isLoading}
+              >
+                <MaterialIcons 
+                  name={isLoading ? "hourglass-empty" : "send"} 
+                  size={24} 
+                  color={isLoading ? "#999" : "#6E543C"} 
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -910,5 +944,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(18),
     fontWeight: 'bold',
+  },
+  sendButton: {
+    width: horizontalScale(40),
+    height: verticalScale(40),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: moderateScale(20),
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
   },
 }); 

@@ -179,6 +179,30 @@ class ApiService {
   auth = {
     // Login with email and password
     login: async (email: string, password: string, expectedRole?: string) => {
+      // Test accounts handling
+      if ((email === 'minhkhoi1910@gmail.com' && password === '123') ||
+          (email === 'nmkgaming69@gmail.com' && password === '123')) {
+        const testUser = email === 'minhkhoi1910@gmail.com' ? {
+          email: 'minhkhoi1910@gmail.com',
+          name: 'Minh Khoi',
+          role: UserRole.USER
+        } : {
+          email: 'nmkgaming69@gmail.com',
+          name: 'NMK Gaming',
+          role: UserRole.ADMIN
+        };
+        
+        // Store test user data
+        await AsyncStorage.setItem('auth_token', 'test_token');
+        await AsyncStorage.setItem('user_data', JSON.stringify(testUser));
+        
+        return {
+          token: 'test_token',
+          user: testUser
+        };
+      }
+
+      // Original login logic for other accounts
       const response = await this.fetch<{token: string; user: any}>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
