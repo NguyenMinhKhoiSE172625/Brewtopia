@@ -1,14 +1,15 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState, useEffect } from 'react';
+import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView, BackHandler, Alert } from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
-import { useState, useEffect } from 'react';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { withAuth } from '../../components/withAuth';
 
-export default function Profile() {
+function Profile() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
@@ -30,6 +31,38 @@ export default function Profile() {
     
     checkUserRole();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      // Clear all user data
+      await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+      
+      // Show logout message
+      Alert.alert(
+        "Đăng xuất thành công",
+        "Vui lòng đăng nhập lại để tiếp tục",
+        [
+          {
+            text: "Đăng nhập",
+            onPress: () => router.replace('/pages/roles/role')
+          }
+        ],
+        { cancelable: false }
+      );
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert(
+        "Lỗi",
+        "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.",
+        [
+          {
+            text: "Đăng nhập lại",
+            onPress: () => router.replace('/pages/roles/role')
+          }
+        ]
+      );
+    }
+  };
 
   const userMenuItems = [
     {
@@ -110,9 +143,10 @@ export default function Profile() {
     }
   ];
 
-  const handleLogout = () => {
-    router.replace('/pages/roles/role');
-  };
+  // Don't render content if not authenticated
+  if (!isAdmin && !userName) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -350,4 +384,6 @@ const styles = StyleSheet.create({
     fontSize: fontScale(12),
     fontWeight: '500',
   },
-}); 
+});
+
+export default withAuth(Profile); 

@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper from '../../utils/UserRoleHelper';
 import * as ImagePicker from 'expo-image-picker';
 import { sendMessageToGemini } from '../../services/geminiService';
+import { withAuth } from '../../components/withAuth';
 
 interface Message {
   text: string;
@@ -53,7 +54,7 @@ const MessageItem = memo(({ message, userRole }: { message: Message; userRole: s
   </View>
 ));
 
-export default function Home() {
+function Home() {
   const router = useRouter();
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
@@ -569,6 +570,8 @@ export default function Home() {
     </SafeAreaView>
   );
 }
+
+export default withAuth(Home);
 
 const styles = StyleSheet.create({
   container: {

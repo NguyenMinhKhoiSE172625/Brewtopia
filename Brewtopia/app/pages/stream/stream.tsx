@@ -6,8 +6,9 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
+import { withAuth } from '../../components/withAuth';
 
-export default function Stream() {
+function Stream() {
   const router = useRouter();
   const [showStartModal, setShowStartModal] = useState(false);
   const [streamTitle, setStreamTitle] = useState("");
@@ -594,4 +595,6 @@ const styles = StyleSheet.create({
     fontSize: fontScale(16),
     fontWeight: '600',
   },
-}); 
+});
+
+export default withAuth(Stream); 

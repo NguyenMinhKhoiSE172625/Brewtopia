@@ -7,8 +7,9 @@ import Post from '../../components/Post';
 import BottomBar from '../../components/BottomBar';
 import SponsorBanner from '../../components/SponsorBanner';
 import * as ImagePicker from 'expo-image-picker';
+import { withAuth } from '../../components/withAuth';
 
-export default function News() {
+function News() {
   const router = useRouter();
 
   const samplePosts = [
@@ -777,4 +778,6 @@ const styles = StyleSheet.create({
     fontSize: fontScale(16),
     fontWeight: '500',
   },
-}); 
+});
+
+export default withAuth(News); 

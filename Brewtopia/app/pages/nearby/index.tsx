@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, Linking, SafeAreaView, ScrollView, Animated, FlatList, Modal } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -8,12 +8,20 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import BottomBar from '../../components/BottomBar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image as CachedImage } from 'expo-image';
+import { withAuth } from '../../components/withAuth';
 
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
 
-// Ensure the API key is visible in logs for debugging
-console.log('Maps API Key:', GOOGLE_MAPS_API_KEY);
+// Constants for pagination
+const CAFES_PER_PAGE = 10;
+const INITIAL_REGION = {
+  latitude: 10.7769,
+  longitude: 106.7009,
+  latitudeDelta: 0.0922,
+  longitudeDelta: 0.0421,
+};
 
 interface Cafe {
   id: string;
@@ -196,12 +204,12 @@ const MOCK_CAFES: Cafe[] = [
 ];
 
 const CafeImage = memo(({ image }: { image: any }) => (
-  <Image
+  <CachedImage
     source={image}
     style={styles.cafeImage}
-    resizeMode="cover"
-    progressiveRenderingEnabled={true}
-    fadeDuration={200}
+    contentFit="cover"
+    transition={200}
+    cachePolicy="memory-disk"
   />
 ));
 
@@ -212,140 +220,313 @@ interface ShareRecipient {
   isGroup: boolean;
 }
 
-export default function Nearby() {
+// Memoized marker component
+const CafeMarker = memo(({ cafe, onPress }: { cafe: Cafe; onPress: () => void }) => (
+  <Marker
+    coordinate={cafe.coordinate}
+    onPress={onPress}
+  >
+    <View style={styles.markerContainer}>
+      <CachedImage 
+        source={require('../../../assets/images/iconcafe.png')}
+        style={styles.markerIcon}
+        cachePolicy="memory-disk"
+      />
+    </View>
+  </Marker>
+));
+
+// Memoized cafe card component
+const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fadeAnim }: {
+  cafe: Cafe;
+  onClose: () => void;
+  onGetDirections: () => void;
+  onShare: () => void;
+  slideAnim: Animated.Value;
+  fadeAnim: Animated.Value;
+}) => {
+  const router = useRouter();
+  
+  const keyExtractor = useCallback((item: any, index: number) => `cafe-image-${index}`, []);
+  
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: horizontalScale(200),
+    offset: horizontalScale(200) * index,
+    index,
+  }), []);
+  
+  const renderCafeImage = useCallback(({ item }: { item: any }) => (
+    <CafeImage image={item} />
+  ), []);
+
+  return (
+    <Animated.View style={[styles.cafeCard, {
+      transform: [{ translateY: slideAnim }],
+      opacity: fadeAnim
+    }]}>
+      <View style={styles.cafeHeader}>
+        <View style={styles.cafeHeaderTop}>
+          <Text style={styles.cafeName}>{cafe.name}</Text>
+          <TouchableOpacity onPress={onClose}>
+            <MaterialIcons name="more-horiz" size={28} color="#6E543C" />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={styles.cafeAddress}>{cafe.address}</Text>
+          <Text style={styles.cafeStatus}>
+            {cafe.status} - Closed at {cafe.closingTime}
+          </Text>
+        </View>
+      </View>
+      
+      <View style={styles.cafeActions}>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onGetDirections}
+        >
+          <MaterialIcons name="place" size={24} color="#6E543C" />
+          <Text style={styles.actionText}>Path</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => {/* Handle phone call */}}
+        >
+          <MaterialIcons name="phone" size={24} color="#6E543C" />
+          <Text style={styles.actionText}>Phone</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={() => {/* Toggle notifications */}}
+        >
+          <MaterialIcons name="notifications" size={24} color="#6E543C" />
+          <Text style={styles.actionText}>Alert</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onShare}
+        >
+          <MaterialIcons name="share" size={24} color="#6E543C" />
+          <Text style={styles.actionText}>Share</Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.detailButton}
+        onPress={() => router.push({
+          pathname: 'pages/shop/detail' as any,
+          params: { shopId: cafe.id }
+        })}
+      >
+        <Text style={styles.detailButtonText}>Detail</Text>
+      </TouchableOpacity>
+
+      <FlatList 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.cafeImagesContainer}
+        contentContainerStyle={styles.cafeImagesContent}
+        data={cafe.images}
+        keyExtractor={keyExtractor}
+        renderItem={renderCafeImage}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        windowSize={2}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
+        getItemLayout={getItemLayout}
+        progressViewOffset={1}
+      />
+    </Animated.View>
+  );
+});
+
+// Generate random cafes function
+const generateRandomCafes = (userLocation: Location.LocationObject, count: number = 10) => {
+  const baseLatitude = userLocation.coords.latitude;
+  const baseLongitude = userLocation.coords.longitude;
+  const cafeNames = [
+    'Espresso Express', 'Morning Brew', 'Coffee Corner', 'Urban Roast',
+    'Cafe Delight', 'Bean Scene', 'Brew Haven', 'Java Junction',
+    'The Daily Grind', 'Cafe Aroma', 'Cup & Saucer', 'Golden Coffee',
+    'The Roasted Bean', 'Coffee Culture', 'Cappuccino Club'
+  ];
+  
+  const cafeImages = [
+    require('../../../assets/images/cafe1.png'),
+    require('../../../assets/images/cafe2.png'),
+    require('../../../assets/images/cafe3.png'),
+    require('../../../assets/images/cafe4.png'),
+    require('../../../assets/images/cafe5.png'),
+  ];
+  
+  const randomCafes: Cafe[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const randomLat = baseLatitude + (Math.random() - 0.5) * 0.01;
+    const randomLng = baseLongitude + (Math.random() - 0.5) * 0.01;
+    
+    const randomName = cafeNames[Math.floor(Math.random() * cafeNames.length)];
+    const id = `random-${i + 1}`;
+    const randomRating = 3.5 + Math.random() * 1.5;
+    const randomClosingHour = 20 + Math.floor(Math.random() * 4);
+    
+    const randomImage1 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
+    const randomImage2 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
+    
+    randomCafes.push({
+      id,
+      name: `${randomName} ${i + 1}`,
+      address: `${Math.floor(Math.random() * 100) + 1} Street, District ${Math.floor(Math.random() * 5) + 1}`,
+      rating: Math.round(randomRating * 10) / 10,
+      status: 'Open',
+      closingTime: `${randomClosingHour}:00`,
+      images: [randomImage1, randomImage2],
+      coordinate: {
+        latitude: randomLat,
+        longitude: randomLng,
+      },
+    });
+  }
+  
+  return randomCafes;
+};
+
+const RecentlyVisitedItem = memo(({ cafe, onPress }: { cafe: Cafe; onPress: () => void }) => (
+  <TouchableOpacity 
+    style={styles.recentlyVisitedItem}
+    onPress={onPress}
+  >
+    <CachedImage 
+      source={cafe.images[0]} 
+      style={styles.recentlyVisitedImage}
+      contentFit="cover"
+      transition={200}
+      cachePolicy="memory-disk"
+    />
+    <View style={styles.recentlyVisitedInfo}>
+      <Text style={styles.recentlyVisitedName}>{cafe.name}</Text>
+      <Text style={styles.recentlyVisitedDate}>{cafe.visitDate}</Text>
+    </View>
+    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+  </TouchableOpacity>
+));
+
+const RecipientItem = memo(({ recipient, onPress }: { recipient: ShareRecipient; onPress: () => void }) => (
+  <TouchableOpacity 
+    style={styles.recipientItem}
+    onPress={onPress}
+  >
+    <CachedImage 
+      source={recipient.isGroup 
+        ? require('../../../assets/images/profile1.png') 
+        : require('../../../assets/images/avatar1.png')}
+      style={styles.recipientAvatar}
+      contentFit="cover"
+      transition={200}
+      cachePolicy="memory-disk"
+    />
+    <Text style={styles.recipientName}>{recipient.name}</Text>
+    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+  </TouchableOpacity>
+));
+
+function Nearby() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
+  const [recentlyVisited, setRecentlyVisited] = useState<Cafe[]>([]);
   const [showDirections, setShowDirections] = useState(false);
-  const [allCafes, setAllCafes] = useState<Cafe[]>([]);
-  const [showRecentlyVisited, setShowRecentlyVisited] = useState(false);
-  const [recentlyVisitedCafes, setRecentlyVisitedCafes] = useState<Cafe[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareRecipients, setShareRecipients] = useState<ShareRecipient[]>([]);
+  const [allCafes, setAllCafes] = useState<Cafe[]>([]);
+  const [visibleCafes, setVisibleCafes] = useState<Cafe[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showRecentlyVisited, setShowRecentlyVisited] = useState(false);
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // Use the static cafe data from outside the component
-  const cafes = useMemo(() => MOCK_CAFES, []);
-
-  // Generate random cafes around the user's location
-  const generateRandomCafes = (userLocation: Location.LocationObject, count: number = 10) => {
-    const baseLatitude = userLocation.coords.latitude;
-    const baseLongitude = userLocation.coords.longitude;
-    const cafeNames = [
-      'Espresso Express', 'Morning Brew', 'Coffee Corner', 'Urban Roast',
-      'Cafe Delight', 'Bean Scene', 'Brew Haven', 'Java Junction',
-      'The Daily Grind', 'Cafe Aroma', 'Cup & Saucer', 'Golden Coffee',
-      'The Roasted Bean', 'Coffee Culture', 'Cappuccino Club'
-    ];
-    
-    // Define all cafe images statically
-    const cafeImages = [
-      require('../../../assets/images/cafe1.png'),
-      require('../../../assets/images/cafe2.png'),
-      require('../../../assets/images/cafe3.png'),
-      require('../../../assets/images/cafe4.png'),
-      require('../../../assets/images/cafe5.png'),
-    ];
-    
-    const randomCafes: Cafe[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      // Generate a point within ~500m radius
-      // 0.005 in lat/lng is roughly 500m
-      const randomLat = baseLatitude + (Math.random() - 0.5) * 0.01;
-      const randomLng = baseLongitude + (Math.random() - 0.5) * 0.01;
-      
-      const randomName = cafeNames[Math.floor(Math.random() * cafeNames.length)];
-      const id = `random-${i + 1}`;
-      const randomRating = 3.5 + Math.random() * 1.5; // Rating between 3.5-5.0
-      const randomClosingHour = 20 + Math.floor(Math.random() * 4); // 20:00 - 23:00
-      
-      // Select random images from the predefined array
-      const randomImage1 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
-      const randomImage2 = cafeImages[Math.floor(Math.random() * cafeImages.length)];
-      
-      randomCafes.push({
-        id,
-        name: `${randomName} ${i + 1}`,
-        address: `${Math.floor(Math.random() * 100) + 1} Street, District ${Math.floor(Math.random() * 5) + 1}`,
-        rating: Math.round(randomRating * 10) / 10,
-        status: 'Open',
-        closingTime: `${randomClosingHour}:00`,
-        images: [randomImage1, randomImage2],
-        coordinate: {
-          latitude: randomLat,
-          longitude: randomLng,
-        },
-      });
-    }
-    
-    return randomCafes;
-  };
-
   useEffect(() => {
     (async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
-          // Set a default location if permission is denied
-          const defaultLocation = {
-            coords: {
-              latitude: 10.7769,
-              longitude: 106.7009,
-              accuracy: 0,
-              altitude: 0,
-              altitudeAccuracy: 0,
-              heading: 0,
-              speed: 0
-            },
-            timestamp: Date.now()
-          };
-          setLocation(defaultLocation);
-          
-          // Combine hardcoded cafes with randomly generated ones
-          const randomCafes = generateRandomCafes(defaultLocation, 15);
-          setAllCafes([...cafes, ...randomCafes]);
-          return;
-        }
-
-        let location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 5000,
-        });
-        setLocation(location);
-        
-        // Combine hardcoded cafes with randomly generated ones
-        const randomCafes = generateRandomCafes(location, 15);
-        setAllCafes([...cafes, ...randomCafes]);
-      } catch (error) {
-        console.log('Error getting location:', error);
-        setErrorMsg('Failed to get location. Using default location.');
-        
-        // Set a default location if there's an error
-        const defaultLocation = {
-          coords: {
-            latitude: 10.7769,
-            longitude: 106.7009,
-            accuracy: 0,
-            altitude: 0,
-            altitudeAccuracy: 0,
-            heading: 0,
-            speed: 0
-          },
-          timestamp: Date.now()
-        };
-        setLocation(defaultLocation);
-        
-        // Use only hardcoded cafes
-        setAllCafes([...cafes]);
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
       }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+      
+      // Generate random cafes around user location
+      const randomCafes = generateRandomCafes(location);
+      setAllCafes([...MOCK_CAFES, ...randomCafes]);
     })();
-  }, [cafes]);
+  }, []);
+
+  // Load visible cafes based on current page
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * CAFES_PER_PAGE;
+    const endIndex = startIndex + CAFES_PER_PAGE;
+    setVisibleCafes(allCafes.slice(startIndex, endIndex));
+  }, [currentPage, allCafes]);
+
+  const handleRegionChange = useCallback((region: Region) => {
+    if (currentPage * CAFES_PER_PAGE >= allCafes.length) {
+      setCurrentPage((prev: number) => prev + 1);
+    }
+  }, [currentPage, allCafes.length]);
+
+  // Memoize handlers
+  const handleMarkerPress = useCallback((cafe: Cafe) => {
+    setSelectedCafe(cafe);
+    setShowDirections(false);
+
+    // Animate card appearance
+    slideAnim.setValue(0);
+    fadeAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    mapRef.current?.animateToRegion({
+      latitude: cafe.coordinate.latitude,
+      longitude: cafe.coordinate.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  }, [slideAnim, fadeAnim]);
+
+  const handleCloseCard = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSelectedCafe(null);
+    });
+  }, [slideAnim, fadeAnim]);
 
   // Initialize recently visited cafes just once on component mount
   useEffect(() => {
@@ -355,7 +536,7 @@ export default function Nearby() {
       { ...MOCK_CAFES[2], visitDate: 'Yesterday' },
       { ...MOCK_CAFES[5], visitDate: 'Last Week' }
     ];
-    setRecentlyVisitedCafes(visitedCafes);
+    setRecentlyVisited(visitedCafes);
   }, []);
 
   // Initialize share recipients (similar to chatItems in profile)
@@ -426,53 +607,6 @@ export default function Nearby() {
       }, 1000);
     }
   }, [params, allCafes]);
-
-  const handleMarkerPress = (cafe: Cafe) => {
-    setSelectedCafe(cafe);
-    setShowDirections(false);
-
-    // Animate card appearance
-    slideAnim.setValue(0);
-    fadeAnim.setValue(0);
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Di chuyển map để hiển thị marker và card
-    mapRef.current?.animateToRegion({
-      latitude: cafe.coordinate.latitude,
-      longitude: cafe.coordinate.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
-  };
-
-  const handleCloseCard = () => {
-    // Animate card disappearance
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setSelectedCafe(null);
-    });
-  };
 
   const handleGetDirections = () => {
     if (selectedCafe && location) {
@@ -591,18 +725,6 @@ export default function Nearby() {
     }
   };
 
-  const renderCafeImage = useCallback(({ item }: { item: any }) => (
-    <CafeImage image={item} />
-  ), []);
-
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: horizontalScale(200),
-    offset: horizontalScale(200) * index,
-    index,
-  }), []);
-
-  const keyExtractor = useCallback((item: any, index: number) => `cafe-image-${index}`, []);
-
   return (
     <SafeAreaView style={styles.container}>
       {errorMsg ? (
@@ -630,23 +752,16 @@ export default function Nearby() {
             showsBuildings={true}
             showsTraffic={false}
             showsIndoors={true}
-            onMapReady={() => {
-              console.log('Map is ready');
-            }}
+            onRegionChangeComplete={handleRegionChange}
+            maxZoomLevel={18}
+            minZoomLevel={10}
           >
-            {allCafes.map((cafe) => (
-              <Marker
+            {visibleCafes.map((cafe) => (
+              <CafeMarker
                 key={cafe.id}
-                coordinate={cafe.coordinate}
+                cafe={cafe}
                 onPress={() => handleMarkerPress(cafe)}
-              >
-                <View style={styles.markerContainer}>
-                  <Image 
-                    source={require('../../../assets/images/iconcafe.png')}
-                    style={styles.markerIcon}
-                  />
-                </View>
-              </Marker>
+              />
             ))}
 
             {showDirections && selectedCafe && location && (
@@ -660,6 +775,9 @@ export default function Nearby() {
                 strokeWidth={3}
                 strokeColor="#6E543C"
                 mode="DRIVING"
+                onStart={() => setIsLoading(true)}
+                onReady={() => setIsLoading(false)}
+                onError={() => setIsLoading(false)}
               />
             )}
           </MapView>
@@ -702,29 +820,25 @@ export default function Nearby() {
               </TouchableOpacity>
             </View>
 
-            {recentlyVisitedCafes.length === 0 ? (
+            {recentlyVisited.length === 0 ? (
               <Text style={styles.noRecentText}>You haven't visited any cafes in the past week.</Text>
             ) : (
-              <ScrollView style={styles.recentlyVisitedList}>
-                {recentlyVisitedCafes.map((cafe, index) => (
-                  <TouchableOpacity 
-                    key={`recent-${cafe.id}`}
-                    style={styles.recentlyVisitedItem}
-                    onPress={() => handleSelectRecentCafe(cafe)}
-                  >
-                    <Image 
-                      source={cafe.images[0]} 
-                      style={styles.recentlyVisitedImage} 
-                      resizeMode="cover"
-                    />
-                    <View style={styles.recentlyVisitedInfo}>
-                      <Text style={styles.recentlyVisitedName}>{cafe.name}</Text>
-                      <Text style={styles.recentlyVisitedDate}>{cafe.visitDate}</Text>
-                    </View>
-                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <FlatList
+                data={recentlyVisited}
+                renderItem={({ item }) => (
+                  <RecentlyVisitedItem
+                    cafe={item}
+                    onPress={() => handleSelectRecentCafe(item)}
+                  />
+                )}
+                keyExtractor={(item) => `recent-${item.id}`}
+                style={styles.recentlyVisitedList}
+                initialNumToRender={3}
+                maxToRenderPerBatch={3}
+                windowSize={3}
+                removeClippedSubviews={true}
+                updateCellsBatchingPeriod={50}
+              />
             )}
           </View>
         )}
@@ -740,98 +854,14 @@ export default function Nearby() {
 
         {/* Selected Cafe Card */}
         {selectedCafe && (
-          <Animated.View 
-            style={[
-              styles.cafeCard,
-              {
-                transform: [
-                  {
-                    translateY: slideAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [300, 0],
-                    }),
-                  },
-                ],
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <View style={styles.cafeHeader}>
-              <View style={styles.cafeHeaderTop}>
-                <Text style={styles.cafeName}>{selectedCafe.name}</Text>
-                <TouchableOpacity onPress={handleCloseCard}>
-                  <MaterialIcons name="more-horiz" size={28} color="#6E543C" />
-                </TouchableOpacity>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.cafeAddress}>{selectedCafe.address}</Text>
-                <Text style={styles.cafeStatus}>
-                  {selectedCafe.status} - Closed at {selectedCafe.closingTime}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.cafeActions}>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={handleGetDirections}
-              >
-                <MaterialIcons name="place" size={24} color="#6E543C" />
-                <Text style={styles.actionText}>Path</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => {/* Handle phone call */}}
-              >
-                <MaterialIcons name="phone" size={24} color="#6E543C" />
-                <Text style={styles.actionText}>Phone</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => {/* Toggle notifications */}}
-              >
-                <MaterialIcons name="notifications" size={24} color="#6E543C" />
-                <Text style={styles.actionText}>Alert</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={handleShare}
-              >
-                <MaterialIcons name="share" size={24} color="#6E543C" />
-                <Text style={styles.actionText}>Share</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.detailButton}
-              onPress={() => router.push({
-                pathname: 'pages/shop/detail' as any,
-                params: { shopId: selectedCafe.id }
-              })}
-            >
-              <Text style={styles.detailButtonText}>Detail</Text>
-            </TouchableOpacity>
-
-            <FlatList 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.cafeImagesContainer}
-              contentContainerStyle={styles.cafeImagesContent}
-              data={selectedCafe.images}
-              keyExtractor={keyExtractor}
-              renderItem={renderCafeImage}
-              initialNumToRender={1}
-              maxToRenderPerBatch={2}
-              windowSize={2}
-              removeClippedSubviews={true}
-              updateCellsBatchingPeriod={50}
-              getItemLayout={getItemLayout}
-              progressViewOffset={1}
-            />
-          </Animated.View>
+          <CafeCard
+            cafe={selectedCafe}
+            onClose={handleCloseCard}
+            onGetDirections={handleGetDirections}
+            onShare={() => handleShare()}
+            slideAnim={slideAnim}
+            fadeAnim={fadeAnim}
+          />
         )}
 
         {/* Share Modal */}
@@ -850,24 +880,22 @@ export default function Nearby() {
                 </TouchableOpacity>
               </View>
               
-              <ScrollView style={styles.recipientsList}>
-                {shareRecipients.map((recipient) => (
-                  <TouchableOpacity 
-                    key={recipient.id}
-                    style={styles.recipientItem}
-                    onPress={() => handleShareWithRecipient(recipient)}
-                  >
-                    <Image 
-                      source={recipient.isGroup 
-                        ? require('../../../assets/images/profile1.png') 
-                        : require('../../../assets/images/avatar1.png')}
-                      style={styles.recipientAvatar}
-                    />
-                    <Text style={styles.recipientName}>{recipient.name}</Text>
-                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <FlatList
+                data={shareRecipients}
+                renderItem={({ item }) => (
+                  <RecipientItem
+                    recipient={item}
+                    onPress={() => handleShareWithRecipient(item)}
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                style={styles.recipientsList}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                windowSize={5}
+                removeClippedSubviews={true}
+                updateCellsBatchingPeriod={50}
+              />
             </View>
           </View>
         </Modal>
@@ -877,6 +905,8 @@ export default function Nearby() {
     </SafeAreaView>
   );
 }
+
+export default withAuth(Nearby);
 
 const styles = StyleSheet.create({
   container: {
