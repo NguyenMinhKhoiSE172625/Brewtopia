@@ -33,6 +33,21 @@ const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;
 const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 3;
 
 class ApiService {
+  private token: string | null = null;
+
+  constructor() {
+    // Load token from storage when service initializes
+    this.loadToken();
+  }
+
+  private async loadToken() {
+    try {
+      this.token = await AsyncStorage.getItem('auth_token');
+    } catch (error) {
+      console.error('Error loading token:', error);
+    }
+  }
+
   // Generic fetch method with debug logging and retry logic
   async fetch<T>(
     url: string, 
@@ -60,13 +75,10 @@ class ApiService {
       // Add abort signal to options
       options.signal = controller.signal;
       
-      // Get auth token if available
-      const token = await AsyncStorage.getItem('auth_token');
-      
       // Prepare headers with auth token if available
       const headers = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
         ...options.headers,
       };
       
@@ -152,12 +164,14 @@ class ApiService {
       role: UserRole.ADMIN
     };
     
-    // Store test user data
-    await AsyncStorage.setItem('auth_token', 'test_token');
+    // Store test user data and token
+    const testToken = 'test_token_' + Date.now();
+    await AsyncStorage.setItem('auth_token', testToken);
     await AsyncStorage.setItem('user_data', JSON.stringify(testUser));
+    this.token = testToken;
     
     return {
-      token: 'test_token',
+      token: testToken,
       user: testUser
     };
   }
@@ -193,6 +207,7 @@ class ApiService {
       if (response.token) {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        this.token = response.token;
       }
       
       return response;
@@ -230,13 +245,14 @@ class ApiService {
     // Logout
     logout: async () => {
       await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('user_data');
+      this.token = null;
       return { success: true };
     },
     
     // Check if user is logged in
     isLoggedIn: async () => {
-      const token = await AsyncStorage.getItem('auth_token');
-      return !!token;
+      return !!this.token;
     },
     
     // Forgot password
@@ -244,6 +260,27 @@ class ApiService {
       return this.fetch('/auth/forgotPassword', {
         method: 'POST',
         body: JSON.stringify({ email }),
+      });
+    },
+  };
+
+  // Payment API methods
+  payment = {
+    // Create PayOS payment
+    createPayosPayment: async (amount: number, description: string) => {
+      if (!this.token) {
+        throw {
+          status: 401,
+          message: 'Please login to make payment'
+        };
+      }
+
+      return this.fetch('/payments/createPayos', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          description
+        }),
       });
     },
   };

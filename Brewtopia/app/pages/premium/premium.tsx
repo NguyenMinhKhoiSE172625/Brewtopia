@@ -2,10 +2,40 @@ import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView } from "r
 import { useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import ApiService from '../../utils/ApiService';
+
+interface PayOSResponse {
+  paymentUrl: string;
+  // Add other fields if needed
+}
 
 export default function Premium() {
   const router = useRouter();
-  const monthlyPrice = '2.99';
+  const monthlyPrice = '10000'; // Price in VND
+
+  const handleSubscribe = async () => {
+    try {
+      // Create PayOS payment
+      const paymentResponse = await ApiService.payment.createPayosPayment(
+        parseInt(monthlyPrice),
+        'Premium Subscription - 1 Month'
+      ) as PayOSResponse;
+
+      // Navigate to payment method page with payment info
+      router.push({
+        pathname: '/pages/order/payment-method',
+        params: { 
+          amount: monthlyPrice,
+          type: 'premium',
+          duration: '1',
+          paymentUrl: paymentResponse.paymentUrl
+        }
+      });
+    } catch (error) {
+      console.error('Payment creation failed:', error);
+      // Handle error appropriately
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,7 +68,7 @@ export default function Premium() {
       <View style={styles.planInfoContainer}>
         <View style={styles.planCard}>
           <Text style={styles.planTitle}>Monthly Plan</Text>
-          <Text style={styles.planPrice}>${monthlyPrice}<Text style={styles.perMonth}>/month</Text></Text>
+          <Text style={styles.planPrice}>{monthlyPrice} VNĐ<Text style={styles.perMonth}>/month</Text></Text>
           <View style={styles.benefitRow}>
             <MaterialIcons name="check-circle" size={20} color="#6E543C" />
             <Text style={styles.benefitText}>Ad-Free Experience</Text>
@@ -57,16 +87,7 @@ export default function Premium() {
       {/* Add to Order Button */}
       <TouchableOpacity 
         style={styles.addButton}
-        onPress={() => {
-          router.push({
-            pathname: '/pages/order/payment-method',
-            params: { 
-              amount: monthlyPrice,
-              type: 'premium',
-              duration: '1'
-            }
-          });
-        }}
+        onPress={handleSubscribe}
       >
         <MaterialIcons name="add-shopping-cart" size={24} color="#FFF" />
         <Text style={styles.addButtonText}>Subscribe Now</Text>
