@@ -17,9 +17,18 @@ function Payment() {
 
   const handleNavigationStateChange = (navState: any) => {
     // Handle payment completion or cancellation
-    if (navState.url.includes('payment-success')) {
+    if (navState.url.includes('status=PAID') || navState.url.includes('payment-success')) {
       // Payment successful
-      router.replace('/pages/payment-success/payment-success');
+      Alert.alert(
+        'Payment Successful',
+        'Thank you for your payment. Your premium subscription has been activated.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/pages/payment-success/payment-success')
+          }
+        ]
+      );
     } else if (navState.url.includes('cancel=true') || navState.url.includes('status=CANCELLED')) {
       // Payment cancelled
       Alert.alert(

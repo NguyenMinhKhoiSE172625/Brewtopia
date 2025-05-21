@@ -11,7 +11,7 @@ interface PayOSResponse {
 
 export default function Premium() {
   const router = useRouter();
-  const monthlyPrice = '10000'; // Price in VND
+  const monthlyPrice = '2000'; // Price in VND
 
   const handleSubscribe = async () => {
     try {
