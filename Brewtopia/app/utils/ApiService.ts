@@ -34,6 +34,7 @@ const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 3;
 
 class ApiService {
   private token: string | null = null;
+  private isRefreshing: boolean = false;
 
   constructor() {
     // Load token from storage when service initializes
@@ -43,8 +44,80 @@ class ApiService {
   private async loadToken() {
     try {
       this.token = await AsyncStorage.getItem('auth_token');
+      console.log('Token loaded:', this.token);
+      
+      // Validate token if exists
+      if (this.token) {
+        const isValid = await this.validateToken(this.token);
+        if (!isValid) {
+          console.log('Invalid token found, clearing...');
+          await this.clearToken();
+        }
+      }
     } catch (error) {
       console.error('Error loading token:', error);
+      await this.clearToken();
+    }
+  }
+
+  private async validateToken(token: string): Promise<boolean> {
+    try {
+      // Make a test request to validate token
+      const response = await fetch(`${DEFAULT_API_URL}/auth/validate`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      return false;
+    }
+  }
+
+  private async clearToken() {
+    this.token = null;
+    await AsyncStorage.removeItem('auth_token');
+    await AsyncStorage.removeItem('user_data');
+  }
+
+  private async refreshToken(): Promise<string | null> {
+    if (this.isRefreshing) {
+      // Wait for ongoing refresh
+      return new Promise((resolve) => {
+        const checkToken = setInterval(() => {
+          if (!this.isRefreshing) {
+            clearInterval(checkToken);
+            resolve(this.token);
+          }
+        }, 100);
+      });
+    }
+
+    this.isRefreshing = true;
+    try {
+      const response = await fetch(`${DEFAULT_API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          this.token = data.token;
+          await AsyncStorage.setItem('auth_token', data.token);
+          return data.token;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    } finally {
+      this.isRefreshing = false;
     }
   }
 
@@ -55,15 +128,6 @@ class ApiService {
     retries = MAX_RETRIES,
     timeout = DEFAULT_TIMEOUT
   ): Promise<T> {
-    // For test accounts, return immediately without making API calls
-    if (url.includes('/auth/login')) {
-      const body = options.body ? JSON.parse(options.body as string) : {};
-      if ((body.email === 'minhkhoi1910@gmail.com' && body.password === '123') ||
-          (body.email === 'nmkgaming69@gmail.com' && body.password === '123')) {
-        return this.handleTestAccountLogin(body.email) as Promise<T>;
-      }
-    }
-
     const fullUrl = url.startsWith('http') ? url : `${DEFAULT_API_URL}${url}`;
     const method = options.method || 'GET';
     
@@ -82,6 +146,9 @@ class ApiService {
         ...options.headers,
       };
       
+      console.log('Request headers:', headers);
+      console.log('Current token:', this.token);
+      
       // Log the request
       DebugService.logRequest(fullUrl, method, options.body ? JSON.parse(options.body as string) : null);
       
@@ -93,6 +160,23 @@ class ApiService {
       
       // Clear timeout
       clearTimeout(timeoutId);
+      
+      // Handle 401 Unauthorized
+      if (response.status === 401 && this.token) {
+        console.log('Token expired, attempting refresh...');
+        const newToken = await this.refreshToken();
+        if (newToken) {
+          // Retry request with new token
+          return this.fetch(url, options, retries, timeout);
+        } else {
+          // Clear token and throw error
+          await this.clearToken();
+          throw {
+            status: 401,
+            message: 'Session expired. Please login again.'
+          };
+        }
+      }
       
       // Parse response
       let data;
@@ -152,41 +236,11 @@ class ApiService {
     }
   }
 
-  // Handle test account login
-  private async handleTestAccountLogin(email: string) {
-    const testUser = email === 'minhkhoi1910@gmail.com' ? {
-      email: 'minhkhoi1910@gmail.com',
-      name: 'Minh Khoi',
-      role: UserRole.USER
-    } : {
-      email: 'nmkgaming69@gmail.com',
-      name: 'NMK Gaming',
-      role: UserRole.ADMIN
-    };
-    
-    // Store test user data and token
-    const testToken = 'test_token_' + Date.now();
-    await AsyncStorage.setItem('auth_token', testToken);
-    await AsyncStorage.setItem('user_data', JSON.stringify(testUser));
-    this.token = testToken;
-    
-    return {
-      token: testToken,
-      user: testUser
-    };
-  }
-  
   // Auth API methods
   auth = {
     // Login with email and password
     login: async (email: string, password: string, expectedRole?: string) => {
-      // Test accounts handling
-      if ((email === 'minhkhoi1910@gmail.com' && password === '123') ||
-          (email === 'nmkgaming69@gmail.com' && password === '123')) {
-        return this.handleTestAccountLogin(email);
-      }
-
-      // Original login logic for other accounts
+      // Original login logic
       const response = await this.fetch<{token: string; user: any}>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
@@ -268,13 +322,17 @@ class ApiService {
   payment = {
     // Create PayOS payment
     createPayosPayment: async (amount: number, description: string) => {
+      console.log('Payment API - Current token:', this.token);
+      
       if (!this.token) {
+        console.log('Payment API - No token found');
         throw {
           status: 401,
           message: 'Please login to make payment'
         };
       }
 
+      console.log('Payment API - Making request with token');
       return this.fetch('/payments/createPayos', {
         method: 'POST',
         body: JSON.stringify({

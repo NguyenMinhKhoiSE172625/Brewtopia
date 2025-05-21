@@ -13,7 +13,11 @@ export function withAuth<P extends object>(WrappedComponent: React.ComponentType
         const token = await AsyncStorage.getItem('auth_token');
         const userData = await AsyncStorage.getItem('user_data');
         
+        console.log('withAuth - Token:', token);
+        console.log('withAuth - User data:', userData);
+        
         if (!token || !userData) {
+          console.log('withAuth - No token or user data found');
           setIsAuthenticated(false);
           Alert.alert(
             "Phiên đăng nhập đã hết hạn",
@@ -29,6 +33,7 @@ export function withAuth<P extends object>(WrappedComponent: React.ComponentType
           return false;
         }
         
+        console.log('withAuth - Authentication successful');
         setIsAuthenticated(true);
         return true;
       } catch (error) {

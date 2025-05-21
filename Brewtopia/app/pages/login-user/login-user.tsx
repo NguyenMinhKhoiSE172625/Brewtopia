@@ -60,14 +60,22 @@ export default function LoginUser() {
     setIsError(false);
     
     try {
+      console.log('Attempting login with:', { email, role });
       // Use ApiService with role validation
       const expectedRole = role === 'admin' ? UserRole.ADMIN : UserRole.USER;
       const data = await ApiService.auth.login(email, password, expectedRole);
+      
+      console.log('Login response:', data);
+      
+      // Verify token was stored
+      const storedToken = await AsyncStorage.getItem('auth_token');
+      console.log('Stored token:', storedToken);
       
       // Login successful
       setIsError(false);
       router.push("/pages/home/home");
     } catch (error: any) {
+      console.error('Login error:', error);
       setIsError(true);
       if (error.status === 0) {
         // Network error
