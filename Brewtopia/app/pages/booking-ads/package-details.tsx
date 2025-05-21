@@ -4,11 +4,24 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import ApiService from '../../utils/ApiService';
+
+interface Upgrade {
+  id: number;
+  name: string;
+  price: number;
+}
+
+interface SelectedUpgrades {
+  impressions: Upgrade | null;
+  format: Upgrade | null;
+  reporting: Upgrade | null;
+}
 
 export default function PackageDetails() {
   const router = useRouter();
   const { packageId } = useLocalSearchParams();
-  const [selectedUpgrades, setSelectedUpgrades] = useState({
+  const [selectedUpgrades, setSelectedUpgrades] = useState<SelectedUpgrades>({
     impressions: null,
     format: null,
     reporting: null
@@ -127,7 +140,7 @@ export default function PackageDetails() {
 
   const selectedPackage = packages[packageId as keyof typeof packages];
 
-  const handleUpgradeSelect = (category: string, option: any) => {
+  const handleUpgradeSelect = (category: keyof SelectedUpgrades, option: Upgrade) => {
     setSelectedUpgrades(prev => ({
       ...prev,
       [category]: prev[category]?.id === option.id ? null : option
@@ -135,23 +148,31 @@ export default function PackageDetails() {
 
     // Calculate new total
     const newTotal = selectedPackage.basePrice + 
-      Object.values(selectedUpgrades).reduce((sum: number, upgrade: any) => {
+      Object.values(selectedUpgrades).reduce((sum: number, upgrade: Upgrade | null) => {
         return sum + (upgrade?.price || 0);
       }, 0);
     
     setTotal(newTotal);
   };
 
-  const handlePay = () => {
-    router.push({
-      pathname: '/pages/order/payment-method',
-      params: { 
-        amount: total.toFixed(2),
-        type: 'ads',
-        packageName: selectedPackage.name,
-        upgrades: JSON.stringify(selectedUpgrades)
-      }
-    });
+  const handlePay = async () => {
+    try {
+      const checkoutUrl = await ApiService.payment.createPayosPayment(
+        total,
+        `${selectedPackage.name} - ${Object.values(selectedUpgrades)
+          .filter((upgrade): upgrade is Upgrade => upgrade !== null)
+          .map(upgrade => upgrade.name)
+          .join(', ')}`
+      );
+
+      router.push({
+        pathname: '/pages/payment/payment',
+        params: { url: checkoutUrl }
+      });
+    } catch (error) {
+      console.error('Payment creation failed:', error);
+      // Handle error appropriately
+    }
   };
 
   return (

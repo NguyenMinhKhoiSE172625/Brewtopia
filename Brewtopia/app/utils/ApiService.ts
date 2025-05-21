@@ -333,13 +333,22 @@ class ApiService {
       }
 
       console.log('Payment API - Making request with token');
-      return this.fetch('/payments/createPayos', {
+      const response = await this.fetch<{
+        data: {
+          checkoutUrl: string;
+          [key: string]: any;
+        };
+        message: string;
+      }>('/payments/createPayos', {
         method: 'POST',
         body: JSON.stringify({
           amount,
           description
         }),
       });
+
+      // Return the checkout URL for WebView
+      return response.data.checkoutUrl;
     },
   };
 }

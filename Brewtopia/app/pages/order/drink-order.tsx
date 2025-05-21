@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Tex
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import ApiService from '../../utils/ApiService';
 
 export default function DrinkOrder() {
   const params = useLocalSearchParams();
@@ -52,12 +53,21 @@ export default function DrinkOrder() {
     });
   };
   
-  const handlePay = () => {
-    // Navigate to payment method screen
-    router.push({
-      pathname: 'pages/order/payment-method' as any,
-      params: { cafeId }
-    });
+  const handlePay = async () => {
+    try {
+      const checkoutUrl = await ApiService.payment.createPayosPayment(
+        100000, // Example amount, replace with actual amount
+        `Drink Order - ${formatDate(date)} ${formatTime(time)}`
+      );
+
+      router.push({
+        pathname: '/pages/payment/payment',
+        params: { url: checkoutUrl }
+      });
+    } catch (error) {
+      console.error('Payment creation failed:', error);
+      // Handle error appropriately
+    }
   };
   
   return (

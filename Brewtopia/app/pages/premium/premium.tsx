@@ -16,20 +16,15 @@ export default function Premium() {
   const handleSubscribe = async () => {
     try {
       // Create PayOS payment
-      const paymentResponse = await ApiService.payment.createPayosPayment(
+      const checkoutUrl = await ApiService.payment.createPayosPayment(
         parseInt(monthlyPrice),
         'Premium Subscription - 1 Month'
-      ) as PayOSResponse;
+      );
 
-      // Navigate to payment method page with payment info
+      // Navigate to payment page with checkoutUrl
       router.push({
-        pathname: '/pages/order/payment-method',
-        params: { 
-          amount: monthlyPrice,
-          type: 'premium',
-          duration: '1',
-          paymentUrl: paymentResponse.paymentUrl
-        }
+        pathname: '/pages/payment/payment',
+        params: { url: checkoutUrl }
       });
     } catch (error) {
       console.error('Payment creation failed:', error);
