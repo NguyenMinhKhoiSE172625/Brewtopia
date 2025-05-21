@@ -17,14 +17,14 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
 /**
  * Smart API URL selection:
  * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
- * 2. PHYSICAL DEVICE: Use computer's IP address on the network (192.168.2.125)
+ * 2. PHYSICAL DEVICE: Use computer's IP address on the network
  */
-const COMPUTER_IP = '104.248.150.14'; // Production server IP
+const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
 const API_PORT = '4000';
 const API_PATH = '/api';
 
-// Try HTTP first for development
-const DEFAULT_API_URL = `http://${COMPUTER_IP}:${API_PORT}${API_PATH}`;
+// Use localhost for development
+const DEFAULT_API_URL = `http://${API_HOST}:${API_PORT}${API_PATH}`;
 
 // Increase default timeout for slower network connections (30 seconds)
 const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;
