@@ -1,22 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert, Modal, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MenuSelection() {
   const router = useRouter();
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, image: require('../../../assets/images/mon1.png'), name: 'Strawberry Matcha Latte' },
-    { id: 2, image: require('../../../assets/images/mon2.png'), name: 'Cherry Lemonade' },
-    { id: 3, image: require('../../../assets/images/mon3.png'), name: 'Fruit & Yogurt Parfait' },
-  ]);
+  const params = useLocalSearchParams();
+  const cafeId = params.cafeId as string;
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newItemName, setNewItemName] = useState('');
-  const [newItemImage, setNewItemImage] = useState(null);
+  const [newItemImage, setNewItemImage] = useState<any>(null);
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('');
+
+  useEffect(() => {
+    console.log('MenuSelection params:', params);
+    console.log('MenuSelection - cafeId from params:', cafeId);
+    AsyncStorage.getItem('cafeId').then(storedCafeId => {
+      console.log('MenuSelection - cafeId from AsyncStorage:', storedCafeId);
+    });
+
+    if (!cafeId) {
+      console.log('MenuSelection - No cafeId provided');
+      return;
+    }
+    console.log('MenuSelection - Fetching cafe with ID:', cafeId);
+    fetch(`/cafes/${cafeId}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('MenuSelection - Cafe data:', data);
+        console.log('MenuSelection - Menu array:', data.menu);
+        if (!data.menu || !Array.isArray(data.menu)) {
+          console.log('MenuSelection - No menu array found in cafe data');
+          return;
+        }
+        const id = data.menu.length > 0 ? data.menu[0] : null;
+        console.log('MenuSelection - Menu ID:', id);
+        setMenuId(id);
+        if (id) {
+          console.log('MenuSelection - Fetching menu items for menu ID:', id);
+          fetch(`/menu-items/${id}`)
+            .then(res => res.json())
+            .then(items => {
+              console.log('MenuSelection - Menu items response:', items);
+              setMenuItems(items);
+            })
+            .catch(error => {
+              console.error('MenuSelection - Error fetching menu items:', error);
+              Alert.alert('Error', 'Failed to load menu items');
+            });
+        } else {
+          console.log('MenuSelection - No menu ID found, creating new menu');
+          fetch(`/cafes/${cafeId}/menu`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          })
+            .then(res => res.json())
+            .then(newMenu => {
+              console.log('MenuSelection - New menu created:', newMenu);
+              setMenuId(newMenu._id);
+            })
+            .catch(error => {
+              console.error('MenuSelection - Error creating menu:', error);
+              Alert.alert('Error', 'Failed to create menu');
+            });
+        }
+      })
+      .catch(error => {
+        console.error('MenuSelection - Error fetching cafe:', error);
+        Alert.alert('Error', 'Failed to load cafe information');
+      });
+  }, [cafeId]);
 
   const handleAddMenuItem = () => {
+    if (!menuId) {
+      Alert.alert('Error', 'Menu ID not loaded yet. Please wait a moment.');
+      return;
+    }
     setIsModalVisible(true);
   };
 
@@ -43,7 +108,7 @@ export default function MenuSelection() {
     }
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!newItemName.trim()) {
       Alert.alert('Error', 'Please enter a name for the menu item');
       return;
@@ -52,16 +117,40 @@ export default function MenuSelection() {
       Alert.alert('Error', 'Please upload an image for the menu item');
       return;
     }
-
-    const newItem = {
-      id: menuItems.length + 1,
-      image: { uri: newItemImage },
-      name: newItemName.trim(),
-    };
-    setMenuItems([...menuItems, newItem]);
+    if (!newItemPrice.trim()) {
+      Alert.alert('Error', 'Please enter a price for the menu item');
+      return;
+    }
+    if (!newItemCategory.trim()) {
+      Alert.alert('Error', 'Please enter a category for the menu item');
+      return;
+    }
+    if (!menuId) {
+      Alert.alert('Error', 'Menu ID not found');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('name', newItemName.trim());
+    formData.append('price', newItemPrice.trim());
+    formData.append('category', newItemCategory.trim());
+    formData.append('image', {
+      uri: newItemImage,
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+    } as any);
+    await fetch(`/menu-items/create-Item/${menuId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      body: formData,
+    });
+    const res = await fetch(`/menu-items/${menuId}`);
+    const data = await res.json();
+    setMenuItems(data);
     setIsModalVisible(false);
     setNewItemName('');
     setNewItemImage(null);
+    setNewItemPrice('');
+    setNewItemCategory('');
   };
 
   const handleNext = () => {
@@ -105,13 +194,13 @@ export default function MenuSelection() {
         <Text style={styles.subtitle}>Fruit Drinks</Text>
 
         <View style={styles.menuGrid}>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddMenuItem}>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddMenuItem} disabled={!menuId}>
             <MaterialIcons name="add" size={40} color="#6E543C" />
           </TouchableOpacity>
 
           {menuItems.map((item) => (
-            <View key={item.id} style={styles.menuItem}>
-              <Image source={item.image} style={styles.menuImage} />
+            <View key={item._id} style={styles.menuItem}>
+              <Image source={{ uri: item.image }} style={styles.menuImage} />
               <Text style={styles.menuItemName}>{item.name}</Text>
             </View>
           ))}
@@ -152,6 +241,23 @@ export default function MenuSelection() {
                 maxLength={50}
               />
               <Text style={styles.charCount}>{newItemName.length}/50</Text>
+
+              <Text style={styles.modalLabel}>Category *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newItemCategory}
+                onChangeText={setNewItemCategory}
+                placeholder="Enter category (e.g. Tea, Coffee)"
+              />
+
+              <Text style={styles.modalLabel}>Price *</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newItemPrice}
+                onChangeText={setNewItemPrice}
+                placeholder="Enter price"
+                keyboardType="numeric"
+              />
 
               <Text style={styles.modalLabel}>Item Image *</Text>
               <TouchableOpacity style={styles.uploadContainer} onPress={handleImagePick}>

@@ -267,6 +267,10 @@ class ApiService {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         this.token = response.token;
+        if (response.cafeId) {
+          await AsyncStorage.setItem('cafeId', response.cafeId);
+          console.log('ApiService - Saved cafeId:', response.cafeId);
+        }
       }
       
       return response;

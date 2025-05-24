@@ -77,7 +77,9 @@ export default function LoginUser() {
       // ADMIN: Kiểm tra cafe profile bằng cafeId từ response
       if (role === 'admin') {
         try {
-          const cafeId = data.cafeId;
+          // Lấy lại cafeId từ AsyncStorage để đảm bảo đã lưu
+          const cafeId = await AsyncStorage.getItem('cafeId');
+          console.log('LoginUser - cafeId from AsyncStorage after login:', cafeId);
           if (cafeId) {
             const cafeProfile = await ApiService.cafe.getProfile(cafeId);
             if (cafeProfile.status === 'pending') {

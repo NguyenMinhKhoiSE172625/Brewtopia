@@ -1,16 +1,60 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ShopInfo() {
   const router = useRouter();
   const [shopName, setShopName] = useState('');
   const [address, setAddress] = useState('');
+  const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<any>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<any>(null);
+  const [selectedWard, setSelectedWard] = useState<any>(null);
+  const [street, setStreet] = useState('');
+  const [houseNumber, setHouseNumber] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+
+  // Fetch provinces on mount
+  useEffect(() => {
+    fetch('https://provinces.open-api.vn/api/p/')
+      .then(res => res.json())
+      .then(setProvinces);
+  }, []);
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    if (selectedProvince) {
+      fetch(`https://provinces.open-api.vn/api/p/${selectedProvince.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setDistricts(data.districts));
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setWards([]);
+    }
+  }, [selectedProvince]);
+
+  // Fetch wards when district changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      fetch(`https://provinces.open-api.vn/api/d/${selectedDistrict.code}?depth=2`)
+        .then(res => res.json())
+        .then(data => setWards(data.wards));
+      setSelectedWard(null);
+    }
+  }, [selectedDistrict]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('cafeId').then(id => console.log('ShopInfo - cafeId from AsyncStorage:', id));
+  }, []);
 
   const getCurrentLocation = async () => {
     try {
@@ -35,20 +79,59 @@ export default function ShopInfo() {
           geocode[0].country
         ].filter(Boolean);
         
-        setAddress(addressComponents.join(', '));
+        setStreet(geocode[0].street || '');
+        setHouseNumber(geocode[0].streetNumber || '');
       }
     } catch (error) {
       Alert.alert('Error', 'Could not get current location');
     }
   };
 
-  const handleNext = () => {
+  const handleSaveAddress = () => {
+    if (!street || !selectedDistrict || !selectedProvince) {
+      Alert.alert('Error', 'Vui lòng nhập đầy đủ địa chỉ');
+      return;
+    }
+    // Ghép số nhà và tên đường thành 1 cụm
+    const streetBlock = houseNumber ? `${houseNumber} ${street}` : street;
+    // Ghép các phần còn lại
+    const addressParts = [
+      streetBlock,
+      selectedWard?.name,
+      selectedDistrict?.name,
+      selectedProvince?.name
+    ].filter(Boolean);
+    const fullAddress = addressParts.join(', ');
+    setAddress(fullAddress);
+    setIsAddressModalVisible(false);
+  };
+
+  const handleNext = async () => {
     if (!shopName || !address || !email || !phoneNumber) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    // Save data and navigate to menu selection
-    router.push('/pages/business-registration/menu-selection');
+    const shopData = {
+      name: shopName,
+      address,
+      email,
+      phone: phoneNumber,
+    };
+    try {
+      const cafeId = await AsyncStorage.getItem('cafeId');
+      console.log('ShopInfo - cafeId when Next:', cafeId);
+      if (!cafeId) {
+        Alert.alert('Error', 'Cafe ID not found. Please try logging in again.');
+        return;
+      }
+      router.push({
+        pathname: '/pages/business-registration/menu-selection',
+        params: { cafeId }
+      });
+    } catch (error) {
+      console.error('Error getting cafeId:', error);
+      Alert.alert('Error', 'Failed to get cafe information');
+    }
   };
 
   return (
@@ -93,21 +176,16 @@ export default function ShopInfo() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Address *</Text>
-          <View style={styles.addressContainer}>
-            <TextInput
-              style={[styles.input, styles.addressInput]}
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Enter address"
-              multiline
-            />
-            <TouchableOpacity 
-              style={styles.locationButton}
-              onPress={getCurrentLocation}
-            >
-              <MaterialIcons name="my-location" size={24} color="#6E543C" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => setIsAddressModalVisible(true)}>
+            <View pointerEvents="none">
+              <TextInput
+                style={styles.input}
+                value={address}
+                placeholder="Chọn địa chỉ"
+                editable={false}
+              />
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.inputContainer}>
@@ -142,6 +220,82 @@ export default function ShopInfo() {
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={isAddressModalVisible} animationType="slide">
+        <ScrollView style={{ flex: 1, backgroundColor: '#fff', padding: 16 }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Nhập địa chỉ chi tiết</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Province/City *</Text>
+            <Picker
+              selectedValue={selectedProvince}
+              onValueChange={(itemValue) => setSelectedProvince(itemValue)}
+            >
+              <Picker.Item label="Chọn tỉnh/thành" value={null} />
+              {provinces.map((p: any) => (
+                <Picker.Item key={p.code} label={p.name} value={p} />
+              ))}
+            </Picker>
+          </View>
+          {selectedProvince && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>District *</Text>
+              <Picker
+                selectedValue={selectedDistrict}
+                onValueChange={(itemValue) => setSelectedDistrict(itemValue)}
+              >
+                <Picker.Item label="Chọn quận/huyện" value={null} />
+                {districts.map((d: any) => (
+                  <Picker.Item key={d.code} label={d.name} value={d} />
+                ))}
+              </Picker>
+            </View>
+          )}
+          {selectedDistrict && (
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Ward *</Text>
+              <Picker
+                selectedValue={selectedWard}
+                onValueChange={(itemValue) => setSelectedWard(itemValue)}
+              >
+                <Picker.Item label="Chọn phường/xã" value={null} />
+                {wards.map((w: any) => (
+                  <Picker.Item key={w.code} label={w.name} value={w} />
+                ))}
+              </Picker>
+            </View>
+          )}
+          {selectedWard && (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Street *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={street}
+                  onChangeText={setStreet}
+                  placeholder="Nhập tên đường"
+                />
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>House Number *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={houseNumber}
+                  onChangeText={setHouseNumber}
+                  placeholder="Nhập số nhà, chi tiết"
+                />
+              </View>
+            </>
+          )}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
+            <TouchableOpacity style={[styles.backButton, { flex: 1, marginRight: 8 }]} onPress={() => setIsAddressModalVisible(false)}>
+              <Text style={styles.backButtonText}>Đóng</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.nextButton, { flex: 1, marginLeft: 8 }]} onPress={handleSaveAddress}>
+              <Text style={styles.nextButtonText}>Lưu địa chỉ</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </Modal>
     </ScrollView>
   );
 }
@@ -215,19 +369,6 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     padding: moderateScale(12),
     fontSize: fontScale(16),
-  },
-  addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addressInput: {
-    flex: 1,
-    marginRight: horizontalScale(8),
-  },
-  locationButton: {
-    padding: moderateScale(12),
-    backgroundColor: '#F5F5F5',
-    borderRadius: moderateScale(8),
   },
   charCount: {
     fontSize: fontScale(12),
