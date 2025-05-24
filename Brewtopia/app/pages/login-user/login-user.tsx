@@ -73,6 +73,36 @@ export default function LoginUser() {
       
       // Login successful
       setIsError(false);
+      
+      // ADMIN: Kiểm tra cafe profile bằng cafeId từ response
+      if (role === 'admin') {
+        try {
+          const cafeId = data.cafeId;
+          if (cafeId) {
+            const cafeProfile = await ApiService.cafe.getProfile(cafeId);
+            if (cafeProfile.status === 'pending') {
+              Alert.alert(
+                'Thông báo',
+                data.message || 'Vui lòng cập nhật profile quán cafe của bạn!',
+                [
+                  {
+                    text: 'Cập nhật ngay',
+                    onPress: () => router.push('/pages/business-registration/welcome'),
+                  },
+                ],
+                { cancelable: false }
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          setIsError(true);
+          setErrorMessage('Error checking cafe profile. Please try again.');
+          return;
+        }
+      }
+      
+      // User thường hoặc admin đã hoàn thiện profile
       router.push("/pages/home/home");
     } catch (error: any) {
       console.error('Login error:', error);

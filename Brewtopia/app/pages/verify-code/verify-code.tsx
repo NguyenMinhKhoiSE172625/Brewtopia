@@ -119,10 +119,10 @@ export default function VerifyCode() {
       await AsyncStorage.removeItem('registration_email');
       await AsyncStorage.removeItem('registration_role');
       
-      // Navigate to welcome page if admin, otherwise to login
+      // Navigate to login page for both admin and user
       setTimeout(() => {
         if (savedRole === 'admin') {
-          router.push("/pages/business-registration/welcome");
+          router.push("/pages/login-user/login-user?role=admin");
         } else {
           router.push("/pages/login-user/login-user");
         }

@@ -241,7 +241,12 @@ class ApiService {
     // Login with email and password
     login: async (email: string, password: string, expectedRole?: string) => {
       // Original login logic
-      const response = await this.fetch<{token: string; user: any}>('/auth/login', {
+      const response = await this.fetch<{
+        token: string;
+        user: any;
+        message?: string;
+        cafeId?: string;
+      }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
@@ -314,6 +319,59 @@ class ApiService {
       return this.fetch('/auth/forgotPassword', {
         method: 'POST',
         body: JSON.stringify({ email }),
+      });
+    },
+  };
+
+  // Cafe API methods
+  cafe = {
+    // Create a new cafe for admin
+    createCafe: async (adminId: string) => {
+      return this.fetch<{
+        id: string;
+        name: string;
+        status: string;
+        message?: string;
+      }>('/cafes', {
+        method: 'POST',
+        body: JSON.stringify({ adminId }),
+      });
+    },
+
+    // Update cafe profile
+    updateProfile: async (cafeId: string, profileData: {
+      name: string;
+      address: string;
+      description?: string;
+      images?: string[];
+      openingHours?: {
+        [key: string]: { open: string; close: string; };
+      };
+    }) => {
+      return this.fetch<{
+        id: string;
+        status: string;
+        message: string;
+      }>(`/cafes/${cafeId}`, {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+    },
+
+    // Get cafe profile
+    getProfile: async (cafeId: string) => {
+      return this.fetch<{
+        id: string;
+        name: string;
+        address: string;
+        status: string;
+        description?: string;
+        images?: string[];
+        openingHours?: {
+          [key: string]: { open: string; close: string; };
+        };
+      }>(`/cafes/${cafeId}`, {
+        method: 'GET',
       });
     },
   };
