@@ -19,7 +19,8 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
  * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
  * 2. PHYSICAL DEVICE: Use computer's IP address on the network
  */
-const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+// const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : '192.168.2.125'; // Đã cập nhật IP theo mạng của bạn
 const API_PORT = '4000';
 const API_PATH = '/api';
 
@@ -337,6 +338,25 @@ class ApiService {
         method: 'GET',
       });
       // Lưu token và user info
+      if (response.token) {
+        await AsyncStorage.setItem('auth_token', response.token);
+        await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        this.token = response.token;
+      }
+      return response;
+    },
+
+    // Đăng nhập Facebook
+    loginWithFacebook: async (accessToken: string) => {
+      const response = await this.fetch<{
+        token: string;
+        user: any;
+        message?: string;
+      }>('/auth/facebook', {
+        method: 'POST',
+        body: JSON.stringify({ accessToken }),
+      });
+      
       if (response.token) {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));

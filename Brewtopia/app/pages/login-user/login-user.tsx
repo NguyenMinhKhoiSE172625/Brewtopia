@@ -13,10 +13,18 @@ import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 
 const GOOGLE_CLIENT_ID = '124662970356-igt3tcbfrcjfqi42k733kv9ue2ci4rq8.apps.googleusercontent.com';
+const FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID'; // Replace with your Facebook App ID
+
 const discovery = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
   tokenEndpoint: 'https://oauth2.googleapis.com/token',
   revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+};
+
+const facebookConfig = {
+  clientId: FACEBOOK_APP_ID,
+  redirectUri: AuthSession.makeRedirectUri({}),
+  scopes: ['public_profile', 'email'],
 };
 
 export default function LoginUser() {
@@ -43,6 +51,18 @@ export default function LoginUser() {
       responseType: 'code',
     },
     discovery
+  );
+
+  const [facebookRequest, facebookResponse, facebookPromptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: FACEBOOK_APP_ID,
+      redirectUri: AuthSession.makeRedirectUri({}),
+      scopes: ['public_profile', 'email'],
+    },
+    {
+      authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
+      tokenEndpoint: 'https://graph.facebook.com/v18.0/oauth/access_token',
+    }
   );
 
   // Check network connectivity when component mounts
@@ -80,6 +100,27 @@ export default function LoginUser() {
     };
     handleGoogleResponse();
   }, [response]);
+
+  useEffect(() => {
+    const handleFacebookResponse = async () => {
+      if (facebookResponse?.type === 'success' && facebookResponse.params.access_token) {
+        setIsLoading(true);
+        try {
+          const data = await ApiService.auth.loginWithFacebook(facebookResponse.params.access_token);
+          router.push('/pages/home/home');
+        } catch (error: any) {
+          setIsError(true);
+          setErrorMessage(error?.message || 'Facebook login failed.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (facebookResponse?.type === 'error') {
+        setIsError(true);
+        setErrorMessage(facebookResponse.error?.message || 'Facebook login failed.');
+      }
+    };
+    handleFacebookResponse();
+  }, [facebookResponse]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -206,6 +247,46 @@ export default function LoginUser() {
     setIsLoading(false);
   };
 
+  // Hàm xử lý đăng nhập Facebook
+  const handleFacebookLogin = async () => {
+    if (role === 'admin') {
+      setIsError(true);
+      setErrorMessage('Admin không được phép đăng nhập bằng Facebook.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setIsError(false);
+    setErrorMessage('');
+    
+    try {
+      // Mở trình duyệt để đăng nhập Facebook
+      const result = await WebBrowser.openAuthSessionAsync(
+        'http://localhost:4000/api/auth/facebook/',
+        'brewtopia://'
+      );
+      
+      if (result.type === 'success') {
+        // Xử lý response từ Facebook
+        const response = await fetch(result.url);
+        const data = await response.json();
+        
+        if (data.token) {
+          await AsyncStorage.setItem('auth_token', data.token);
+          await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
+          router.push('/pages/home/home');
+        } else {
+          throw new Error('Không thể lấy token từ Facebook');
+        }
+      }
+    } catch (error: any) {
+      setIsError(true);
+      setErrorMessage(error?.message || 'Đăng nhập Facebook thất bại');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
@@ -327,11 +408,19 @@ export default function LoginUser() {
             <View style={styles.socialContainer}>
               <Text style={styles.orText}>Or Login with</Text>
               <View style={styles.socialButtons}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <Text>f</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleFacebookLogin}
+                  disabled={role === 'admin' || isLoading}
+                >
+                  <AntDesign name="facebook-square" size={24} color="#1877F2" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin} disabled={role === 'admin' || isLoading}>
-                  <Text>G</Text>
+                <TouchableOpacity 
+                  style={styles.socialButton} 
+                  onPress={handleGoogleLogin} 
+                  disabled={role === 'admin' || isLoading}
+                >
+                  <AntDesign name="google" size={24} color="#DB4437" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton}>
                   <AntDesign name="apple1" size={24} color="black" />
