@@ -325,6 +325,25 @@ class ApiService {
         body: JSON.stringify({ email }),
       });
     },
+    
+    // Đăng nhập Google
+    loginWithGoogle: async (code: string) => {
+      // Gửi mã code tới backend để lấy token và user info
+      const response = await this.fetch<{
+        token: string;
+        user: any;
+        message?: string;
+      }>(`/auth/google/callback?code=${code}`, {
+        method: 'GET',
+      });
+      // Lưu token và user info
+      if (response.token) {
+        await AsyncStorage.setItem('auth_token', response.token);
+        await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        this.token = response.token;
+      }
+      return response;
+    },
   };
 
   // Cafe API methods

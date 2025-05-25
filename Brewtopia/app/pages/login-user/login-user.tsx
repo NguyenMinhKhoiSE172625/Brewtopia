@@ -9,6 +9,15 @@ import DebugService from '../../utils/DebugService';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import NetworkHelper from '../../utils/NetworkHelper';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+
+const GOOGLE_CLIENT_ID = '124662970356-igt3tcbfrcjfqi42k733kv9ue2ci4rq8.apps.googleusercontent.com';
+const discovery = {
+  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+};
 
 export default function LoginUser() {
   const router = useRouter();
@@ -26,6 +35,16 @@ export default function LoginUser() {
   const [isLoading, setIsLoading] = useState(false);
   const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
 
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: AuthSession.makeRedirectUri({}),
+      scopes: ['profile', 'email'],
+      responseType: 'code',
+    },
+    discovery
+  );
+
   // Check network connectivity when component mounts
   useEffect(() => {
     const checkNetwork = async () => {
@@ -40,6 +59,27 @@ export default function LoginUser() {
     
     checkNetwork();
   }, []);
+
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (response?.type === 'success' && response.params.code) {
+        setIsLoading(true);
+        try {
+          const data = await ApiService.auth.loginWithGoogle(response.params.code);
+          router.push('/pages/home/home');
+        } catch (error: any) {
+          setIsError(true);
+          setErrorMessage(error?.message || 'Google login failed.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (response?.type === 'error') {
+        setIsError(true);
+        setErrorMessage(response.error?.message || 'Google login failed.');
+      }
+    };
+    handleGoogleResponse();
+  }, [response]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -150,6 +190,20 @@ export default function LoginUser() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Hàm xử lý đăng nhập Google
+  const handleGoogleLogin = async () => {
+    if (role === 'admin') {
+      setIsError(true);
+      setErrorMessage('Admin không được phép đăng nhập bằng Google.');
+      return;
+    }
+    setIsError(false);
+    setErrorMessage('');
+    setIsLoading(true);
+    await promptAsync();
+    setIsLoading(false);
   };
 
   return (
@@ -276,7 +330,7 @@ export default function LoginUser() {
                 <TouchableOpacity style={styles.socialButton}>
                   <Text>f</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
+                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin} disabled={role === 'admin' || isLoading}>
                   <Text>G</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton}>
