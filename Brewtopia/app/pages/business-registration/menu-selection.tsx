@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../../config/constants';
 
 export default function MenuSelection() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function MenuSelection() {
       return;
     }
     console.log('MenuSelection - Fetching cafe with ID:', cafeId);
-    fetch(`/cafes/${cafeId}`)
+    fetch(`${API_URL}/cafes/${cafeId}`)
       .then(res => res.json())
       .then(data => {
         console.log('MenuSelection - Cafe data:', data);
@@ -44,7 +45,7 @@ export default function MenuSelection() {
         setMenuId(id);
         if (id) {
           console.log('MenuSelection - Fetching menu items for menu ID:', id);
-          fetch(`/menu-items/${id}`)
+          fetch(`${API_URL}/menu-items/${id}`)
             .then(res => res.json())
             .then(items => {
               console.log('MenuSelection - Menu items response:', items);
@@ -56,7 +57,7 @@ export default function MenuSelection() {
             });
         } else {
           console.log('MenuSelection - No menu ID found, creating new menu');
-          fetch(`/cafes/${cafeId}/menu`, {
+          fetch(`${API_URL}/cafes/${cafeId}/menu`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           })
@@ -138,12 +139,12 @@ export default function MenuSelection() {
       name: 'photo.jpg',
       type: 'image/jpeg',
     } as any);
-    await fetch(`/menu-items/create-Item/${menuId}`, {
+    await fetch(`${API_URL}/menu-items/create-Item/${menuId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'multipart/form-data' },
       body: formData,
     });
-    const res = await fetch(`/menu-items/${menuId}`);
+    const res = await fetch(`${API_URL}/menu-items/${menuId}`);
     const data = await res.json();
     setMenuItems(data);
     setIsModalVisible(false);
