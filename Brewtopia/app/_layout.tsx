@@ -72,9 +72,13 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{
-      headerShown: false,
-      animation: 'fade',
-    }} />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+      }}
+    >
+      <Stack.Screen name="index" />
+    </Stack>
   );
 }
