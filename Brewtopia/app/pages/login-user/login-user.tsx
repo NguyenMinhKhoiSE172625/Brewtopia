@@ -152,37 +152,28 @@ export default function LoginUser() {
       const storedToken = await AsyncStorage.getItem('auth_token');
       console.log('Stored token:', storedToken);
       
-      // Login successful
+      // Log cafeId nếu có
+      if (data.cafeId) {
+        console.log('Đã lưu cafeId:', data.cafeId);
+      }
+      
       setIsError(false);
       
-      // ADMIN: Kiểm tra cafe profile bằng cafeId từ response
-      if (role === 'admin') {
-        try {
-          // Lấy lại cafeId từ AsyncStorage để đảm bảo đã lưu
-          const cafeId = await AsyncStorage.getItem('cafeId');
-          console.log('LoginUser - cafeId from AsyncStorage after login:', cafeId);
-          if (cafeId) {
-            const cafeProfile = await ApiService.cafe.getProfile(cafeId);
-            if (cafeProfile.status === 'pending') {
-              Alert.alert(
-                'Thông báo',
-                data.message || 'Vui lòng cập nhật profile quán cafe của bạn!',
-                [
-                  {
-                    text: 'Cập nhật ngay',
-                    onPress: () => router.push('/pages/business-registration/welcome'),
-                  },
-                ],
-                { cancelable: false }
-              );
-              return;
-            }
-          }
-        } catch (err) {
-          setIsError(true);
-          setErrorMessage('Error checking cafe profile. Please try again.');
-          return;
-        }
+      // ADMIN: Nếu có message yêu cầu cập nhật profile và có cafeId, ép chuyển trang cập nhật business
+      if (role === 'admin' && data.message && data.cafeId) {
+        // Hiện alert bắt buộc cập nhật, không cho cancel
+        Alert.alert(
+          'Thông báo',
+          data.message,
+          [
+            {
+              text: 'Cập nhật ngay',
+              onPress: () => router.replace('/pages/business-registration/welcome'),
+            },
+          ],
+          { cancelable: false }
+        );
+        return;
       }
       
       // User thường hoặc admin đã hoàn thiện profile
