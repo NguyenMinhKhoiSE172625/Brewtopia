@@ -44,7 +44,6 @@ export default function MenuSelection() {
         console.log('MenuSelection - Menu ID:', id);
         setMenuId(id);
         if (id) {
-          console.log('MenuSelection - Fetching menu items for menu ID:', id);
           fetch(`${API_URL}/menu-items/${id}`)
             .then(res => res.json())
             .then(items => {

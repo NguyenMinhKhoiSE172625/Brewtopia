@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
 
 export default function ShopInfo() {
   const router = useRouter();
@@ -53,7 +54,24 @@ export default function ShopInfo() {
   }, [selectedDistrict]);
 
   useEffect(() => {
-    AsyncStorage.getItem('cafeId').then(id => console.log('ShopInfo - cafeId from AsyncStorage:', id));
+    AsyncStorage.getItem('cafeId').then(id => {
+      console.log('ShopInfo - cafeId from AsyncStorage:', id);
+      if (id) {
+        ApiService.cafe.getProfile(id)
+          .then((data) => {
+            if (data) {
+              setShopName(data.name || '');
+              setAddress(data.address?.street ? `${data.address.street}, ${data.address.ward || ''}, ${data.address.district || ''}, ${data.address.city || ''}` : '');
+              setEmail(data.email || '');
+              setPhoneNumber(data.phoneNumber || '');
+              // Có thể set thêm các trường khác nếu cần
+            }
+          })
+          .catch((err) => {
+            console.error('Lỗi lấy thông tin quán:', err);
+          });
+      }
+    });
   }, []);
 
   const getCurrentLocation = async () => {
@@ -111,12 +129,6 @@ export default function ShopInfo() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    const shopData = {
-      name: shopName,
-      address,
-      email,
-      phone: phoneNumber,
-    };
     try {
       const cafeId = await AsyncStorage.getItem('cafeId');
       console.log('ShopInfo - cafeId when Next:', cafeId);
@@ -124,13 +136,22 @@ export default function ShopInfo() {
         Alert.alert('Error', 'Cafe ID not found. Please try logging in again.');
         return;
       }
+      // Tách address thành các trường nhỏ nếu cần
+      // Ở đây chỉ truyền address dạng string, có thể cần truyền object nếu backend yêu cầu
+      await ApiService.cafe.updateProfile(cafeId, {
+        name: shopName,
+        address: address,
+        email: email,
+        phoneNumber: phoneNumber,
+        status: 'pending',
+      });
       router.push({
         pathname: '/pages/business-registration/menu-selection',
         params: { cafeId }
       });
     } catch (error) {
-      console.error('Error getting cafeId:', error);
-      Alert.alert('Error', 'Failed to get cafe information');
+      console.error('Error update cafe profile:', error);
+      Alert.alert('Error', 'Failed to update cafe information');
     }
   };
 

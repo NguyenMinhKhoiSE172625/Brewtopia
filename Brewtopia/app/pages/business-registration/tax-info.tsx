@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'rea
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
 
 const businessTypes = [
   'Traditional',
@@ -18,13 +20,23 @@ export default function TaxInfo() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState('Traditional');
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selectedType) {
       Alert.alert('Error', 'Please select a business type');
       return;
     }
-    // Save data and navigate to identification information
-    router.push('/pages/business-registration/identification');
+    try {
+      const cafeId = await AsyncStorage.getItem('cafeId');
+      await ApiService.cafe.updateProfile(cafeId, {
+        taxInfo: {
+          businessType: selectedType,
+        },
+        status: 'pending',
+      });
+      router.push('/pages/business-registration/identification');
+    } catch (error) {
+      Alert.alert('Error', 'Cập nhật thông tin thất bại');
+    }
   };
 
   return (

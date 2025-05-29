@@ -4,11 +4,13 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
 
 export default function Identification() {
   const router = useRouter();
   const [nationality, setNationality] = useState('Viet Nam');
-  const [frontIdImage, setFrontIdImage] = useState(null);
+  const [frontIdImage, setFrontIdImage] = useState<string | null>(null);
 
   const handleImagePick = async () => {
     try {
@@ -33,13 +35,24 @@ export default function Identification() {
     }
   };
 
-  const handleDone = () => {
+  const handleDone = async () => {
     if (!frontIdImage) {
       Alert.alert('Error', 'Please upload your identification document');
       return;
     }
-    // Save data and complete registration
-    router.push('/pages/login-user/login-user?role=admin');
+    try {
+      const cafeId = await AsyncStorage.getItem('cafeId');
+      if (!cafeId) {
+        Alert.alert('Error', 'Không tìm thấy cafeId');
+        return;
+      }
+      await ApiService.cafe.updateProfile(cafeId, {
+        status: 'success',
+      });
+      router.push('/pages/login-user/login-user?role=admin');
+    } catch (error) {
+      Alert.alert('Error', 'Cập nhật thông tin thất bại');
+    }
   };
 
   return (
