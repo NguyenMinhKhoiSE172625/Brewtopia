@@ -251,7 +251,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
-      
+
       // Role validation using UserRoleHelper
       if (expectedRole) {
         const userRole = response.user.role || UserRole.USER;
@@ -262,18 +262,37 @@ class ApiService {
           };
         }
       }
-      
+
       // Store the token for future requests
       if (response.token) {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         this.token = response.token;
-        if (response.cafeId) {
-          await AsyncStorage.setItem('cafeId', response.cafeId);
-          console.log('ApiService - Saved cafeId:', response.cafeId);
+
+        // For admin users, create cafe if not exists and save cafeId
+        if (response.user.role === 'admin') {
+          try {
+            // Call API to create cafe with userId
+            const cafeResponse = await this.cafe.createCafe(response.user.id);
+            if (cafeResponse.id) {
+              await AsyncStorage.setItem('cafeId', cafeResponse.id);
+              console.log('ApiService - Created and saved cafeId:', cafeResponse.id);
+              // Add cafeId to response for backward compatibility
+              response.cafeId = cafeResponse.id;
+              // Add message to indicate profile update needed
+              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
+            }
+          } catch (error) {
+            console.log('ApiService - Error creating cafe:', error);
+            // If cafe already exists or other error, try to use cafeId from login response
+            if (response.cafeId) {
+              await AsyncStorage.setItem('cafeId', response.cafeId);
+              console.log('ApiService - Saved existing cafeId:', response.cafeId);
+            }
+          }
         }
       }
-      
+
       return response;
     },
     
@@ -334,6 +353,7 @@ class ApiService {
         token: string;
         user: any;
         message?: string;
+        cafeId?: string;
       }>(`/auth/google/callback?code=${code}`, {
         method: 'GET',
       });
@@ -342,6 +362,29 @@ class ApiService {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         this.token = response.token;
+
+        // For admin users, create cafe if not exists and save cafeId
+        if (response.user.role === 'admin') {
+          try {
+            // Call API to create cafe with userId
+            const cafeResponse = await this.cafe.createCafe(response.user.id);
+            if (cafeResponse.id) {
+              await AsyncStorage.setItem('cafeId', cafeResponse.id);
+              console.log('ApiService - Google login: Created and saved cafeId:', cafeResponse.id);
+              // Add cafeId to response for backward compatibility
+              response.cafeId = cafeResponse.id;
+              // Add message to indicate profile update needed
+              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
+            }
+          } catch (error) {
+            console.log('ApiService - Google login: Error creating cafe:', error);
+            // If cafe already exists or other error, try to use cafeId from login response
+            if (response.cafeId) {
+              await AsyncStorage.setItem('cafeId', response.cafeId);
+              console.log('ApiService - Google login: Saved existing cafeId:', response.cafeId);
+            }
+          }
+        }
       }
       return response;
     },
@@ -352,15 +395,39 @@ class ApiService {
         token: string;
         user: any;
         message?: string;
+        cafeId?: string;
       }>('/auth/facebook', {
         method: 'POST',
         body: JSON.stringify({ accessToken }),
       });
-      
+
       if (response.token) {
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         this.token = response.token;
+
+        // For admin users, create cafe if not exists and save cafeId
+        if (response.user.role === 'admin') {
+          try {
+            // Call API to create cafe with userId
+            const cafeResponse = await this.cafe.createCafe(response.user.id);
+            if (cafeResponse.id) {
+              await AsyncStorage.setItem('cafeId', cafeResponse.id);
+              console.log('ApiService - Facebook login: Created and saved cafeId:', cafeResponse.id);
+              // Add cafeId to response for backward compatibility
+              response.cafeId = cafeResponse.id;
+              // Add message to indicate profile update needed
+              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
+            }
+          } catch (error) {
+            console.log('ApiService - Facebook login: Error creating cafe:', error);
+            // If cafe already exists or other error, try to use cafeId from login response
+            if (response.cafeId) {
+              await AsyncStorage.setItem('cafeId', response.cafeId);
+              console.log('ApiService - Facebook login: Saved existing cafeId:', response.cafeId);
+            }
+          }
+        }
       }
       return response;
     },
@@ -368,8 +435,8 @@ class ApiService {
 
   // Cafe API methods
   cafe = {
-    // Create a new cafe for admin
-    createCafe: async (adminId: string) => {
+    // Create a new cafe for user (admin role)
+    createCafe: async (userId: string) => {
       return this.fetch<{
         id: string;
         name: string;
@@ -377,7 +444,7 @@ class ApiService {
         message?: string;
       }>('/cafes', {
         method: 'POST',
-        body: JSON.stringify({ adminId }),
+        body: JSON.stringify({ userId }),
       });
     },
 
