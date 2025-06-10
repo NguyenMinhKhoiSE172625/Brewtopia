@@ -491,7 +491,7 @@ class ApiService {
     // Create PayOS payment
     createPayosPayment: async (amount: number, description: string) => {
       console.log('Payment API - Current token:', this.token);
-      
+
       if (!this.token) {
         console.log('Payment API - No token found');
         throw {
@@ -517,6 +517,92 @@ class ApiService {
 
       // Return the checkout URL for WebView
       return response.data.checkoutUrl;
+    },
+  };
+
+  // Posts API methods
+  posts = {
+    // Get all posts with pagination
+    getPosts: async (page: number = 1, limit: number = 10) => {
+      return this.fetch<{
+        message: string;
+        posts: Array<{
+          _id: string;
+          user: {
+            _id: string;
+            name: string;
+            email: string;
+            isVerified: boolean;
+            role: string;
+            provider: string;
+            isActive: boolean;
+            points: number;
+            createdAt: string;
+            updatedAt: string;
+            verificationCode: string | null;
+          } | null;
+          content: string;
+          images: string[];
+          createdAt: string;
+          updatedAt: string;
+          likeCount: number;
+          shareCount: number;
+          commentCount: number;
+        }>;
+        total: number;
+        page: number;
+        totalPages: number;
+      }>(`/posts?page=${page}&limit=${limit}`, {
+        method: 'GET',
+      });
+    },
+
+    // Create a new post
+    createPost: async (content: string, images: string[] = []) => {
+      return this.fetch<{
+        message: string;
+        post: any;
+      }>('/posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          content,
+          images
+        }),
+      });
+    },
+
+    // Like/unlike a post
+    toggleLike: async (postId: string) => {
+      return this.fetch<{
+        message: string;
+        liked: boolean;
+        likeCount: number;
+      }>(`/posts/${postId}/like`, {
+        method: 'POST',
+      });
+    },
+
+    // Add comment to a post
+    addComment: async (postId: string, content: string) => {
+      return this.fetch<{
+        message: string;
+        comment: any;
+      }>(`/posts/${postId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          content
+        }),
+      });
+    },
+
+    // Get comments for a post
+    getComments: async (postId: string) => {
+      return this.fetch<{
+        message: string;
+        comments: any[];
+      }>(`/posts/${postId}/comments`, {
+        method: 'GET',
+      });
     },
   };
 }

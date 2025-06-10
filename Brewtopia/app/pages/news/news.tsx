@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal, Alert, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal, Alert, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
@@ -8,200 +8,167 @@ import BottomBar from '../../components/BottomBar';
 import SponsorBanner from '../../components/SponsorBanner';
 import * as ImagePicker from 'expo-image-picker';
 import { withAuth } from '../../components/withAuth';
+import ApiService from '../../utils/ApiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Interface for API Post data
+interface ApiPost {
+  _id: string;
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    isVerified: boolean;
+    role: string;
+    provider: string;
+    isActive: boolean;
+    points: number;
+    createdAt: string;
+    updatedAt: string;
+    verificationCode: string | null;
+  } | null;
+  content: string;
+  images: string[];
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  shareCount: number;
+  commentCount: number;
+}
+
+// Interface for UI Post data (compatible with existing Post component)
+interface UIPost {
+  id: string;
+  username: string;
+  timestamp: string;
+  imageUrl: any;
+  caption: string;
+  likes: number;
+  comments: any[];
+}
 
 function News() {
   const router = useRouter();
 
-  const samplePosts = [
-    {
-      id: '1',
-      username: 'Coffee Lover',
-      timestamp: '2 hours ago',
-      imageUrl: require('../../../assets/images/cafe1.png'),
-      caption: "Starting my day with the perfect cup of coffee ☕️ #MorningCoffee #CoffeeLover",
-      likes: 245,
-      comments: [
-        {
-          id: '1',
-          username: 'John',
-          text: 'Looks delicious! Which blend is this?',
-          timestamp: '1 hour ago'
-        },
-        {
-          id: '2',
-          username: 'Sarah',
-          text: "Perfect morning vibes! 😍",
-          timestamp: '30 minutes ago'
-        }
-      ]
-    },
-    {
-      id: '2',
-      username: 'Cafe Explorer',
-      timestamp: '3 hours ago',
-      imageUrl: require('../../../assets/images/cafe2.png'),
-      caption: "Found this hidden gem today! The atmosphere is amazing 🌟 #CafeHopping",
-      likes: 189,
-      comments: [
-        {
-          id: '1',
-          username: 'Mike',
-          text: 'Where is this place? Looks cozy!',
-          timestamp: '2 hours ago'
-        }
-      ]
-    },
-    {
-      id: '3',
-      username: 'Barista Pro',
-      timestamp: '5 hours ago',
-      imageUrl: require('../../../assets/images/cafe3.png'),
-      caption: "Latte art of the day 🎨 #LatteArt #BaristaLife",
-      likes: 567,
-      comments: [
-        {
-          id: '1',
-          username: 'Emma',
-          text: "Your latte art skills are amazing! 👏",
-          timestamp: '4 hours ago'
-        },
-        {
-          id: '2',
-          username: 'David',
-          text: "Teach me your ways! 🙏",
-          timestamp: '3 hours ago'
-        }
-      ]
-    },
-    {
-      id: '4',
-      username: 'Food Critic',
-      timestamp: '6 hours ago',
-      imageUrl: require('../../../assets/images/cafe4.png'),
-      caption: "Best brunch spot in town! The eggs benedict here is to die for 🍳 #FoodieLife",
-      likes: 432,
-      comments: [
-        {
-          id: '1',
-          username: 'Lisa',
-          text: 'Added to my must-visit list!',
-          timestamp: '5 hours ago'
-        }
-      ]
-    },
-    {
-      id: '5',
-      username: 'Sweet Tooth',
-      timestamp: '8 hours ago',
-      imageUrl: require('../../../assets/images/cafe5.png'),
-      caption: "This chocolate cake is pure heaven 🍫 #DessertLover",
-      likes: 678,
-      comments: [
-        {
-          id: '1',
-          username: 'Peter',
-          text: "Looks incredible! Save me a slice 😋",
-          timestamp: '7 hours ago'
-        }
-      ]
-    },
-    {
-      id: '6',
-      username: 'Coffee Artisan',
-      timestamp: '10 hours ago',
-      imageUrl: require('../../../assets/images/mon1.png'),
-      caption: "Fresh beans just arrived! Can't wait to brew these 🌱 #CoffeeRoasting",
-      likes: 345,
-      comments: [
-        {
-          id: '1',
-          username: 'Alex',
-          text: 'Which origin are these beans from?',
-          timestamp: '9 hours ago'
-        }
-      ]
-    },
-    {
-      id: '7',
-      username: 'Cafe Hopper',
-      timestamp: '12 hours ago',
-      imageUrl: require('../../../assets/images/mon2.png'),
-      caption: "Weekend vibes at this beautiful cafe ✨ #WeekendMood",
-      likes: 289,
-      comments: [
-        {
-          id: '1',
-          username: 'Rachel',
-          text: "Such a lovely spot! 😍",
-          timestamp: '11 hours ago'
-        }
-      ]
-    },
-    {
-      id: '8',
-      username: 'Tea Master',
-      timestamp: '1 day ago',
-      imageUrl: require('../../../assets/images/mon3.png'),
-      caption: "Exploring new tea blends today 🍵 #TeaTime",
-      likes: 234,
-      comments: [
-        {
-          id: '1',
-          username: 'Sophie',
-          text: "Love a good tea tasting! 🫖",
-          timestamp: '23 hours ago'
-        }
-      ]
-    },
-    {
-      id: '9',
-      username: 'Pastry Chef',
-      timestamp: '1 day ago',
-      imageUrl: require('../../../assets/images/mon4.png'),
-      caption: "Fresh croissants hot from the oven 🥐 #BakeryLife",
-      likes: 456,
-      comments: [
-        {
-          id: '1',
-          username: 'Tom',
-          text: "These look perfectly flaky! 👌",
-          timestamp: '23 hours ago'
-        }
-      ]
-    },
-    {
-      id: '10',
-      username: 'Coffee Shop',
-      timestamp: '1 day ago',
-      imageUrl: require('../../../assets/images/mon5.png'),
-      caption: "New seasonal menu launching tomorrow! 🎉 #NewMenu #Excited",
-      likes: 567,
-      comments: [
-        {
-          id: '1',
-          username: 'Anna',
-          text: "Can't wait to try everything! 😋",
-          timestamp: '22 hours ago'
-        },
-        {
-          id: '2',
-          username: 'James',
-          text: 'The preview looks amazing!',
-          timestamp: '21 hours ago'
-        }
-      ]
-    }
-  ];
+  // State for posts and loading
+  const [posts, setPosts] = useState<UIPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
 
+  // Modal states
   const [showPostModal, setShowPostModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
-  const [posts, setPosts] = useState(samplePosts);
-  
-  // New states for photo and rating features
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratedCafe, setRatedCafe] = useState('');
+
+  // Function to convert API post to UI post format
+  const convertApiPostToUIPost = (apiPost: ApiPost): UIPost => {
+    let imageUrl;
+
+    if (apiPost.images.length > 0) {
+      // Always create array of image objects for consistency
+      imageUrl = apiPost.images.map(img => ({ uri: img }));
+    } else {
+      // No images, use default avatar (single image format)
+      imageUrl = require('../../../assets/images/avatar3.png');
+    }
+
+    return {
+      id: apiPost._id,
+      username: apiPost.user?.name || 'Unknown User',
+      timestamp: formatTimestamp(apiPost.createdAt),
+      imageUrl: imageUrl,
+      caption: apiPost.content,
+      likes: apiPost.likeCount,
+      comments: [] // Comments will be loaded separately if needed
+    };
+  };
+
+  // Function to format timestamp
+  const formatTimestamp = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hours ago`;
+    } else if (diffInDays === 1) {
+      return '1 day ago';
+    } else {
+      return `${diffInDays} days ago`;
+    }
+  };
+
+  // Load current user data
+  const loadCurrentUser = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user_data');
+      if (userData) {
+        setCurrentUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  };
+
+  // Fetch posts from API
+  const fetchPosts = async (pageNum: number = 1, isRefresh: boolean = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else if (pageNum === 1) {
+        setLoading(true);
+      }
+
+      const response = await ApiService.posts.getPosts(pageNum, 10);
+      const uiPosts = response.posts.map(convertApiPostToUIPost);
+
+      if (isRefresh || pageNum === 1) {
+        setPosts(uiPosts);
+        setPage(1);
+      } else {
+        setPosts(prev => [...prev, ...uiPosts]);
+      }
+
+      setHasMorePosts(pageNum < response.totalPages);
+
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      Alert.alert('Error', 'Failed to load posts. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Load more posts (pagination)
+  const loadMorePosts = () => {
+    if (!loading && hasMorePosts) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchPosts(nextPage, false);
+    }
+  };
+
+  // Refresh posts
+  const onRefresh = () => {
+    fetchPosts(1, true);
+  };
+
+  // useEffect to load data on component mount
+  useEffect(() => {
+    loadCurrentUser();
+    fetchPosts(1, false);
+  }, []);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -239,25 +206,40 @@ function News() {
     setSelectedImages(selectedImages.filter(imageUri => imageUri !== uri));
   };
 
-  const handleCreatePost = () => {
-    if (newPostContent.trim() || selectedImages.length > 0) {
-      const newPost = {
-        id: (posts.length + 1).toString(),
-        username: 'You',
-        timestamp: 'Just now',
-        imageUrl: selectedImages.length > 0 
-          ? { uri: selectedImages[0] } 
-          : require('../../../assets/images/avatar3.png'),
-        caption: newPostContent + (rating > 0 ? `\n\nRated ${ratedCafe}: ${rating}⭐` : ''),
-        likes: 0,
-        comments: []
-      };
-      setPosts([newPost, ...posts]);
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim() && selectedImages.length === 0) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Prepare content with rating if exists
+      let content = newPostContent.trim();
+      if (rating > 0) {
+        content += `\n\nRated ${ratedCafe || 'this cafe'}: ${rating}⭐`;
+      }
+
+      // Create post via API
+      await ApiService.posts.createPost(content, selectedImages);
+
+      // Reset form
       setNewPostContent('');
       setSelectedImages([]);
       setRating(0);
       setRatedCafe('');
       setShowPostModal(false);
+
+      // Refresh posts to show the new post
+      fetchPosts(1, true);
+
+      Alert.alert('Success', 'Post created successfully!');
+
+    } catch (error) {
+      console.error('Error creating post:', error);
+      Alert.alert('Error', 'Failed to create post. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -382,9 +364,52 @@ function News() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Render posts with sponsor banners */}
-        {renderPostsWithSponsors()}
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#6E543C']}
+            tintColor="#6E543C"
+          />
+        }
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+          if (isCloseToBottom) {
+            loadMorePosts();
+          }
+        }}
+        scrollEventThrottle={400}
+      >
+        {/* Loading indicator for initial load */}
+        {loading && posts.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6E543C" />
+            <Text style={styles.loadingText}>Loading posts...</Text>
+          </View>
+        ) : (
+          <>
+            {/* Render posts with sponsor banners */}
+            {renderPostsWithSponsors()}
+
+            {/* Loading indicator for pagination */}
+            {loading && posts.length > 0 && (
+              <View style={styles.paginationLoading}>
+                <ActivityIndicator size="small" color="#6E543C" />
+                <Text style={styles.loadingText}>Loading more posts...</Text>
+              </View>
+            )}
+
+            {/* End of posts message */}
+            {!hasMorePosts && posts.length > 0 && (
+              <View style={styles.endOfPostsContainer}>
+                <Text style={styles.endOfPostsText}>You've reached the end!</Text>
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
 
       {/* Create Post Modal */}
@@ -413,12 +438,12 @@ function News() {
               </TouchableOpacity>
             </View>
             <View style={styles.modalUserInfo}>
-              <Image 
-                source={require('../../../assets/images/avatar3.png')} 
-                style={styles.modalAvatar} 
+              <Image
+                source={require('../../../assets/images/avatar3.png')}
+                style={styles.modalAvatar}
               />
               <View>
-                <Text style={styles.modalUserName}>You</Text>
+                <Text style={styles.modalUserName}>{currentUser?.name || 'You'}</Text>
                 <View style={styles.modalLocationPicker}>
                   <MaterialIcons name="location-on" size={16} color="#6E543C" />
                   <Text style={styles.modalLocationText}>Add location</Text>
@@ -777,6 +802,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(16),
     fontWeight: '500',
+  },
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: verticalScale(50),
+  },
+  loadingText: {
+    marginTop: verticalScale(10),
+    fontSize: fontScale(16),
+    color: '#6E543C',
+  },
+  paginationLoading: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: verticalScale(20),
+  },
+  endOfPostsContainer: {
+    paddingVertical: verticalScale(20),
+    alignItems: 'center',
+  },
+  endOfPostsText: {
+    fontSize: fontScale(14),
+    color: '#999999',
+    fontStyle: 'italic',
   },
 });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
 
@@ -14,7 +14,7 @@ interface PostProps {
   id: string;
   username: string;
   timestamp: string;
-  imageUrl: any;
+  imageUrl: any; // Can be single image or array of images
   caption: string;
   likes: number;
   comments: Comment[];
@@ -29,6 +29,11 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [imageViewVisible, setImageViewVisible] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Check if imageUrl is an array (multiple images) or single image
+  const isMultipleImages = Array.isArray(imageUrl);
+  const images = isMultipleImages ? imageUrl : [imageUrl];
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -48,12 +53,161 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     }
   };
 
-  const openImageViewer = () => {
+  const openImageViewer = (index: number = 0) => {
+    setCurrentImageIndex(index);
     setImageViewVisible(true);
   };
 
   const closeImageViewer = () => {
     setImageViewVisible(false);
+  };
+
+  const renderImages = () => {
+    if (images.length === 0 || !images[0]) return null;
+
+    if (images.length === 1) {
+      // Single image
+      return (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => openImageViewer(0)}
+        >
+          <Image
+            source={images[0]}
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      );
+    } else if (images.length === 2) {
+      // Two images - show side by side
+      return (
+        <View style={styles.twoImagesContainer}>
+          <TouchableOpacity
+            style={styles.halfImageContainer}
+            activeOpacity={0.9}
+            onPress={() => openImageViewer(0)}
+          >
+            <Image
+              source={images[0]}
+              style={styles.halfImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.halfImageContainer}
+            activeOpacity={0.9}
+            onPress={() => openImageViewer(1)}
+          >
+            <Image
+              source={images[1]}
+              style={styles.halfImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        </View>
+      );
+    } else if (images.length === 3) {
+      // Three images - first large, two small on right
+      return (
+        <View style={styles.threeImagesContainer}>
+          <TouchableOpacity
+            style={styles.largeImageContainer}
+            activeOpacity={0.9}
+            onPress={() => openImageViewer(0)}
+          >
+            <Image
+              source={images[0]}
+              style={styles.largeImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+          <View style={styles.smallImagesColumn}>
+            <TouchableOpacity
+              style={styles.smallImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(1)}
+            >
+              <Image
+                source={images[1]}
+                style={styles.smallImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.smallImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(2)}
+            >
+              <Image
+                source={images[2]}
+                style={styles.smallImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    } else {
+      // Four or more images - 2x2 grid with overlay for remaining
+      return (
+        <View style={styles.multipleImagesContainer}>
+          <View style={styles.topRow}>
+            <TouchableOpacity
+              style={styles.quarterImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(0)}
+            >
+              <Image
+                source={images[0]}
+                style={styles.quarterImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quarterImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(1)}
+            >
+              <Image
+                source={images[1]}
+                style={styles.quarterImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.bottomRow}>
+            <TouchableOpacity
+              style={styles.quarterImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(2)}
+            >
+              <Image
+                source={images[2]}
+                style={styles.quarterImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quarterImageContainer}
+              activeOpacity={0.9}
+              onPress={() => openImageViewer(3)}
+            >
+              <Image
+                source={images[3]}
+                style={styles.quarterImage}
+                resizeMode="cover"
+              />
+              {images.length > 4 && (
+                <View style={styles.moreImagesOverlay}>
+                  <Text style={styles.moreImagesText}>+{images.length - 4}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
   };
 
   return (
@@ -69,16 +223,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         </View>
       </View>
 
-      <TouchableOpacity 
-        activeOpacity={0.9}
-        onPress={openImageViewer}
-      >
-        <Image 
-          source={imageUrl}
-          style={styles.postImage}
-          resizeMode="cover"
-        />
-      </TouchableOpacity>
+      {renderImages()}
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
@@ -135,22 +280,76 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         animationType="fade"
         onRequestClose={closeImageViewer}
       >
-        <TouchableWithoutFeedback onPress={closeImageViewer}>
-          <View style={styles.imageViewerContainer}>
-            <TouchableOpacity 
+        <View style={styles.imageViewerContainer}>
+          {/* Header with close button and counter */}
+          <View style={styles.imageViewerHeader}>
+            <TouchableOpacity
               style={styles.closeButton}
               onPress={closeImageViewer}
             >
-              <Ionicons name="close-circle" size={30} color="#FFFFFF" />
+              <Ionicons name="close" size={28} color="#FFFFFF" />
             </TouchableOpacity>
-            
-            <Image 
-              source={imageUrl}
-              style={styles.fullImage}
-              resizeMode="contain"
+            {images.length > 1 && (
+              <View style={styles.imageCounter}>
+                <Text style={styles.imageCounterText}>
+                  {currentImageIndex + 1} / {images.length}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Images */}
+          <View style={styles.imageViewerContent}>
+            <FlatList
+              data={images}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={currentImageIndex}
+              getItemLayout={(data, index) => ({
+                length: SCREEN_WIDTH,
+                offset: SCREEN_WIDTH * index,
+                index,
+              })}
+              renderItem={({ item }) => (
+                <View style={styles.imageSlide}>
+                  <TouchableWithoutFeedback>
+                    <Image
+                      source={item}
+                      style={styles.fullImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableWithoutFeedback>
+                </View>
+              )}
+              keyExtractor={(item, index) => index.toString()}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                setCurrentImageIndex(index);
+              }}
             />
           </View>
-        </TouchableWithoutFeedback>
+
+          {/* Navigation dots for multiple images */}
+          {images.length > 1 && (
+            <View style={styles.dotsContainer}>
+              {images.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.dot,
+                    index === currentImageIndex && styles.activeDot
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Tap area to close (only on edges) */}
+          <TouchableWithoutFeedback onPress={closeImageViewer}>
+            <View style={styles.closeArea} />
+          </TouchableWithoutFeedback>
+        </View>
       </Modal>
     </View>
   );
@@ -275,10 +474,148 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT * 0.7,
   },
-  closeButton: {
+  // Image viewer modal styles
+  imageViewerHeader: {
     position: 'absolute',
-    top: 40,
-    right: 20,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     zIndex: 10,
   },
-}); 
+  closeButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  imageCounter: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  imageCounterText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(14),
+    fontWeight: '600',
+  },
+  imageViewerContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  imageSlide: {
+    width: SCREEN_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotsContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    backgroundColor: '#FFFFFF',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  closeArea: {
+    position: 'absolute',
+    top: 80,
+    bottom: 80,
+    left: 0,
+    right: 0,
+  },
+
+  // Multiple images layout styles
+  twoImagesContainer: {
+    flexDirection: 'row',
+    height: verticalScale(200),
+  },
+  halfImageContainer: {
+    flex: 1,
+    marginHorizontal: 1,
+  },
+  halfImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  threeImagesContainer: {
+    flexDirection: 'row',
+    height: verticalScale(200),
+  },
+  largeImageContainer: {
+    flex: 2,
+    marginRight: 2,
+  },
+  largeImage: {
+    width: '100%',
+    height: '100%',
+  },
+  smallImagesColumn: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  smallImageContainer: {
+    height: '49%',
+  },
+  smallImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  multipleImagesContainer: {
+    height: verticalScale(200),
+  },
+  topRow: {
+    flexDirection: 'row',
+    height: '50%',
+    marginBottom: 2,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    height: '50%',
+  },
+  quarterImageContainer: {
+    flex: 1,
+    marginHorizontal: 1,
+    position: 'relative',
+  },
+  quarterImage: {
+    width: '100%',
+    height: '100%',
+  },
+  moreImagesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreImagesText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(18),
+    fontWeight: 'bold',
+  },
+});
