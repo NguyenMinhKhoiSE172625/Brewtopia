@@ -265,30 +265,26 @@ class ApiService {
 
       // Store the token for future requests
       if (response.token) {
+        console.log('ApiService - Login response user:', response.user);
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        // Store userId separately for easy access (only if it exists)
+        const userId = response.user?.id || response.user?._id;
+        if (userId) {
+          console.log('ApiService - Saving userId:', userId);
+          await AsyncStorage.setItem('userId', userId);
+        } else {
+          console.log('ApiService - No userId found in response.user:', response.user);
+        }
         this.token = response.token;
 
-        // For admin users, create cafe if not exists and save cafeId
+        // For admin users, save cafeId from response
         if (response.user.role === 'admin') {
-          try {
-            // Call API to create cafe with userId
-            const cafeResponse = await this.cafe.createCafe(response.user.id);
-            if (cafeResponse.id) {
-              await AsyncStorage.setItem('cafeId', cafeResponse.id);
-              console.log('ApiService - Created and saved cafeId:', cafeResponse.id);
-              // Add cafeId to response for backward compatibility
-              response.cafeId = cafeResponse.id;
-              // Add message to indicate profile update needed
-              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
-            }
-          } catch (error) {
-            console.log('ApiService - Error creating cafe:', error);
-            // If cafe already exists or other error, try to use cafeId from login response
-            if (response.cafeId) {
-              await AsyncStorage.setItem('cafeId', response.cafeId);
-              console.log('ApiService - Saved existing cafeId:', response.cafeId);
-            }
+          if (response.cafeId) {
+            await AsyncStorage.setItem('cafeId', response.cafeId);
+            console.log('ApiService - Saved cafeId from login response:', response.cafeId);
+          } else {
+            console.log('ApiService - No cafeId found in login response');
           }
         }
       }
@@ -329,6 +325,8 @@ class ApiService {
     logout: async () => {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user_data');
+      await AsyncStorage.removeItem('userId');
+      await AsyncStorage.removeItem('cafeId');
       this.token = null;
       return { success: true };
     },
@@ -359,30 +357,26 @@ class ApiService {
       });
       // Lưu token và user info
       if (response.token) {
+        console.log('ApiService - Google login response user:', response.user);
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        // Store userId separately for easy access (only if it exists)
+        const userId = response.user?.id || response.user?._id;
+        if (userId) {
+          console.log('ApiService - Google login: Saving userId:', userId);
+          await AsyncStorage.setItem('userId', userId);
+        } else {
+          console.log('ApiService - Google login: No userId found in response.user:', response.user);
+        }
         this.token = response.token;
 
-        // For admin users, create cafe if not exists and save cafeId
+        // For admin users, save cafeId from response
         if (response.user.role === 'admin') {
-          try {
-            // Call API to create cafe with userId
-            const cafeResponse = await this.cafe.createCafe(response.user.id);
-            if (cafeResponse.id) {
-              await AsyncStorage.setItem('cafeId', cafeResponse.id);
-              console.log('ApiService - Google login: Created and saved cafeId:', cafeResponse.id);
-              // Add cafeId to response for backward compatibility
-              response.cafeId = cafeResponse.id;
-              // Add message to indicate profile update needed
-              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
-            }
-          } catch (error) {
-            console.log('ApiService - Google login: Error creating cafe:', error);
-            // If cafe already exists or other error, try to use cafeId from login response
-            if (response.cafeId) {
-              await AsyncStorage.setItem('cafeId', response.cafeId);
-              console.log('ApiService - Google login: Saved existing cafeId:', response.cafeId);
-            }
+          if (response.cafeId) {
+            await AsyncStorage.setItem('cafeId', response.cafeId);
+            console.log('ApiService - Google login: Saved cafeId from response:', response.cafeId);
+          } else {
+            console.log('ApiService - Google login: No cafeId found in response');
           }
         }
       }
@@ -402,30 +396,26 @@ class ApiService {
       });
 
       if (response.token) {
+        console.log('ApiService - Facebook login response user:', response.user);
         await AsyncStorage.setItem('auth_token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
+        // Store userId separately for easy access (only if it exists)
+        const userId = response.user?.id || response.user?._id;
+        if (userId) {
+          console.log('ApiService - Facebook login: Saving userId:', userId);
+          await AsyncStorage.setItem('userId', userId);
+        } else {
+          console.log('ApiService - Facebook login: No userId found in response.user:', response.user);
+        }
         this.token = response.token;
 
-        // For admin users, create cafe if not exists and save cafeId
+        // For admin users, save cafeId from response
         if (response.user.role === 'admin') {
-          try {
-            // Call API to create cafe with userId
-            const cafeResponse = await this.cafe.createCafe(response.user.id);
-            if (cafeResponse.id) {
-              await AsyncStorage.setItem('cafeId', cafeResponse.id);
-              console.log('ApiService - Facebook login: Created and saved cafeId:', cafeResponse.id);
-              // Add cafeId to response for backward compatibility
-              response.cafeId = cafeResponse.id;
-              // Add message to indicate profile update needed
-              response.message = response.message || 'Vui lòng cập nhật thông tin quán cafe của bạn.';
-            }
-          } catch (error) {
-            console.log('ApiService - Facebook login: Error creating cafe:', error);
-            // If cafe already exists or other error, try to use cafeId from login response
-            if (response.cafeId) {
-              await AsyncStorage.setItem('cafeId', response.cafeId);
-              console.log('ApiService - Facebook login: Saved existing cafeId:', response.cafeId);
-            }
+          if (response.cafeId) {
+            await AsyncStorage.setItem('cafeId', response.cafeId);
+            console.log('ApiService - Facebook login: Saved cafeId from response:', response.cafeId);
+          } else {
+            console.log('ApiService - Facebook login: No cafeId found in response');
           }
         }
       }
@@ -435,27 +425,33 @@ class ApiService {
 
   // Cafe API methods
   cafe = {
-    // Create a new cafe for user (admin role)
-    createCafe: async (userId: string) => {
-      return this.fetch<{
-        id: string;
-        name: string;
-        status: string;
-        message?: string;
-      }>('/cafes', {
-        method: 'POST',
-        body: JSON.stringify({ userId }),
-      });
-    },
 
     // Update cafe profile
     updateProfile: async (cafeId: string, profileData: {
-      name: string;
-      address: string;
+      name?: string;
+      shopName?: string;
+      address?: string | {
+        street?: string;
+        ward?: string;
+        district?: string;
+        city?: string;
+        coordinates?: [number, number];
+      };
+      email?: string;
+      phoneNumber?: string;
       description?: string;
       images?: string[];
       openingHours?: {
         [key: string]: { open: string; close: string; };
+      };
+      status?: string;
+      taxInfo?: {
+        taxCode?: string;
+        businessType?: string;
+      };
+      identification?: {
+        nationality?: string;
+        citizenIdImage?: string;
       };
     }) => {
       return this.fetch<{
@@ -473,7 +469,15 @@ class ApiService {
       return this.fetch<{
         id: string;
         name: string;
-        address: string;
+        address: string | {
+          street?: string;
+          ward?: string;
+          district?: string;
+          city?: string;
+          coordinates?: [number, number];
+        };
+        email?: string;
+        phoneNumber?: string;
         status: string;
         description?: string;
         images?: string[];
@@ -552,7 +556,7 @@ class ApiService {
         total: number;
         page: number;
         totalPages: number;
-      }>(`/posts?page=${page}&limit=${limit}`, {
+      }>(`/posts/Allpost?page=${page}&limit=${limit}`, {
         method: 'GET',
       });
     },
@@ -562,7 +566,7 @@ class ApiService {
       return this.fetch<{
         message: string;
         post: any;
-      }>('/posts', {
+      }>('/posts/Allpost', {
         method: 'POST',
         body: JSON.stringify({
           content,
@@ -583,24 +587,62 @@ class ApiService {
     },
 
     // Add comment to a post
-    addComment: async (postId: string, content: string) => {
+    addComment: async (targetId: string, content: string, targetType: string = 'Post') => {
       return this.fetch<{
-        message: string;
-        comment: any;
-      }>(`/posts/${postId}/comments`, {
+        _id: string;
+        user?: string; // User có thể undefined
+        content: string;
+        createdAt: string;
+        updatedAt: string;
+        targetId: string;
+        targetType: string;
+        likes: any[];
+      }>('/comments', {
         method: 'POST',
         body: JSON.stringify({
+          targetId,
+          targetType,
           content
         }),
       });
     },
 
-    // Get comments for a post
-    getComments: async (postId: string) => {
+    // Get comments for a post - API trả về array trực tiếp
+    getComments: async (targetId: string, targetType: string = 'Post') => {
+      return this.fetch<Array<{
+        _id: string;
+        user?: string; // API trả về user ID thay vì object, có thể undefined
+        content: string;
+        createdAt: string;
+        updatedAt: string;
+        targetId: string;
+        targetType: string;
+        likes: any[];
+      }>>('/comments/allComments', {
+        method: 'POST',
+        body: JSON.stringify({
+          targetId,
+          targetType
+        }),
+      });
+    },
+
+    // Alternative method if backend requires GET with query params instead of body
+    getCommentsWithQuery: async (targetId: string, targetType: string = 'Post') => {
       return this.fetch<{
         message: string;
-        comments: any[];
-      }>(`/posts/${postId}/comments`, {
+        comments: Array<{
+          _id: string;
+          user: {
+            _id: string;
+            name: string;
+            email: string;
+          };
+          content: string;
+          createdAt: string;
+          updatedAt: string;
+        }>;
+      }>(`/comments?targetId=${targetId}&targetType=${targetType}`, {
         method: 'GET',
       });
     },

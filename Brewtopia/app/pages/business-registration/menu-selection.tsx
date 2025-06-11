@@ -35,40 +35,67 @@ export default function MenuSelection() {
       .then(res => res.json())
       .then(data => {
         console.log('MenuSelection - Cafe data:', data);
-        console.log('MenuSelection - Menu array:', data.menu);
-        if (!data.menu || !Array.isArray(data.menu)) {
-          console.log('MenuSelection - No menu array found in cafe data');
-          return;
+        console.log('MenuSelection - Data type:', typeof data);
+        console.log('MenuSelection - Is array:', Array.isArray(data));
+
+        // Handle both array and object response formats
+        let cafeData = data;
+        if (Array.isArray(data) && data.length > 0) {
+          cafeData = data[0]; // Take first cafe if response is array
+          console.log('MenuSelection - Using first cafe from array:', cafeData);
         }
-        const id = data.menu.length > 0 ? data.menu[0] : null;
-        console.log('MenuSelection - Menu ID:', id);
-        setMenuId(id);
-        if (id) {
-          fetch(`${API_URL}/menu-items/${id}`)
-            .then(res => res.json())
+
+        // Log all possible menu-related fields
+        console.log('MenuSelection - cafeData.menu:', cafeData.menu);
+        console.log('MenuSelection - cafeData.menuId:', cafeData.menuId);
+        console.log('MenuSelection - cafeData._id:', cafeData._id);
+        console.log('MenuSelection - cafeData.id:', cafeData.id);
+        console.log('MenuSelection - Full cafeData keys:', Object.keys(cafeData));
+
+        // Try to extract menuId from different possible locations
+        let extractedMenuId = null;
+
+        if (cafeData.menu && Array.isArray(cafeData.menu) && cafeData.menu.length > 0) {
+          extractedMenuId = cafeData.menu[0];
+          console.log('MenuSelection - Found menuId in menu array:', extractedMenuId);
+        } else if (cafeData.menuId) {
+          extractedMenuId = cafeData.menuId;
+          console.log('MenuSelection - Found menuId in menuId field:', extractedMenuId);
+        } else if (cafeData.menu && typeof cafeData.menu === 'string') {
+          extractedMenuId = cafeData.menu;
+          console.log('MenuSelection - Found menuId as string in menu field:', extractedMenuId);
+        } else {
+          // Use cafeId as menuId (common pattern)
+          extractedMenuId = cafeData._id || cafeData.id || cafeId;
+          console.log('MenuSelection - Using cafeId as menuId:', extractedMenuId);
+        }
+
+        if (extractedMenuId) {
+          setMenuId(extractedMenuId);
+          console.log('MenuSelection - Set menuId to:', extractedMenuId);
+
+          // Fetch menu items using the correct API
+          console.log('MenuSelection - Fetching menu items from:', `${API_URL}/menu-items/${extractedMenuId}`);
+          fetch(`${API_URL}/menu-items/${extractedMenuId}`)
+            .then(res => {
+              console.log('MenuSelection - Menu items response status:', res.status);
+              return res.json();
+            })
             .then(items => {
               console.log('MenuSelection - Menu items response:', items);
-              setMenuItems(items);
+              // Handle different response formats
+              const menuItemsArray = Array.isArray(items) ? items : (items.items || items.menuItems || []);
+              console.log('MenuSelection - Processed menu items array:', menuItemsArray);
+              setMenuItems(menuItemsArray);
             })
             .catch(error => {
               console.error('MenuSelection - Error fetching menu items:', error);
-              Alert.alert('Error', 'Failed to load menu items');
+              // Don't show alert, just start with empty menu
+              setMenuItems([]);
             });
         } else {
-          console.log('MenuSelection - No menu ID found, creating new menu');
-          fetch(`${API_URL}/cafes/${cafeId}/menu`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          })
-            .then(res => res.json())
-            .then(newMenu => {
-              console.log('MenuSelection - New menu created:', newMenu);
-              setMenuId(newMenu._id);
-            })
-            .catch(error => {
-              console.error('MenuSelection - Error creating menu:', error);
-              Alert.alert('Error', 'Failed to create menu');
-            });
+          console.log('MenuSelection - No menuId found, starting with empty menu');
+          setMenuItems([]);
         }
       })
       .catch(error => {
@@ -78,10 +105,15 @@ export default function MenuSelection() {
   }, [cafeId]);
 
   const handleAddMenuItem = () => {
+    console.log('MenuSelection - handleAddMenuItem called, menuId:', menuId);
     if (!menuId) {
-      Alert.alert('Error', 'Menu ID not loaded yet. Please wait a moment.');
+      console.log('MenuSelection - No menuId available');
+      Alert.alert('Error', 'Menu not ready. Please wait a moment and try again.');
       return;
     }
+
+    // Allow adding items even with temporary menu ID
+    console.log('MenuSelection - Opening add item modal');
     setIsModalVisible(true);
   };
 
@@ -129,28 +161,61 @@ export default function MenuSelection() {
       Alert.alert('Error', 'Menu ID not found');
       return;
     }
-    const formData = new FormData();
-    formData.append('name', newItemName.trim());
-    formData.append('price', newItemPrice.trim());
-    formData.append('category', newItemCategory.trim());
-    formData.append('image', {
-      uri: newItemImage,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as any);
-    await fetch(`${API_URL}/menu-items/create-Item/${menuId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'multipart/form-data' },
-      body: formData,
-    });
-    const res = await fetch(`${API_URL}/menu-items/${menuId}`);
-    const data = await res.json();
-    setMenuItems(data);
-    setIsModalVisible(false);
-    setNewItemName('');
-    setNewItemImage(null);
-    setNewItemPrice('');
-    setNewItemCategory('');
+    try {
+      console.log('MenuSelection - Creating menu item for menuId:', menuId);
+
+      if (!menuId) {
+        Alert.alert('Error', 'Menu ID not available. Please try again.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('name', newItemName.trim());
+      formData.append('price', newItemPrice.trim());
+      formData.append('category', newItemCategory.trim());
+      formData.append('image', {
+        uri: newItemImage,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      console.log('MenuSelection - Sending POST to:', `${API_URL}/menu-items/create-Item/${menuId}`);
+
+      const createResponse = await fetch(`${API_URL}/menu-items/create-Item/${menuId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: formData,
+      });
+
+      console.log('MenuSelection - Response status:', createResponse.status);
+      const createResult = await createResponse.json();
+      console.log('MenuSelection - Create item response:', createResult);
+
+      if (!createResponse.ok) {
+        console.error('MenuSelection - API Error:', createResult);
+        throw new Error(`Failed to create menu item: ${createResult.message || createResult.error || 'Unknown error'}`);
+      }
+
+      // Refresh menu items using the correct API
+      console.log('MenuSelection - Fetching updated menu items from:', `${API_URL}/menu-items/${menuId}`);
+      const res = await fetch(`${API_URL}/menu-items/${menuId}`);
+      const data = await res.json();
+      console.log('MenuSelection - Updated menu items:', data);
+
+      const menuItemsArray = Array.isArray(data) ? data : (data.items || data.menuItems || []);
+      setMenuItems(menuItemsArray);
+
+      setIsModalVisible(false);
+      setNewItemName('');
+      setNewItemImage(null);
+      setNewItemPrice('');
+      setNewItemCategory('');
+
+      Alert.alert('Success', 'Menu item added successfully!');
+    } catch (error) {
+      console.error('MenuSelection - Error saving menu item:', error);
+      Alert.alert('Error', `Failed to save menu item: ${error.message}`);
+    }
   };
 
   const handleNext = () => {
@@ -194,7 +259,7 @@ export default function MenuSelection() {
         <Text style={styles.subtitle}>Fruit Drinks</Text>
 
         <View style={styles.menuGrid}>
-          <TouchableOpacity style={styles.addButton} onPress={handleAddMenuItem} disabled={!menuId}>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddMenuItem}>
             <MaterialIcons name="add" size={40} color="#6E543C" />
           </TouchableOpacity>
 

@@ -47,6 +47,10 @@ export default function Identification() {
         return;
       }
       await ApiService.cafe.updateProfile(cafeId, {
+        identification: {
+          nationality: nationality,
+          citizenIdImage: frontIdImage,
+        },
         status: 'success',
       });
       router.push('/pages/login-user/login-user?role=admin');

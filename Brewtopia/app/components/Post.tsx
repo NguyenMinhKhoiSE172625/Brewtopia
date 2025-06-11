@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions, TouchableWithoutFeedback, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions, TouchableWithoutFeedback, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
+import ApiService from '../utils/ApiService';
 
 interface Comment {
   id: string;
   username: string;
   text: string;
   timestamp: string;
+}
+
+interface ApiComment {
+  _id: string;
+  user?: string; // API trả về user ID thay vì object, có thể undefined
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  targetId: string;
+  targetType: string;
+  likes: any[];
 }
 
 interface PostProps {
@@ -30,26 +42,116 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
   const [newComment, setNewComment] = useState('');
   const [imageViewVisible, setImageViewVisible] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
 
   // Check if imageUrl is an array (multiple images) or single image
   const isMultipleImages = Array.isArray(imageUrl);
   const images = isMultipleImages ? imageUrl : [imageUrl];
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+  // Convert API comment to UI comment format
+  const convertApiCommentToUIComment = (apiComment: ApiComment): Comment => {
+    console.log('Converting comment:', JSON.stringify(apiComment, null, 2));
+    console.log('User field:', apiComment.user, 'Type:', typeof apiComment.user);
+
+    let username = 'Unknown User';
+    if (apiComment.user && typeof apiComment.user === 'string') {
+      username = `User ${apiComment.user.slice(-4)}`;
+    }
+
+    return {
+      id: apiComment._id,
+      username: username,
+      text: apiComment.content,
+      timestamp: formatTimestamp(apiComment.createdAt)
+    };
   };
 
-  const handleAddComment = () => {
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      return diffInMinutes < 1 ? 'Just now' : `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d ago`;
+    }
+  };
+
+  // Fetch comments from API
+  const fetchComments = async () => {
+    if (commentsLoaded) return;
+
+    try {
+      setLoadingComments(true);
+      const response = await ApiService.posts.getComments(id, 'Post');
+      // API trả về array trực tiếp, không có property comments
+      const uiComments = response.map(convertApiCommentToUIComment);
+      setComments(uiComments);
+      setCommentsLoaded(true);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      Alert.alert('Error', 'Failed to load comments. Please try again.');
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleLike = async () => {
+    try {
+      await ApiService.posts.toggleLike(id);
+      setIsLiked(!isLiked);
+      setLikes(prev => isLiked ? prev - 1 : prev + 1);
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      Alert.alert('Error', 'Failed to update like. Please try again.');
+    }
+  };
+
+  const handleAddComment = async () => {
     if (newComment.trim()) {
-      const newCommentObj = {
-        id: Date.now().toString(),
-        username: 'Current User',
-        text: newComment,
-        timestamp: new Date().toLocaleString()
-      };
-      setComments([...comments, newCommentObj]);
-      setNewComment('');
+      try {
+        const response = await ApiService.posts.addComment(id, newComment.trim(), 'Post');
+
+        console.log('Add Comment API Response:', JSON.stringify(response, null, 2));
+        console.log('Response user field:', response.user, 'Type:', typeof response.user);
+
+        // Convert API response to UI format and add to comments
+        try {
+          const newCommentObj = convertApiCommentToUIComment(response);
+          setComments([...comments, newCommentObj]);
+          setNewComment('');
+          console.log('Comment added successfully:', response);
+        } catch (convertError) {
+          console.error('Error converting comment:', convertError);
+          // Fallback: Add comment with basic info
+          const fallbackComment = {
+            id: response._id || Date.now().toString(),
+            username: 'You',
+            text: newComment.trim(),
+            timestamp: 'Just now'
+          };
+          setComments([...comments, fallbackComment]);
+          setNewComment('');
+          Alert.alert('Success', 'Comment added successfully!');
+        }
+      } catch (error) {
+        console.error('Error adding comment:', error);
+        Alert.alert('Error', 'Failed to add comment. Please try again.');
+      }
+    }
+  };
+
+  const handleToggleComments = () => {
+    setShowComments(!showComments);
+    if (!showComments && !commentsLoaded) {
+      fetchComments();
     }
   };
 
@@ -235,9 +337,9 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
           <Text style={styles.actionText}>{likes} likes</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => setShowComments(!showComments)}
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleToggleComments}
         >
           <MaterialIcons name="comment" size={24} color="#6E543C" />
           <Text style={styles.actionText}>{comments.length} comments</Text>
@@ -248,28 +350,37 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
 
       {showComments && (
         <View style={styles.commentsSection}>
-          {comments.map(comment => (
-            <View key={comment.id} style={styles.commentItem}>
-              <Text style={styles.commentUsername}>{comment.username}</Text>
-              <Text style={styles.commentText}>{comment.text}</Text>
-              <Text style={styles.commentTimestamp}>{comment.timestamp}</Text>
+          {loadingComments ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#6E543C" />
+              <Text style={styles.loadingText}>Loading comments...</Text>
             </View>
-          ))}
+          ) : (
+            <>
+              {comments.map(comment => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <Text style={styles.commentUsername}>{comment.username}</Text>
+                  <Text style={styles.commentText}>{comment.text}</Text>
+                  <Text style={styles.commentTimestamp}>{comment.timestamp}</Text>
+                </View>
+              ))}
 
-          <View style={styles.addCommentSection}>
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Add a comment..."
-              value={newComment}
-              onChangeText={setNewComment}
-            />
-            <TouchableOpacity 
-              style={styles.postCommentButton} 
-              onPress={handleAddComment}
-            >
-              <Text style={styles.postCommentText}>Post</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.addCommentSection}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChangeText={setNewComment}
+                />
+                <TouchableOpacity
+                  style={styles.postCommentButton}
+                  onPress={handleAddComment}
+                >
+                  <Text style={styles.postCommentText}>Post</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </View>
       )}
 
@@ -464,6 +575,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(14),
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(16),
+  },
+  loadingText: {
+    marginLeft: horizontalScale(8),
+    fontSize: fontScale(14),
+    color: '#6E543C',
   },
   // Image viewer styles
   imageViewerContainer: {
