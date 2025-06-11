@@ -281,6 +281,11 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         onRequestClose={closeImageViewer}
       >
         <View style={styles.imageViewerContainer}>
+          {/* Background overlay - tap to close */}
+          <TouchableWithoutFeedback onPress={closeImageViewer}>
+            <View style={styles.modalBackground} />
+          </TouchableWithoutFeedback>
+
           {/* Header with close button and counter */}
           <View style={styles.imageViewerHeader}>
             <TouchableOpacity
@@ -298,7 +303,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
             )}
           </View>
 
-          {/* Images */}
+          {/* Images - Optimized for smooth scrolling */}
           <View style={styles.imageViewerContent}>
             <FlatList
               data={images}
@@ -313,13 +318,11 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
               })}
               renderItem={({ item }) => (
                 <View style={styles.imageSlide}>
-                  <TouchableWithoutFeedback>
-                    <Image
-                      source={item}
-                      style={styles.fullImage}
-                      resizeMode="contain"
-                    />
-                  </TouchableWithoutFeedback>
+                  <Image
+                    source={item}
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
                 </View>
               )}
               keyExtractor={(item, index) => index.toString()}
@@ -327,6 +330,10 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
                 const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
                 setCurrentImageIndex(index);
               }}
+              scrollEventThrottle={16}
+              decelerationRate="fast"
+              bounces={false}
+              overScrollMode="never"
             />
           </View>
 
@@ -344,11 +351,6 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
               ))}
             </View>
           )}
-
-          {/* Tap area to close (only on edges) */}
-          <TouchableWithoutFeedback onPress={closeImageViewer}>
-            <View style={styles.closeArea} />
-          </TouchableWithoutFeedback>
         </View>
       </Modal>
     </View>
@@ -475,6 +477,14 @@ const styles = StyleSheet.create({
     height: SCREEN_HEIGHT * 0.7,
   },
   // Image viewer modal styles
+  modalBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
   imageViewerHeader: {
     position: 'absolute',
     top: 0,
@@ -508,11 +518,13 @@ const styles = StyleSheet.create({
   imageViewerContent: {
     flex: 1,
     justifyContent: 'center',
+    zIndex: 5,
   },
   imageSlide: {
     width: SCREEN_WIDTH,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 10,
   },
   dotsContainer: {
     position: 'absolute',
@@ -522,6 +534,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
   dot: {
     width: 8,
@@ -535,13 +548,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-  },
-  closeArea: {
-    position: 'absolute',
-    top: 80,
-    bottom: 80,
-    left: 0,
-    right: 0,
   },
 
   // Multiple images layout styles
