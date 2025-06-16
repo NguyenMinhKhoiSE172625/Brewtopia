@@ -1,12 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import { withAuth } from '../../components/withAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
 
 function PaymentSuccess() {
   const router = useRouter();
+
+  useEffect(() => {
+    const updatePremiumStatus = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        if (userId) {
+          await ApiService.user.updateUser(userId, { AccStatus: 'Premium' });
+          // Cập nhật lại user_data trong AsyncStorage nếu muốn
+          const userDataStr = await AsyncStorage.getItem('user_data');
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            userData.AccStatus = 'Premium';
+            await AsyncStorage.setItem('user_data', JSON.stringify(userData));
+          }
+        }
+      } catch (error) {
+        console.error('Cập nhật AccStatus thất bại:', error);
+      }
+    };
+    updatePremiumStatus();
+  }, []);
 
   const handleContinue = () => {
     router.replace('/pages/home/home');

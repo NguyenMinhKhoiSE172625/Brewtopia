@@ -13,6 +13,7 @@ function Profile() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
+  const [accStatus, setAccStatus] = useState('');
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -23,6 +24,7 @@ function Profile() {
         if (userData) {
           const user = JSON.parse(userData);
           setUserName(user.name || '');
+          setAccStatus(user.AccStatus || '');
         }
       } catch (error) {
         console.error('Error checking user role:', error);
@@ -163,14 +165,24 @@ function Profile() {
           <View style={styles.profileSection}>
             <Image 
               source={require('../../../assets/images/profile1.png')} 
-              style={styles.profileImage} 
+              style={[styles.profileImage, accStatus === 'Premium' ? styles.premiumAvatar : null]} 
             />
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{userName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.profileName}>{userName}</Text>
+                {accStatus === 'Premium' && (
+                  <View style={styles.premiumBadge}>
+                    <MaterialIcons name="diamond" size={16} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                  </View>
+                )}
+              </View>
               <View style={styles.statusContainer}>
-                <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
-                  <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
-                </View>
+                {accStatus === 'Premium' ? null : (
+                  <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
+                    <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
+                  </View>
+                )}
                 {isAdmin ? (
                   <TouchableOpacity 
                     style={styles.bookingAdsButton}
@@ -179,12 +191,14 @@ function Profile() {
                     <Text style={styles.bookingAdsText}>Booking Ads</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity 
-                    style={styles.buyPremiumButton}
-                    onPress={() => router.push('/pages/premium/premium')}
-                  >
-                    <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
-                  </TouchableOpacity>
+                  accStatus !== 'Premium' && (
+                    <TouchableOpacity 
+                      style={styles.buyPremiumButton}
+                      onPress={() => router.push('/pages/premium/premium')}
+                    >
+                      <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
+                    </TouchableOpacity>
+                  )
                 )}
               </View>
             </View>
@@ -383,6 +397,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(12),
     fontWeight: '500',
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginLeft: 10,
+    height: 24,
+    minWidth: 70,
+    justifyContent: 'center',
+  },
+  premiumBadgeText: {
+    color: '#000',
+    fontWeight: '600',
+    fontSize: fontScale(13),
+  },
+  premiumAvatar: {
+    borderColor: '#FFD700',
   },
 });
 

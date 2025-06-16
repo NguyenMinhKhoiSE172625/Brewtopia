@@ -514,6 +514,7 @@ class ApiService {
       }>('/payments/createPayos', {
         method: 'POST',
         body: JSON.stringify({
+          targetModel: 'UpgradeVIP',
           amount,
           description
         }),
@@ -644,6 +645,17 @@ class ApiService {
         }>;
       }>(`/comments?targetId=${targetId}&targetType=${targetType}`, {
         method: 'GET',
+      });
+    },
+  };
+
+  // User API methods
+  user = {
+    // Cập nhật thông tin user (ví dụ: AccStatus)
+    updateUser: async (userId: string, data: { [key: string]: any }) => {
+      return this.fetch<{ id: string; status: string; message: string }>(`/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
       });
     },
   };
