@@ -14,13 +14,18 @@ function PaymentSuccess() {
     const updatePremiumStatus = async () => {
       try {
         const userId = await AsyncStorage.getItem('userId');
+        const userDataStr = await AsyncStorage.getItem('user_data');
+        let accStatus = 'Premium';
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr);
+          if (userData.role === 'admin') accStatus = 'VIP';
+        }
         if (userId) {
-          await ApiService.user.updateUser(userId, { AccStatus: 'Premium' });
+          await ApiService.user.updateUser(userId, { AccStatus: accStatus });
           // Cập nhật lại user_data trong AsyncStorage nếu muốn
-          const userDataStr = await AsyncStorage.getItem('user_data');
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
-            userData.AccStatus = 'Premium';
+            userData.AccStatus = accStatus;
             await AsyncStorage.setItem('user_data', JSON.stringify(userData));
           }
         }

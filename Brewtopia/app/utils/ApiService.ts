@@ -493,7 +493,7 @@ class ApiService {
   // Payment API methods
   payment = {
     // Create PayOS payment
-    createPayosPayment: async (amount: number, description: string) => {
+    createPayosPayment: async (amount: number, description: string, targetModel: string = 'UpgradePremium') => {
       console.log('Payment API - Current token:', this.token);
 
       if (!this.token) {
@@ -514,7 +514,7 @@ class ApiService {
       }>('/payments/createPayos', {
         method: 'POST',
         body: JSON.stringify({
-          targetModel: 'UpgradeVIP',
+          targetModel,
           amount,
           description
         }),

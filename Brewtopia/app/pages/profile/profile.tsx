@@ -176,6 +176,12 @@ function Profile() {
                     <Text style={styles.premiumBadgeText}>Premium</Text>
                   </View>
                 )}
+                {accStatus === 'VIP' && (
+                  <View style={styles.premiumBadge}>
+                    <MaterialIcons name="diamond" size={16} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.premiumBadgeText}>VIP</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.statusContainer}>
                 {accStatus === 'Premium' ? null : (

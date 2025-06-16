@@ -1,12 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
 
 export default function BookingAds() {
   const router = useRouter();
+  const [isVIP, setIsVIP] = useState(false);
+
+  useEffect(() => {
+    const checkVIPStatus = async () => {
+      const userData = await AsyncStorage.getItem('user_data');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setIsVIP(user.AccStatus === 'VIP');
+      }
+    };
+    checkVIPStatus();
+  }, []);
+
+  const handleUpgradeToVIP = async () => {
+    try {
+      const checkoutUrl = await ApiService.payment.createPayosPayment(
+        2000, // Giá nâng cấp VIP
+        'Upgrade to VIP',
+        'UpgradeVIP' // targetModel cho doanh nghiệp
+      );
+      router.push({
+        pathname: '/pages/payment/payment',
+        params: { url: checkoutUrl }
+      });
+    } catch (error) {
+      console.error('Payment creation failed:', error);
+    }
+  };
 
   const packages = [
     {
@@ -71,24 +101,42 @@ export default function BookingAds() {
           resizeMode="contain"
         />
 
-        {packages.map((pkg) => (
-          <View key={pkg.id} style={styles.packageCard}>
-            <View style={styles.packageHeader}>
-              <Text style={styles.packageName}>{pkg.name}</Text>
-              <Text style={styles.packagePrice}>{pkg.price}$</Text>
+        {isVIP ? (
+          packages.map((pkg) => (
+            <View key={pkg.id} style={styles.packageCard}>
+              <View style={styles.packageHeader}>
+                <Text style={styles.packageName}>{pkg.name}</Text>
+                <Text style={styles.packagePrice}>{pkg.price}$</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.exploreButton}
+                onPress={() => router.push({
+                  pathname: '/pages/booking-ads/package-details',
+                  params: { packageId: pkg.id }
+                })}
+              >
+                <Text style={styles.exploreButtonText}>EXPLORE</Text>
+              </TouchableOpacity>
             </View>
-            
+          ))
+        ) : (
+          <View style={styles.upgradeCard}>
+            <Text style={styles.upgradeTitle}>Upgrade to VIP to book ads</Text>
+            <Text style={styles.upgradePrice}>Chỉ 2.000đ/tháng</Text>
+            <View style={styles.benefitList}>
+              <Text style={styles.benefitItem}>• Được phép đặt quảng cáo trên hệ thống</Text>
+              <Text style={styles.benefitItem}>• Ưu tiên hỗ trợ doanh nghiệp</Text>
+              <Text style={styles.benefitItem}>• Nhận các quyền lợi VIP khác trong tương lai</Text>
+            </View>
             <TouchableOpacity 
-              style={styles.exploreButton}
-              onPress={() => router.push({
-                pathname: '/pages/booking-ads/package-details',
-                params: { packageId: pkg.id }
-              })}
+              style={styles.upgradeButton}
+              onPress={handleUpgradeToVIP}
             >
-              <Text style={styles.exploreButtonText}>EXPLORE</Text>
+              <Text style={styles.upgradeButtonText}>Upgrade to VIP</Text>
             </TouchableOpacity>
           </View>
-        ))}
+        )}
       </ScrollView>
 
       <BottomBar />
@@ -155,5 +203,43 @@ const styles = StyleSheet.create({
     fontSize: fontScale(16),
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  upgradeCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(16),
+    alignItems: 'center',
+  },
+  upgradeTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '600',
+    color: '#6E543C',
+    marginBottom: verticalScale(16),
+  },
+  upgradePrice: {
+    fontSize: fontScale(16),
+    color: '#FF0000',
+    fontWeight: '700',
+    marginBottom: verticalScale(8),
+  },
+  benefitList: {
+    marginBottom: verticalScale(16),
+    alignSelf: 'flex-start',
+  },
+  benefitItem: {
+    fontSize: fontScale(14),
+    color: '#6E543C',
+    marginBottom: 2,
+  },
+  upgradeButton: {
+    backgroundColor: '#FFD700',
+    borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: horizontalScale(16),
+  },
+  upgradeButtonText: {
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    color: '#000',
   },
 }); 
