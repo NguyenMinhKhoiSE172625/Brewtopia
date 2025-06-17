@@ -10,7 +10,7 @@ export function withAuth<P extends object>(WrappedComponent: React.ComponentType
 
     const checkAuth = async () => {
       try {
-        const token = await AsyncStorage.getItem('auth_token');
+        const token = await AsyncStorage.getItem('token');
         const userData = await AsyncStorage.getItem('user_data');
         
         console.log('withAuth - Token:', token);

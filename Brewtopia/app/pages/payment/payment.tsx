@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View, ActivityIndicator, Alert } from 'react-native';
 import PaymentWebView from '../../components/PaymentWebView';
 import { withAuth } from '../../components/withAuth';
+import ApiService from '../../utils/ApiService';
 
 function Payment() {
   const router = useRouter();
@@ -15,9 +16,19 @@ function Payment() {
     }
   }, [checkoutUrl]);
 
-  const handleNavigationStateChange = (navState: any) => {
+  const handleNavigationStateChange = async (navState: any) => {
     // Handle payment completion or cancellation
     if (navState.url.includes('status=PAID') || navState.url.includes('payment-success')) {
+      // Parse orderCode từ URL
+      const urlParams = new URLSearchParams(navState.url.split('?')[1]);
+      const orderCode = urlParams.get('orderCode');
+      if (orderCode) {
+        try {
+          await ApiService.payment.callPayOsWebhook(orderCode, 'PAID');
+        } catch (err) {
+          console.warn('Gọi webhook PayOs thất bại:', err);
+        }
+      }
       // Payment successful
       Alert.alert(
         'Payment Successful',

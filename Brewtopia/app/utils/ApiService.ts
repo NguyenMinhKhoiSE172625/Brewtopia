@@ -44,7 +44,7 @@ class ApiService {
 
   private async loadToken() {
     try {
-      this.token = await AsyncStorage.getItem('auth_token');
+      this.token = await AsyncStorage.getItem('token');
       console.log('Token loaded:', this.token);
       
       // Validate token if exists
@@ -79,7 +79,7 @@ class ApiService {
 
   private async clearToken() {
     this.token = null;
-    await AsyncStorage.removeItem('auth_token');
+    await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user_data');
   }
 
@@ -109,7 +109,7 @@ class ApiService {
         const data = await response.json();
         if (data.token) {
           this.token = data.token;
-          await AsyncStorage.setItem('auth_token', data.token);
+          await AsyncStorage.setItem('token', data.token);
           return data.token;
         }
       }
@@ -266,7 +266,7 @@ class ApiService {
       // Store the token for future requests
       if (response.token) {
         console.log('ApiService - Login response user:', response.user);
-        await AsyncStorage.setItem('auth_token', response.token);
+        await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
@@ -323,7 +323,7 @@ class ApiService {
     
     // Logout
     logout: async () => {
-      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user_data');
       await AsyncStorage.removeItem('userId');
       await AsyncStorage.removeItem('cafeId');
@@ -358,7 +358,7 @@ class ApiService {
       // Lưu token và user info
       if (response.token) {
         console.log('ApiService - Google login response user:', response.user);
-        await AsyncStorage.setItem('auth_token', response.token);
+        await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
@@ -397,7 +397,7 @@ class ApiService {
 
       if (response.token) {
         console.log('ApiService - Facebook login response user:', response.user);
-        await AsyncStorage.setItem('auth_token', response.token);
+        await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
@@ -522,6 +522,11 @@ class ApiService {
 
       // Return the checkout URL for WebView
       return response.data.checkoutUrl;
+    },
+    callPayOsWebhook: async (orderCode: string, status: string = 'PAID') => {
+      return this.fetch<any>(`/payments/webhook/PayOs?orderCode=${orderCode}&status=${status}`, {
+        method: 'GET',
+      });
     },
   };
 

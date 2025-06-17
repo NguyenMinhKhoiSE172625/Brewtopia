@@ -11,6 +11,7 @@ import NetworkHelper from '../../utils/NetworkHelper';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import { API_URL } from '../../config/constants';
 
 const GOOGLE_CLIENT_ID = '124662970356-igt3tcbfrcjfqi42k733kv9ue2ci4rq8.apps.googleusercontent.com';
 const FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID'; // Replace with your Facebook App ID
@@ -43,10 +44,13 @@ export default function LoginUser() {
   const [isLoading, setIsLoading] = useState(false);
   const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
 
+  const redirectUri = 'https://auth.expo.io/@khoiawesome/brewtopia';
+  console.log('Google OAuth redirectUri:', redirectUri);
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId: GOOGLE_CLIENT_ID,
-      redirectUri: AuthSession.makeRedirectUri({}),
+      redirectUri,
       scopes: ['profile', 'email'],
       responseType: 'code',
     },
@@ -85,11 +89,23 @@ export default function LoginUser() {
       if (response?.type === 'success' && response.params.code) {
         setIsLoading(true);
         try {
-          const data = await ApiService.auth.loginWithGoogle(response.params.code);
-          router.push('/pages/home/home');
-        } catch (error: any) {
+          // Gửi code lên backend để xác thực
+          const res = await fetch(`${API_URL}/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: response.params.code }),
+          });
+          const data = await res.json();
+          if (data.token) {
+            await AsyncStorage.setItem('token', data.token);
+            await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
+            router.push('/pages/home/home');
+          } else {
+            throw new Error(data.message || 'Google login failed.');
+          }
+        } catch (error) {
           setIsError(true);
-          setErrorMessage(error?.message || 'Google login failed.');
+          setErrorMessage((error as any).message || 'Google login failed.');
         } finally {
           setIsLoading(false);
         }
@@ -149,7 +165,7 @@ export default function LoginUser() {
       console.log('Login response:', data);
       
       // Verify token was stored
-      const storedToken = await AsyncStorage.getItem('auth_token');
+      const storedToken = await AsyncStorage.getItem('token');
       console.log('Stored token:', storedToken);
       
       // Log cafeId nếu có
@@ -224,7 +240,7 @@ export default function LoginUser() {
     }
   };
 
-  // Hàm xử lý đăng nhập Google
+  // Hàm xử lý đăng nhập Google mới
   const handleGoogleLogin = async () => {
     if (role === 'admin') {
       setIsError(true);
@@ -263,7 +279,7 @@ export default function LoginUser() {
         const data = await response.json();
         
         if (data.token) {
-          await AsyncStorage.setItem('auth_token', data.token);
+          await AsyncStorage.setItem('token', data.token);
           await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
           router.push('/pages/home/home');
         } else {

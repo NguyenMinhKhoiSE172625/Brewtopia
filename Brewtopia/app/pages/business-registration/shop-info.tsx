@@ -110,7 +110,7 @@ export default function ShopInfo() {
         console.log('ShopInfo - All AsyncStorage keys:', allKeys);
 
         // Check if user is logged in
-        const authToken = await AsyncStorage.getItem('auth_token');
+        const authToken = await AsyncStorage.getItem('token');
         const userData = await AsyncStorage.getItem('user_data');
         console.log('ShopInfo - Auth token exists:', !!authToken);
         console.log('ShopInfo - User data exists:', !!userData);

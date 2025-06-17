@@ -1,179 +1,143 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import { useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface SharedItem {
-  image: any;
-  title: string;
-  location: string;
-}
-
-interface SharedCafe {
-  cafeId: string;
-  cafeName: string;
-  cafeAddress: string;
-  coordinate: {
-    latitude: number;
-    longitude: number;
-  };
-}
+import socketService from '../../services/socketService';
+import chatService from '../../services/chatService';
+import { sendMessageToGemini } from '../../services/geminiService';
 
 interface Message {
-  id: string;
-  sender: string;
-  time: string;
-  text?: string;
-  images?: any[];
-  sharedItem?: SharedItem;
-  sharedCafe?: SharedCafe;
-  icon?: string;
-  timestamp?: string;
+  _id: string;
+  sender: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  message: string;
+  createdAt: string;
+  system?: boolean;
 }
 
 export default function Chat() {
   const router = useRouter();
   const { chatId, chatName, isGroup } = useLocalSearchParams();
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Initialize with empty messages
-  const [messages, setMessages] = useState<Message[]>([]);
-
-  // Load messages from AsyncStorage
   useEffect(() => {
-    const loadMessages = async () => {
+    const initializeChat = async () => {
       try {
-        const chatMessagesKey = `chat_messages_${chatId}`;
-        const messagesStr = await AsyncStorage.getItem(chatMessagesKey);
-        
-        if (messagesStr) {
-          const loadedMessages = JSON.parse(messagesStr);
-          
-          // Format messages for display
-          const formattedMessages = loadedMessages.map((msg: any) => {
-            const messageTime = msg.timestamp 
-              ? new Date(msg.timestamp).toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: false 
-                })
-              : msg.time || '00:00';
-              
-            return {
-              ...msg,
-              time: messageTime
-            };
-          });
-          
-          setMessages(formattedMessages);
-        } else {
-          // Sample messages if no saved messages
-          setMessages([
-            {
-              id: '1',
-              text: 'Hi there!',
-              sender: 'user',
-              time: '11:40'
-            },
-            {
-              id: '2',
-              text: 'How are you?',
-              sender: 'me',
-              time: '11:41'
-            }
-          ]);
+        setLoading(true);
+        // Get current user data
+        const userData = await AsyncStorage.getItem('user_data');
+        if (userData) {
+          const parsedUserData = JSON.parse(userData);
+          setCurrentUser(parsedUserData);
+          socketService.setCurrentUser(parsedUserData._id);
         }
-        
-        // Scroll to bottom after loading messages
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false });
-        }, 200);
-      } catch (error) {
-        console.error('Error loading messages:', error);
+
+        // Get chat history
+        const history = await chatService.getChatHistory(chatId as string);
+        setMessages(history);
+
+        // Connect to socket and join room
+        socketService.connect();
+        socketService.joinRoom(chatId as string, currentUser?._id);
+
+        // Set up socket listeners
+        socketService.on('receiveMessage', (msg: Message) => {
+          setMessages(prev => [...prev, msg]);
+        });
+
+        socketService.on('systemMessage', (data: { message: string }) => {
+          setMessages(prev => [...prev, { 
+            _id: Date.now().toString(),
+            sender: { _id: 'system', name: 'System' },
+            message: data.message,
+            createdAt: new Date().toISOString(),
+            system: true
+          }]);
+        });
+
+      } catch (err) {
+        console.error('Error initializing chat:', err);
+        setError('Không thể kết nối đến phòng chat');
+      } finally {
+        setLoading(false);
       }
     };
-    
-    loadMessages();
+
+    initializeChat();
+
+    return () => {
+      socketService.removeListener('receiveMessage');
+      socketService.removeListener('systemMessage');
+      if (currentUser) {
+        socketService.leaveRoom(chatId as string, currentUser._id);
+      }
+    };
   }, [chatId]);
 
   const handleSendMessage = async () => {
-    if (message.trim()) {
-      // Create new message
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: message,
-        sender: 'me',
-        time: new Date().toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: false 
-        }),
-        timestamp: new Date().toISOString()
-      };
-      
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      setMessage('');
-      
-      // Save to AsyncStorage
+    if (!message.trim() || !currentUser) return;
+
+    const newMessage = {
+      chatId,
+      senderId: currentUser._id,
+      message: message.trim()
+    };
+
+    // If chatting with AI
+    if (chatName === 'BREWBOT') {
       try {
-        const chatMessagesKey = `chat_messages_${chatId}`;
-        await AsyncStorage.setItem(chatMessagesKey, JSON.stringify(updatedMessages));
+        // Send message to socket
+        socketService.sendMessage(newMessage);
+
+        // Get AI response
+        const response = await sendMessageToGemini(message.trim());
+        
+        // Add AI response to messages
+        setMessages(prev => [...prev, {
+          _id: Date.now().toString(),
+          sender: {
+            _id: 'ai',
+            name: 'BREWBOT',
+            avatar: require('../../../assets/images/bot1.png')
+          },
+          message: response.text,
+          createdAt: new Date().toISOString()
+        }]);
       } catch (error) {
-        console.error('Error saving message:', error);
+        console.error('Error getting AI response:', error);
+        setError('Không thể gửi tin nhắn');
       }
-      
-      // Scroll to bottom after sending message
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+    } else {
+      // Normal chat
+      socketService.sendMessage(newMessage);
     }
+
+    setMessage('');
   };
 
-  const handleSendLike = async () => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      icon: 'thumb-up' as const,
-      sender: 'me',
-      time: new Date().toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: false 
-      }),
-      timestamp: new Date().toISOString()
-    };
-    
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    
-    // Save to AsyncStorage
-    try {
-      const chatMessagesKey = `chat_messages_${chatId}`;
-      await AsyncStorage.setItem(chatMessagesKey, JSON.stringify(updatedMessages));
-    } catch (error) {
-      console.error('Error saving like message:', error);
-    }
-    
-    // Scroll to bottom after sending message
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-  
-  const handleViewSharedCafe = (cafe: SharedCafe) => {
-    // Navigate to map screen with cafe location
-    router.push({
-      pathname: '/pages/nearby',
-      params: { 
-        focusCafeId: cafe.cafeId,
-        latitude: cafe.coordinate.latitude,
-        longitude: cafe.coordinate.longitude
-      }
-    });
-  };
+  useEffect(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6E543C" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -183,17 +147,10 @@ export default function Chat() {
           <MaterialIcons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          {isGroup === 'true' ? (
-            <Image 
-              source={require('../../../assets/images/cafe1.png')}
-              style={styles.groupImage}
-            />
-          ) : (
-            <Image 
-              source={require('../../../assets/images/profile1.png')}
-              style={styles.profileImage}
-            />
-          )}
+          <Image 
+            source={chatName === 'BREWBOT' ? require('../../../assets/images/bot1.png') : require('../../../assets/images/profile1.png')}
+            style={styles.profileImage}
+          />
           <Text style={styles.headerTitle}>{chatName}</Text>
         </View>
       </View>
@@ -201,125 +158,77 @@ export default function Chat() {
       {/* Chat Messages */}
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         <ScrollView 
-          style={styles.messageContainer}
           ref={scrollViewRef}
+          style={styles.messageContainer}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
           {messages.map((msg) => (
             <View 
-              key={msg.id}
+              key={msg._id}
               style={[
                 styles.messageWrapper,
-                msg.sender === 'me' ? styles.myMessage : styles.otherMessage
+                msg.sender._id === currentUser?._id ? styles.myMessage : styles.otherMessage
               ]}
             >
-              {msg.text && (
-                <View style={[
-                  styles.messageBubble,
-                  msg.sender === 'me' ? styles.myBubble : styles.otherBubble
-                ]}>
-                  <Text style={[
-                    styles.messageText,
-                    msg.sender === 'me' ? styles.myMessageText : styles.otherMessageText
-                  ]}>{msg.text}</Text>
-                </View>
+              {!msg.system && msg.sender._id !== currentUser?._id && (
+                <Image 
+                  source={msg.sender.avatar || require('../../../assets/images/profile1.png')}
+                  style={styles.messageAvatar}
+                />
               )}
-              
-              {msg.images && (
-                <View style={styles.imageContainer}>
-                  {msg.images.map((img, index) => (
-                    <Image 
-                      key={index}
-                      source={img}
-                      style={styles.messageImage}
-                    />
-                  ))}
-                  <MaterialIcons name="check-circle" size={16} color="#4CAF50" style={styles.checkmark} />
-                </View>
-              )}
-
-              {msg.sharedItem && (
-                <View style={[styles.messageWrapper]}>
-                  <View style={styles.sharedItemContainer}>
-                    <Image source={msg.sharedItem.image} style={styles.sharedItemImage} />
-                    <View style={styles.sharedItemInfo}>
-                      <Text style={styles.sharedItemTitle}>{msg.sharedItem.title}</Text>
-                      <Text style={styles.sharedItemLocation}>{msg.sharedItem.location}</Text>
-                    </View>
-                    <MaterialIcons name="check-circle" size={16} color="#4CAF50" style={styles.checkmark} />
-                  </View>
-                </View>
-              )}
-              
-              {msg.sharedCafe && (
-                <TouchableOpacity 
-                  style={styles.sharedCafeContainer}
-                  onPress={() => handleViewSharedCafe(msg.sharedCafe!)}
-                >
-                  <View style={styles.sharedCafeContent}>
-                    <View style={styles.sharedCafeHeader}>
-                      <MaterialIcons name="store" size={20} color="#6E543C" />
-                      <Text style={styles.sharedCafeTitle}>{msg.sharedCafe.cafeName}</Text>
-                    </View>
-                    <Text style={styles.sharedCafeAddress}>{msg.sharedCafe.cafeAddress}</Text>
-                    <View style={styles.sharedCafeFooter}>
-                      <MaterialIcons name="place" size={16} color="#6E543C" />
-                      <Text style={styles.viewOnMapText}>View on map</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )}
-
-              {msg.icon && (
-                <View style={[
-                  styles.messageBubble,
-                  msg.sender === 'me' ? styles.myBubble : styles.otherBubble,
-                  styles.iconBubble
-                ]}>
-                  <MaterialIcons 
-                    name={msg.icon as any}
-                    size={24} 
-                    color={msg.sender === 'me' ? '#FFFFFF' : '#000000'} 
-                  />
-                </View>
-              )}
-
-              <Text style={styles.messageTime}>{msg.time}</Text>
+              <View style={[
+                styles.messageBubble,
+                msg.sender._id === currentUser?._id ? styles.myBubble : styles.otherBubble,
+                msg.system && styles.systemBubble
+              ]}>
+                <Text style={[
+                  styles.messageText,
+                  msg.sender._id === currentUser?._id ? styles.myMessageText : styles.otherMessageText,
+                  msg.system && styles.systemMessageText
+                ]}>{msg.message}</Text>
+              </View>
+              <Text style={styles.messageTime}>
+                {new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Text>
             </View>
           ))}
         </ScrollView>
 
         {/* Input Area */}
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton}>
-            <MaterialIcons name="keyboard-arrow-right" size={24} color="#000" />
-          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={message}
             onChangeText={setMessage}
-            placeholder="Message"
+            placeholder="Nhập tin nhắn..."
             placeholderTextColor="#999"
-            onSubmitEditing={handleSendMessage}
-            returnKeyType="send"
+            multiline
+            maxLength={1000}
           />
-          <View style={styles.inputActions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcons name="sentiment-satisfied" size={24} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleSendLike}
-            >
-              <MaterialIcons name="thumb-up" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={styles.sendButton}
+            onPress={handleSendMessage}
+          >
+            <MaterialIcons name="send" size={24} color="#6E543C" />
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => setError(null)}>
+            <MaterialIcons name="close" size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -328,6 +237,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF5EA',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -351,13 +265,11 @@ const styles = StyleSheet.create({
   },
   profileImage: {
     width: horizontalScale(40),
-    height: horizontalScale(40),
+    height: verticalScale(40),
     borderRadius: horizontalScale(20),
   },
-  groupImage: {
-    width: horizontalScale(40),
-    height: horizontalScale(40),
-    borderRadius: horizontalScale(8),
+  keyboardAvoidingView: {
+    flex: 1,
   },
   messageContainer: {
     flex: 1,
@@ -372,6 +284,14 @@ const styles = StyleSheet.create({
   },
   otherMessage: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  messageAvatar: {
+    width: horizontalScale(30),
+    height: verticalScale(30),
+    borderRadius: horizontalScale(15),
+    marginRight: horizontalScale(8),
   },
   messageBubble: {
     padding: moderateScale(12),
@@ -379,15 +299,15 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(4),
   },
   myBubble: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#6E543C',
   },
   otherBubble: {
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
   },
-  iconBubble: {
-    padding: moderateScale(8),
-    alignItems: 'center',
-    justifyContent: 'center',
+  systemBubble: {
+    backgroundColor: '#F5F5F5',
+    alignSelf: 'center',
+    marginVertical: verticalScale(8),
   },
   messageText: {
     fontSize: fontScale(16),
@@ -398,55 +318,15 @@ const styles = StyleSheet.create({
   otherMessageText: {
     color: '#000000',
   },
+  systemMessageText: {
+    color: '#666666',
+    fontStyle: 'italic',
+  },
   messageTime: {
     fontSize: fontScale(12),
     color: '#666666',
     alignSelf: 'flex-end',
     marginTop: verticalScale(4),
-  },
-  imageContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: moderateScale(8),
-    marginBottom: verticalScale(4),
-  },
-  messageImage: {
-    width: horizontalScale(120),
-    height: horizontalScale(120),
-    borderRadius: moderateScale(8),
-  },
-  sharedItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(12),
-    padding: moderateScale(12),
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  sharedItemImage: {
-    width: horizontalScale(60),
-    height: horizontalScale(60),
-    borderRadius: moderateScale(8),
-    marginRight: horizontalScale(12),
-  },
-  sharedItemInfo: {
-    flex: 1,
-  },
-  sharedItemTitle: {
-    fontSize: fontScale(16),
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: verticalScale(4),
-  },
-  sharedItemLocation: {
-    fontSize: fontScale(14),
-    color: '#666666',
-  },
-  checkmark: {
-    position: 'absolute',
-    bottom: moderateScale(4),
-    right: moderateScale(4),
   },
   inputContainer: {
     flexDirection: 'row',
@@ -458,63 +338,37 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: verticalScale(40),
+    minHeight: verticalScale(40),
+    maxHeight: verticalScale(100),
     backgroundColor: '#F2F2F7',
     borderRadius: moderateScale(20),
     paddingHorizontal: horizontalScale(16),
+    paddingVertical: verticalScale(8),
     fontSize: fontScale(16),
   },
-  attachButton: {
+  sendButton: {
+    marginLeft: horizontalScale(12),
+    width: horizontalScale(40),
+    height: verticalScale(40),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    position: 'absolute',
+    bottom: verticalScale(80),
+    left: horizontalScale(16),
+    right: horizontalScale(16),
+    backgroundColor: '#FF3B30',
+    padding: moderateScale(12),
+    borderRadius: moderateScale(8),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(14),
+    flex: 1,
     marginRight: horizontalScale(8),
   },
-  inputActions: {
-    flexDirection: 'row',
-    marginLeft: horizontalScale(8),
-  },
-  actionButton: {
-    marginLeft: horizontalScale(12),
-  },
-  // Shared cafe styling
-  sharedCafeContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: moderateScale(12),
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    overflow: 'hidden',
-    marginBottom: verticalScale(4),
-  },
-  sharedCafeContent: {
-    padding: moderateScale(12),
-  },
-  sharedCafeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(4),
-  },
-  sharedCafeTitle: {
-    fontSize: fontScale(16),
-    fontWeight: '600',
-    color: '#6E543C',
-    marginLeft: horizontalScale(6),
-  },
-  sharedCafeAddress: {
-    fontSize: fontScale(14),
-    color: '#666',
-    marginBottom: verticalScale(8),
-    paddingLeft: horizontalScale(26),
-  },
-  sharedCafeFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: verticalScale(4),
-    paddingTop: verticalScale(8),
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  viewOnMapText: {
-    fontSize: fontScale(14),
-    color: '#6E543C',
-    fontWeight: '500',
-    marginLeft: horizontalScale(6),
-  }
 }); 

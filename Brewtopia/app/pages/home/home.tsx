@@ -427,7 +427,7 @@ function Home() {
         )}
         <TouchableOpacity 
           style={styles.chatBot}
-          onPress={() => setShowChatModal(true)}
+          onPress={() => router.push('/pages/chat/users')}
         >
           <Image 
             source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}

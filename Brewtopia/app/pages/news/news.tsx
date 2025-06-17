@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { withAuth } from '../../components/withAuth';
 import ApiService from '../../utils/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import socketService from '../../services/socketService';
 
 // Interface for API Post data
 interface ApiPost {
@@ -65,6 +66,11 @@ function News() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratedCafe, setRatedCafe] = useState('');
+
+  // New states for comments
+  const [comments, setComments] = useState<Record<string, any[]>>({}); // { [postId]: [comment, ...] }
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({}); // { [postId]: string }
+  const [currentUserId, setCurrentUserId] = useState('');
 
   // Function to convert API post to UI post format
   const convertApiPostToUIPost = (apiPost: ApiPost): UIPost => {
@@ -168,6 +174,49 @@ function News() {
   useEffect(() => {
     loadCurrentUser();
     fetchPosts(1, false);
+  }, []);
+
+  useEffect(() => {
+    // Lấy userId từ AsyncStorage
+    AsyncStorage.getItem('userId').then(id => {
+      if (id) setCurrentUserId(id);
+    });
+  }, []);
+
+  useEffect(() => {
+    // Lắng nghe like realtime
+    socketService.on('like:update', ({ targetId, likeChange, targetModel }) => {
+      if (targetModel === 'Post') {
+        setPosts(prev =>
+          prev.map(post =>
+            post.id === targetId
+              ? { ...post, likes: (post.likes || 0) + likeChange }
+              : post
+          )
+        );
+      }
+    });
+
+    // Lắng nghe comment realtime
+    socketService.on('comment:update', ({ action, comment }) => {
+      if (action === 'create' && comment.targetType === 'Post') {
+        setComments(prev => ({
+          ...prev,
+          [comment.targetId]: [...(prev[comment.targetId] || []), comment]
+        }));
+      }
+      if (action === 'delete' && comment.targetType === 'Post') {
+        setComments(prev => ({
+          ...prev,
+          [comment.targetId]: (prev[comment.targetId] || []).filter(c => c._id !== comment._id)
+        }));
+      }
+    });
+
+    return () => {
+      socketService.removeListener('like:update');
+      socketService.removeListener('comment:update');
+    };
   }, []);
 
   const requestPermissions = async () => {
@@ -349,6 +398,26 @@ function News() {
       </TouchableOpacity>
     </View>
   );
+
+  const handleLike = (postId: string) => {
+    if (!currentUserId) return;
+    (socketService as any).emit('likeOrUnlike', {
+      targetId: postId,
+      userId: currentUserId,
+      targetModel: 'Post'
+    });
+  };
+
+  const handleSendComment = (postId: string) => {
+    if (!currentUserId || !commentInputs[postId]?.trim()) return;
+    (socketService as any).emit('comment:create', {
+      targetId: postId,
+      userId: currentUserId,
+      targetType: 'Post',
+      content: commentInputs[postId]
+    });
+    setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+  };
 
   return (
     <SafeAreaView style={styles.container}>

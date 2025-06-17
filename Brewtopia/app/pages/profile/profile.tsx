@@ -37,7 +37,7 @@ function Profile() {
   const handleLogout = async () => {
     try {
       // Clear all user data
-      await AsyncStorage.multiRemove(['auth_token', 'user_data']);
+      await AsyncStorage.multiRemove(['token', 'user_data']);
       
       // Show logout message
       Alert.alert(
@@ -184,11 +184,11 @@ function Profile() {
                 )}
               </View>
               <View style={styles.statusContainer}>
-                {accStatus === 'Premium' ? null : (
+                {(accStatus !== 'VIP' && accStatus !== 'Premium') ? (
                   <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
                     <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
                   </View>
-                )}
+                ) : null}
                 {isAdmin ? (
                   <TouchableOpacity 
                     style={styles.bookingAdsButton}
@@ -197,12 +197,12 @@ function Profile() {
                     <Text style={styles.bookingAdsText}>Booking Ads</Text>
                   </TouchableOpacity>
                 ) : (
-                  accStatus !== 'Premium' && (
-                    <TouchableOpacity 
-                      style={styles.buyPremiumButton}
+                  accStatus !== 'Premium' && accStatus !== 'VIP' && (
+                    <TouchableOpacity
+                      style={styles.premiumButton}
                       onPress={() => router.push('/pages/premium/premium')}
                     >
-                      <Text style={styles.buyPremiumText}>Buy Premium ?</Text>
+                      <Text style={styles.premiumButtonText}>Buy Premium ?</Text>
                     </TouchableOpacity>
                   )
                 )}
@@ -423,6 +423,17 @@ const styles = StyleSheet.create({
   },
   premiumAvatar: {
     borderColor: '#FFD700',
+  },
+  premiumButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(12),
+  },
+  premiumButtonText: {
+    color: '#000000',
+    fontSize: fontScale(12),
+    fontWeight: '500',
   },
 });
 
