@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, 
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image as CachedImage } from 'expo-image';
 import { withAuth } from '../../components/withAuth';
+import ApiService from '../../utils/ApiService';
 
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
@@ -225,15 +226,7 @@ const CafeMarker = memo(({ cafe, onPress }: { cafe: Cafe; onPress: () => void })
   <Marker
     coordinate={cafe.coordinate}
     onPress={onPress}
-  >
-    <View style={styles.markerContainer}>
-      <CachedImage 
-        source={require('../../../assets/images/iconcafe.png')}
-        style={styles.markerIcon}
-        cachePolicy="memory-disk"
-      />
-    </View>
-  </Marker>
+  />
 ));
 
 // Memoized cafe card component
@@ -247,8 +240,6 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
 }) => {
   const router = useRouter();
   
-  const keyExtractor = useCallback((item: any, index: number) => `cafe-image-${index}`, []);
-  
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: horizontalScale(200),
     offset: horizontalScale(200) * index,
@@ -258,6 +249,8 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
   const renderCafeImage = useCallback(({ item }: { item: any }) => (
     <CafeImage image={item} />
   ), []);
+
+  const cafeImageKeyExtractor = useCallback((item: any, index: number) => `cafe-image-${index}`, []);
 
   return (
     <Animated.View style={[styles.cafeCard, {
@@ -323,17 +316,17 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
         <Text style={styles.detailButtonText}>Detail</Text>
       </TouchableOpacity>
 
-      <FlatList 
-        horizontal 
+      <FlatList
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.cafeImagesContainer}
         contentContainerStyle={styles.cafeImagesContent}
         data={cafe.images}
-        keyExtractor={keyExtractor}
+        keyExtractor={cafeImageKeyExtractor}
         renderItem={renderCafeImage}
-        initialNumToRender={1}
+        initialNumToRender={2}
         maxToRenderPerBatch={2}
-        windowSize={2}
+        windowSize={3}
         removeClippedSubviews={true}
         updateCellsBatchingPeriod={50}
         getItemLayout={getItemLayout}
@@ -462,10 +455,82 @@ function Nearby() {
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location);
-      
-      // Generate random cafes around user location
-      const randomCafes = generateRandomCafes(location);
-      setAllCafes([...MOCK_CAFES, ...randomCafes]);
+
+      // Lấy userId từ AsyncStorage
+      let userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        // Nếu không có userId, thử lấy từ user_data
+        const userDataString = await AsyncStorage.getItem('user_data');
+        if (userDataString) {
+          try {
+            const user = JSON.parse(userDataString);
+            userId = user._id || user.id;
+          } catch (e) {}
+        }
+      }
+
+      let cafesFromApi: Cafe[] = [];
+      if (userId) {
+        try {
+          // Gọi API lấy cafe theo userId
+          const cafeArr = await ApiService.cafe.getProfile(userId);
+          const cafeRes = Array.isArray(cafeArr) ? cafeArr[0] : cafeArr;
+          let cafeAddress = '';
+          let cafeLat: number | undefined = undefined;
+          let cafeLng: number | undefined = undefined;
+          if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
+            cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
+            cafeLat = cafeRes.address.coordinates[1];
+            cafeLng = cafeRes.address.coordinates[0];
+          } else if (cafeRes && typeof cafeRes.address === 'string') {
+            cafeAddress = cafeRes.address;
+          }
+          if (
+            typeof cafeLat === 'number' &&
+            typeof cafeLng === 'number' &&
+            !isNaN(cafeLat) &&
+            !isNaN(cafeLng) &&
+            Math.abs(cafeLat) > 0.01 &&
+            Math.abs(cafeLng) > 0.01
+          ) {
+            cafesFromApi = [{
+              id: cafeRes._id || cafeRes.id || userId,
+              name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
+              address: cafeAddress,
+              rating: cafeRes.rating || 0,
+              status: cafeRes.status || 'Open',
+              closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
+              images: [require('../../../assets/images/cafe1.png')],
+              coordinate: {
+                latitude: cafeLat,
+                longitude: cafeLng,
+              },
+            }];
+            console.log('CAFES FROM API:', cafesFromApi);
+          } else {
+            console.log('Không có toạ độ hợp lệ:', cafeLat, cafeLng);
+          }
+        } catch (err) {
+          console.log('Lỗi lấy cafe từ API:', err);
+        }
+      }
+
+      if (cafesFromApi.length > 0) {
+        setAllCafes(cafesFromApi);
+        // Zoom map về vị trí quán
+        if (cafesFromApi[0].coordinate && mapRef.current) {
+          mapRef.current.animateToRegion({
+            latitude: cafesFromApi[0].coordinate.latitude,
+            longitude: cafesFromApi[0].coordinate.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          });
+        }
+      } else {
+        // Nếu không có dữ liệu từ API thì dùng mock
+        const randomCafes = generateRandomCafes(location);
+        setAllCafes([...MOCK_CAFES, ...randomCafes]);
+      }
     })();
   }, []);
 
@@ -725,6 +790,12 @@ function Nearby() {
     }
   };
 
+  const renderRecentlyVisitedItem = useCallback(({ item }: { item: Cafe }) => (
+    <RecentlyVisitedItem cafe={item} onPress={() => handleSelectRecentCafe(item)} />
+  ), [handleSelectRecentCafe]);
+
+  const recentlyVisitedKeyExtractor = useCallback((item: Cafe) => `recent-${item.id}`, []);
+
   return (
     <SafeAreaView style={styles.container}>
       {errorMsg ? (
@@ -825,16 +896,11 @@ function Nearby() {
             ) : (
               <FlatList
                 data={recentlyVisited}
-                renderItem={({ item }) => (
-                  <RecentlyVisitedItem
-                    cafe={item}
-                    onPress={() => handleSelectRecentCafe(item)}
-                  />
-                )}
-                keyExtractor={(item) => `recent-${item.id}`}
+                renderItem={renderRecentlyVisitedItem}
+                keyExtractor={recentlyVisitedKeyExtractor}
                 style={styles.recentlyVisitedList}
-                initialNumToRender={3}
-                maxToRenderPerBatch={3}
+                initialNumToRender={2}
+                maxToRenderPerBatch={2}
                 windowSize={3}
                 removeClippedSubviews={true}
                 updateCellsBatchingPeriod={50}
