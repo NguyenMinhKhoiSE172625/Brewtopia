@@ -651,6 +651,26 @@ class ApiService {
       });
     },
   };
+
+  // Event API methods
+  events = {
+    // Lấy danh sách event
+    getEvents: async () => {
+      return this.fetch<Array<{
+        Countfollower: number;
+        _id: string;
+        title: string;
+        description: string;
+        image: string;
+        followers: string[];
+        createdAt: string;
+        updatedAt: string;
+        cafe?: string;
+      }>>('/events', {
+        method: 'GET',
+      });
+    },
+  };
 }
 
 // Export as singleton

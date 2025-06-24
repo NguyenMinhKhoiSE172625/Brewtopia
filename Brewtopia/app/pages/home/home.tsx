@@ -9,6 +9,8 @@ import UserRoleHelper from '../../utils/UserRoleHelper';
 import * as ImagePicker from 'expo-image-picker';
 import { sendMessageToGemini } from '../../services/geminiService';
 import { withAuth } from '../../components/withAuth';
+import ApiService from '../../utils/ApiService';
+import SocketService from '../../services/socketService';
 
 interface Message {
   text: string;
@@ -269,6 +271,68 @@ function Home() {
     }
   };
 
+  // State cho event
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventLoading, setEventLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Lấy danh sách event khi vào trang
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventLoading(true);
+      try {
+        const res = await ApiService.events.getEvents();
+        setEvents(res);
+      } catch (e) {
+        setEvents([]);
+      } finally {
+        setEventLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  // Lấy userId từ AsyncStorage
+  useEffect(() => {
+    AsyncStorage.getItem('user_data').then(data => {
+      if (data) {
+        try {
+          const user = JSON.parse(data);
+          setUserId(user._id || user.id);
+        } catch {}
+      }
+    });
+  }, []);
+
+  // Hàm follow/unfollow event
+  const handleFollowToggle = (eventId: string, isFollowing: boolean) => {
+    if (!userId) return;
+    SocketService.emit('followOrUnfollow', { eventId, userId });
+    // Cập nhật UI tạm thời
+    setEvents(prev => prev.map(ev =>
+      ev._id === eventId
+        ? {
+            ...ev,
+            followers: isFollowing
+              ? ev.followers.filter((id: string) => id !== userId)
+              : [...ev.followers, userId],
+            Countfollower: isFollowing ? ev.Countfollower - 1 : ev.Countfollower + 1
+          }
+        : ev
+    ));
+  };
+
+  // Lắng nghe socket cập nhật event (nếu có)
+  useEffect(() => {
+    const updateEvent = (data: any) => {
+      setEvents(prev => prev.map(ev => (ev._id === data._id ? data : ev)));
+    };
+    SocketService.on('eventUpdated', updateEvent);
+    return () => {
+      SocketService.removeListener('eventUpdated');
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Animated Welcome Popup */}
@@ -348,6 +412,42 @@ function Home() {
               </View>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Event Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Sự kiện nổi bật</Text>
+          </View>
+          {eventLoading ? (
+            <Text>Đang tải sự kiện...</Text>
+          ) : (
+            events.length === 0 ? (
+              <Text>Không có sự kiện nào.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginVertical: 8}}>
+                {events.map(event => {
+                  const isFollowing = userId && event.followers.includes(userId);
+                  return (
+                    <View key={event._id} style={{width: 260, marginRight: 16, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', elevation: 2}}>
+                      <Image source={{uri: event.image}} style={{width: 260, height: 140}} resizeMode="cover" />
+                      <View style={{padding: 10}}>
+                        <Text style={{fontWeight: 'bold', fontSize: 16, color: '#6E543C'}} numberOfLines={1}>{event.title}</Text>
+                        <Text style={{color: '#333', marginVertical: 4}} numberOfLines={2}>{event.description}</Text>
+                        <Text style={{color: '#888', fontSize: 12}}>Người theo dõi: {event.Countfollower}</Text>
+                        <TouchableOpacity
+                          style={{marginTop: 8, backgroundColor: isFollowing ? '#ccc' : '#6E543C', borderRadius: 8, paddingVertical: 6, alignItems: 'center'}}
+                          onPress={() => handleFollowToggle(event._id, isFollowing)}
+                        >
+                          <Text style={{color: '#fff', fontWeight: 'bold'}}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )
+          )}
         </View>
 
         {/* Special Offers */}
