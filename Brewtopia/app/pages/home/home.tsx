@@ -353,6 +353,26 @@ function Home() {
     checkWelcomeToast();
   }, []);
 
+  // Thêm tips cho phần Bạn có biết
+  const coffeeTips = [
+    {
+      icon: 'cafe-outline',
+      text: 'Cà phê là thức uống phổ biến thứ 2 trên thế giới, chỉ sau nước lọc!'
+    },
+    {
+      icon: 'leaf-outline',
+      text: 'Hạt cà phê thực chất là hạt của quả cà phê, không phải là hạt đậu.'
+    },
+    {
+      icon: 'flame-outline',
+      text: 'Cà phê rang càng đậm thì lượng caffeine càng ít.'
+    },
+    {
+      icon: 'timer-outline',
+      text: 'Một tách espresso chỉ mất khoảng 25-30 giây để pha.'
+    },
+  ];
+
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#FAF6F2'}}>
       <ScrollView style={styles.content} contentContainerStyle={{paddingBottom: 32}}>
@@ -464,11 +484,19 @@ function Home() {
           <FlatList
             ref={flatListRef}
             data={specialOffers}
-            renderItem={renderSpecialOffer}
+            renderItem={({item}) => (
+              <View style={styles.specialOfferCard}>
+                <Image
+                  source={item}
+                  style={styles.specialOfferImage}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            snapToInterval={Dimensions.get('window').width - horizontalScale(16)}
+            snapToInterval={Dimensions.get('window').width - horizontalScale(32) + 16}
             decelerationRate="fast"
             keyExtractor={keyExtractor}
             initialNumToRender={2}
@@ -479,7 +507,7 @@ function Home() {
             getItemLayout={getItemLayout}
             onMomentumScrollEnd={(event) => {
               const newIndex = Math.round(
-                event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32))
+                event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32) + 16)
               );
               setCurrentIndex(newIndex);
             }}
@@ -490,21 +518,30 @@ function Home() {
               });
             }}
             style={{marginTop: 8}}
+            contentContainerStyle={{paddingRight: 16}}
           />
+          {/* Indicator */}
+          <View style={styles.offerIndicatorRow}>
+            {specialOffers.map((_, idx) => (
+              <View key={idx} style={[styles.offerIndicatorDot, idx === currentIndex && styles.offerIndicatorDotActive]} />
+            ))}
+          </View>
         </View>
 
-        {/* Did you know */}
+        {/* Bạn có biết */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialIcons name="lightbulb-outline" size={20} color="#FFD700" style={{marginRight: 6}} />
             <Text style={styles.sectionTitle}>Bạn có biết?</Text>
           </View>
-          <View style={styles.didYouKnowCard}>
-            <Image source={require('../../../assets/images/didyouknow.png')} style={styles.didYouKnowImage} resizeMode="cover" />
-            <View style={{flex: 1, marginLeft: 12}}>
-              <Text style={styles.didYouKnowText}>Cà phê là thức uống phổ biến thứ 2 trên thế giới, chỉ sau nước lọc!</Text>
-            </View>
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingVertical: 4}}>
+            {coffeeTips.map((tip, idx) => (
+              <View key={idx} style={styles.tipCard}>
+                <Ionicons name={tip.icon} size={24} color={PRIMARY_BROWN} style={{marginRight: 10}} />
+                <Text style={styles.tipText}>{tip.text}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </ScrollView>
 
@@ -1083,5 +1120,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 6,
     elevation: 6,
+  },
+  specialOfferCard: {
+    width: Dimensions.get('window').width - horizontalScale(32),
+    height: verticalScale(180),
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    marginRight: 16,
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  specialOfferImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
+  },
+  offerIndicatorRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  offerIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E3D6C7',
+    marginHorizontal: 3,
+  },
+  offerIndicatorDotActive: {
+    backgroundColor: PRIMARY_BROWN,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginRight: 12,
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 2,
+    minWidth: 220,
+    maxWidth: 260,
+  },
+  tipText: {
+    color: PRIMARY_BROWN,
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
 }); 
