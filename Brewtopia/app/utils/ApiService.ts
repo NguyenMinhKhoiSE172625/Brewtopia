@@ -536,28 +536,15 @@ class ApiService {
     getPosts: async (page: number = 1, limit: number = 10) => {
       return this.fetch<{
         message: string;
-        posts: Array<{
+        data: Array<{
+          shareCount: number;
           _id: string;
-          user: {
-            _id: string;
-            name: string;
-            email: string;
-            isVerified: boolean;
-            role: string;
-            provider: string;
-            isActive: boolean;
-            points: number;
-            createdAt: string;
-            updatedAt: string;
-            verificationCode: string | null;
-          } | null;
+          user: string;
           content: string;
           images: string[];
           createdAt: string;
           updatedAt: string;
           likeCount: number;
-          shareCount: number;
-          commentCount: number;
         }>;
         total: number;
         page: number;

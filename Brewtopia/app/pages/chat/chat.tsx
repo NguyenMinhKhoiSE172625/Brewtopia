@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
@@ -20,6 +20,13 @@ interface Message {
   system?: boolean;
 }
 
+const AI_HISTORY_KEY = 'ai_chat_history';
+const AI_FEATURES_DESC = `
+Bạn là trợ lý cho app Brewtopia. App này có các tính năng: đặt bàn, đặt đồ uống, chat với quán, xem tin tức, tích điểm thưởng, đổi quà, thanh toán, hỗ trợ tài khoản, xem ưu đãi, livestream, v.v...
+Nếu người dùng hỏi về các tính năng này, hãy hướng dẫn chi tiết cách sử dụng, chỉ dẫn rõ ràng các bước thao tác hoặc vị trí nút bấm trên app.
+Nếu người dùng hỏi về một tính năng mà app chưa có, hãy trả lời: “Tính năng này đang được phát triển, bạn vui lòng chờ các bản cập nhật tiếp theo.”
+Hãy trả lời thân thiện, ngắn gọn, dễ hiểu.
+`;
 export default function Chat() {
   const router = useRouter();
   const { chatId, chatName, isGroup } = useLocalSearchParams();
@@ -29,6 +36,7 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const realChatIdRef = useRef<string>('');
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -36,23 +44,46 @@ export default function Chat() {
         setLoading(true);
         // Get current user data
         const userData = await AsyncStorage.getItem('user_data');
+        let parsedUserData = null;
         if (userData) {
-          const parsedUserData = JSON.parse(userData);
+          parsedUserData = JSON.parse(userData);
           setCurrentUser(parsedUserData);
           socketService.setCurrentUser(parsedUserData._id);
         }
 
+        // Nếu là chat với AI thì không gọi API, không join socket, không set listener
+        if (chatId === 'ai') {
+          // Load lịch sử chat AI từ AsyncStorage
+          const aiHistory = await AsyncStorage.getItem(AI_HISTORY_KEY);
+          setMessages(aiHistory ? JSON.parse(aiHistory) : []);
+          setLoading(false);
+          return;
+        }
+
         // Get chat history
-        const history = await chatService.getChatHistory(chatId as string);
+        realChatIdRef.current = Array.isArray(chatId) ? String(chatId[0]) : String(chatId);
+        const history = await chatService.getChatHistory(String(realChatIdRef.current));
         setMessages(history);
 
-        // Connect to socket and join room
+        // Connect to socket and join room (chỉ join sau khi đã có currentUser)
         socketService.connect();
-        socketService.joinRoom(chatId as string, currentUser?._id);
+        if (parsedUserData) {
+          socketService.joinRoom(String(realChatIdRef.current), parsedUserData._id);
+        }
 
         // Set up socket listeners
         socketService.on('receiveMessage', (msg: Message) => {
-          setMessages(prev => [...prev, msg]);
+          // Map sender thành object nếu là string
+          let senderObj = msg.sender;
+          if (typeof msg.sender === 'string') {
+            senderObj = { _id: msg.sender, name: 'Người dùng', avatar: undefined };
+          }
+          const fixedMsg = { ...msg, sender: senderObj };
+
+          setMessages(prev => {
+            if (prev.some(m => m._id === fixedMsg._id)) return prev;
+            return [...prev, fixedMsg];
+          });
         });
 
         socketService.on('systemMessage', (data: { message: string }) => {
@@ -76,35 +107,106 @@ export default function Chat() {
     initializeChat();
 
     return () => {
+      // Nếu là AI thì không cleanup socket
+      if (chatId === 'ai') return;
       socketService.removeListener('receiveMessage');
       socketService.removeListener('systemMessage');
       if (currentUser) {
-        socketService.leaveRoom(chatId as string, currentUser._id);
+        socketService.leaveRoom(String(realChatIdRef.current), currentUser._id);
       }
     };
   }, [chatId]);
 
+  const handleClearAIHistory = async () => {
+    Alert.alert(
+      'Xóa lịch sử',
+      'Bạn có chắc muốn xóa toàn bộ lịch sử chat với BREWBOT?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Xóa', style: 'destructive', onPress: async () => {
+          await AsyncStorage.removeItem(AI_HISTORY_KEY);
+          setMessages([]);
+        }}
+      ]
+    );
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || !currentUser) return;
 
-    const newMessage = {
-      chatId,
-      senderId: currentUser._id,
-      message: message.trim()
-    };
+    // Nếu là AI chỉ xử lý local và Gemini
+    if (chatName === 'BREWBOT' || chatId === 'ai') {
+      try {
+        // Thêm tin nhắn người dùng vào state
+        const userMsg = {
+          _id: Date.now().toString(),
+          sender: {
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatar: currentUser.avatar || require('../../../assets/images/profile1.png')
+          },
+          message: message.trim(),
+          createdAt: new Date().toISOString()
+        };
+        setMessages(prev => {
+          const newMsgs = [...prev, userMsg, {
+            _id: (Date.now() + 1).toString(),
+            sender: {
+              _id: 'ai',
+              name: 'BREWBOT',
+              avatar: require('../../../assets/images/bot1.png')
+            },
+            message: 'Đang soạn trả lời...',
+            createdAt: new Date().toISOString()
+          }];
+          AsyncStorage.setItem(AI_HISTORY_KEY, JSON.stringify(newMsgs));
+          return newMsgs;
+        });
+        setMessage('');
 
-    // If chatting with AI
+        // Gửi prompt có prepend mô tả tính năng app
+        const prompt = `${AI_FEATURES_DESC}\nNgười dùng: ${message.trim()}`;
+        const response = await sendMessageToGemini(prompt);
+
+        // Thay thế "Đang soạn trả lời..." bằng câu trả lời thật
+        setMessages(prev => {
+          const idx = prev.findIndex(m => m.sender._id === 'ai' && m.message === 'Đang soạn trả lời...');
+          if (idx !== -1) {
+            const newMsgs = [...prev];
+            newMsgs[idx] = {
+              _id: (Date.now() + 2).toString(),
+              sender: {
+                _id: 'ai',
+                name: 'BREWBOT',
+                avatar: require('../../../assets/images/bot1.png')
+              },
+              message: response.text,
+              createdAt: new Date().toISOString()
+            };
+            AsyncStorage.setItem(AI_HISTORY_KEY, JSON.stringify(newMsgs));
+            return newMsgs;
+          }
+          return prev;
+        });
+      } catch (error) {
+        setError('Không thể gửi tin nhắn');
+      }
+      return;
+    }
+
+    // Gửi lên server
     if (chatName === 'BREWBOT') {
       try {
-        // Send message to socket
-        socketService.sendMessage(newMessage);
+        socketService.sendMessage({
+          chatId: String(realChatIdRef.current),
+          senderId: currentUser._id,
+          message: message.trim()
+        });
 
-        // Get AI response
+        // Lấy phản hồi AI
         const response = await sendMessageToGemini(message.trim());
-        
-        // Add AI response to messages
         setMessages(prev => [...prev, {
-          _id: Date.now().toString(),
+          _id: (Date.now() + 1).toString(),
           sender: {
             _id: 'ai',
             name: 'BREWBOT',
@@ -114,12 +216,14 @@ export default function Chat() {
           createdAt: new Date().toISOString()
         }]);
       } catch (error) {
-        console.error('Error getting AI response:', error);
         setError('Không thể gửi tin nhắn');
       }
     } else {
-      // Normal chat
-      socketService.sendMessage(newMessage);
+      socketService.sendMessage({
+        chatId: String(realChatIdRef.current),
+        senderId: currentUser._id,
+        message: message.trim()
+      });
     }
 
     setMessage('');
@@ -147,8 +251,22 @@ export default function Chat() {
           <MaterialIcons name="arrow-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Image 
-            source={chatName === 'BREWBOT' ? require('../../../assets/images/bot1.png') : require('../../../assets/images/profile1.png')}
+          <Image
+            source={(() => {
+              if (chatName === 'BREWBOT') {
+                return require('../../../assets/images/bot1.png');
+              }
+              // Tìm avatar user đối phương trong messages (nếu có participants thì nên lấy từ participants)
+              const otherMsg = messages.find(m => m.sender && m.sender._id !== currentUser?._id && m.sender._id !== 'system');
+              let avatar = otherMsg?.sender?.avatar;
+              if (!avatar || avatar === 'false') {
+                // random avatar từ randomuser.me dựa vào id
+                const id = otherMsg?.sender?._id || 'default';
+                const hash = Math.abs(id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % 100;
+                return { uri: `https://randomuser.me/api/portraits/men/${hash}.jpg` };
+              }
+              return typeof avatar === 'string' ? { uri: avatar } : avatar;
+            })()}
             style={styles.profileImage}
           />
           <Text style={styles.headerTitle}>{chatName}</Text>
@@ -167,37 +285,38 @@ export default function Chat() {
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
           {messages.map((msg) => (
-            <View 
-              key={msg._id}
-              style={[
-                styles.messageWrapper,
-                msg.sender._id === currentUser?._id ? styles.myMessage : styles.otherMessage
-              ]}
-            >
-              {!msg.system && msg.sender._id !== currentUser?._id && (
-                <Image 
-                  source={msg.sender.avatar || require('../../../assets/images/profile1.png')}
-                  style={styles.messageAvatar}
-                />
-              )}
-              <View style={[
-                styles.messageBubble,
-                msg.sender._id === currentUser?._id ? styles.myBubble : styles.otherBubble,
-                msg.system && styles.systemBubble
-              ]}>
-                <Text style={[
-                  styles.messageText,
-                  msg.sender._id === currentUser?._id ? styles.myMessageText : styles.otherMessageText,
-                  msg.system && styles.systemMessageText
-                ]}>{msg.message}</Text>
+            msg.system ? null : (
+              <View 
+                key={msg._id}
+                style={[
+                  styles.messageWrapper,
+                  msg.sender._id === currentUser?._id ? styles.myMessage : styles.otherMessage
+                ]}
+              >
+                {!msg.system && msg.sender._id !== currentUser?._id && (
+                  <Image 
+                    source={msg.sender.avatar || require('../../../assets/images/profile1.png')}
+                    style={styles.messageAvatar}
+                  />
+                )}
+                <View style={[
+                  styles.messageBubble,
+                  msg.sender._id === currentUser?._id ? styles.myBubble : styles.otherBubble,
+                  msg.system && styles.systemBubble
+                ]}>
+                  <Text style={[
+                    styles.messageText,
+                    msg.sender._id === currentUser?._id ? styles.myMessageText : styles.otherMessageText,
+                    msg.system && styles.systemMessageText
+                  ]}>{msg.message}</Text>
+                </View>
+                <Text style={styles.messageTime}>
+                  {msg.createdAt && !isNaN(new Date(msg.createdAt).getTime())
+                    ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                    : ''}
+                </Text>
               </View>
-              <Text style={styles.messageTime}>
-                {new Date(msg.createdAt).toLocaleTimeString('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
-            </View>
+            )
           ))}
         </ScrollView>
 
@@ -228,6 +347,12 @@ export default function Chat() {
             <MaterialIcons name="close" size={20} color="#FFF" />
           </TouchableOpacity>
         </View>
+      )}
+
+      {chatId === 'ai' && (
+        <TouchableOpacity style={{position: 'absolute', top: 10, right: 16, zIndex: 10}} onPress={handleClearAIHistory}>
+          <MaterialIcons name="delete" size={24} color="#fff" />
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );

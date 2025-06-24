@@ -3,6 +3,8 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, Modal, Dime
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../utils/scaling';
 import ApiService from '../utils/ApiService';
+import socketService from '../services/socketService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Comment {
   id: string;
@@ -44,6 +46,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Check if imageUrl is an array (multiple images) or single image
   const isMultipleImages = Array.isArray(imageUrl);
@@ -103,15 +106,17 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     }
   };
 
-  const handleLike = async () => {
-    try {
-      await ApiService.posts.toggleLike(id);
-      setIsLiked(!isLiked);
-      setLikes(prev => isLiked ? prev - 1 : prev + 1);
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      Alert.alert('Error', 'Failed to update like. Please try again.');
-    }
+  const handleLike = () => {
+    if (!currentUserId) return;
+    // Optimistic update
+    setIsLiked(prev => !prev);
+    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+    // Emit socket event với đúng targetModel và userId
+    socketService.emit('likeOrUnlike', {
+      targetId: id,
+      userId: currentUserId,
+      targetModel: 'Post'
+    });
   };
 
   const handleAddComment = async () => {
@@ -312,6 +317,93 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     }
   };
 
+  useEffect(() => {
+    // Lấy userId hiện tại từ AsyncStorage
+    const getUserId = async () => {
+      const userData = await AsyncStorage.getItem('user_data');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setCurrentUserId(parsed._id);
+      }
+    };
+    getUserId();
+  }, []);
+
+  // Khi load lại post, lấy trạng thái like từ API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLikeStatus = async () => {
+      if (!currentUserId) return;
+      try {
+        const API_URL = 'http://10.0.2.2:4000/api'; // hoặc import từ config/constants
+        const res = await fetch(`${API_URL}/likes/${id}?targetModel=Post`);
+        const data = await res.json();
+        if (!isMounted) return;
+        setLikes(Number(data.likeCount) || 0);
+        // Nếu backend trả về likedByCurrentUser
+        if (typeof data.likedByCurrentUser === 'boolean') {
+          setIsLiked(data.likedByCurrentUser);
+        } else if (Array.isArray(data.likedUserIds)) {
+          setIsLiked(data.likedUserIds.includes(currentUserId));
+        }
+      } catch (e) {
+        // fallback: không đổi trạng thái
+      }
+    };
+    fetchLikeStatus();
+    return () => { isMounted = false; };
+  }, [id, currentUserId]);
+
+  // Fetch comments chỉ khi showComments chuyển từ false sang true và chưa từng load
+  useEffect(() => {
+    let isMounted = true;
+    if (showComments && !commentsLoaded) {
+      (async () => {
+        try {
+          setLoadingComments(true);
+          const response = await ApiService.posts.getComments(id, 'Post');
+          const uiComments = response.map(convertApiCommentToUIComment);
+          if (!isMounted) return;
+          setComments(uiComments);
+          setCommentsLoaded(true);
+        } catch (error) {
+          if (isMounted) {
+            console.error('Error fetching comments:', error);
+            Alert.alert('Error', 'Failed to load comments. Please try again.');
+          }
+        } finally {
+          if (isMounted) setLoadingComments(false);
+        }
+      })();
+    }
+    return () => { isMounted = false; };
+  }, [showComments, commentsLoaded, id]);
+
+  useEffect(() => {
+    // Lắng nghe event likeOrUnlike từ server
+    const onLikeOrUnlike = (data: any) => {
+      if (data.targetId === id && data.targetModel === 'Post') {
+        setLikes(Number(data.likeCount) || 0);
+        // Nếu backend trả về userId vừa like/unlike
+        if (data.userId && currentUserId) {
+          if (data.userId === currentUserId) {
+            setIsLiked(prev => !prev); // Toggle trạng thái like của chính mình
+          }
+        }
+        // Nếu backend trả về likedByCurrentUser hoặc likedUserIds
+        if (typeof data.likedByCurrentUser === 'boolean') {
+          setIsLiked(data.likedByCurrentUser);
+        } else if (Array.isArray(data.likedUserIds) && currentUserId) {
+          setIsLiked(data.likedUserIds.includes(currentUserId));
+        }
+      }
+    };
+    socketService.on('likeOrUnlike', onLikeOrUnlike);
+    return () => {
+      socketService.removeListener('likeOrUnlike');
+    };
+  }, [id, currentUserId]);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -334,7 +426,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
             size={24} 
             color={isLiked ? "#FF0000" : "#6E543C"} 
           />
-          <Text style={styles.actionText}>{likes} likes</Text>
+          <Text style={styles.actionText}>{Number.isFinite(likes) ? likes : 0} likes</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

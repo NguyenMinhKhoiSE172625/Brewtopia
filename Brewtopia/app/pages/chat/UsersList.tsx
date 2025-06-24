@@ -8,6 +8,7 @@ import { API_URL } from '../../config/constants';
 interface User {
   _id: string;
   name: string;
+  email?: string;
   avatar?: string;
   isAI?: boolean;
 }
@@ -53,7 +54,7 @@ const UsersList: React.FC<UsersListProps> = ({ onUserSelect, currentUserId }) =>
       };
 
       // Filter out current user and add AI user
-      const filteredUsers = data.filter((user: User) => user._id !== currentUserId);
+      const filteredUsers = data.filter((user: User) => String(user._id) !== String(currentUserId));
       setUsers([aiUser, ...filteredUsers]);
     } catch (err) {
       setError('Không thể tải danh sách người dùng');
@@ -63,26 +64,46 @@ const UsersList: React.FC<UsersListProps> = ({ onUserSelect, currentUserId }) =>
     }
   };
 
-  const renderUserItem = ({ item }: { item: User }) => (
-    <TouchableOpacity 
-      style={styles.userItem}
-      onPress={() => onUserSelect(item)}
-    >
-      <Image 
-        source={item.avatar || require('../../../assets/images/profile1.png')}
-        style={styles.userAvatar}
-      />
-      <View style={styles.userInfo}>
-        <Text style={styles.userName}>{item.name}</Text>
-        {item.isAI && (
-          <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>AI</Text>
+  const renderUserItem = ({ item }: { item: User }) => {
+    // Avatar mặc định random nếu không có
+    let avatarSource;
+    if (item.avatar && item.avatar !== 'false') {
+      avatarSource = typeof item.avatar === 'string' ? { uri: item.avatar } : item.avatar;
+    } else if (item.isAI) {
+      avatarSource = require('../../../assets/images/bot1.png');
+    } else {
+      // random avatar từ randomuser.me (dựa vào _id để không đổi mỗi lần render)
+      const hash = Math.abs(
+        item._id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+      ) % 100;
+      avatarSource = { uri: `https://randomuser.me/api/portraits/men/${hash}.jpg` };
+    }
+    return (
+      <TouchableOpacity 
+        style={styles.userItem}
+        onPress={() => onUserSelect(item)}
+      >
+        <Image 
+          source={avatarSource}
+          style={styles.userAvatar}
+        />
+        <View style={styles.userInfoCol}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.userName}>{item.name}</Text>
+            {item.isAI && (
+              <View style={styles.aiBadge}>
+                <Text style={styles.aiBadgeText}>AI</Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
-      <MaterialIcons name="chevron-right" size={24} color="#999" />
-    </TouchableOpacity>
-  );
+          {item.email && (
+            <Text style={styles.userEmail}>{item.email}</Text>
+          )}
+        </View>
+        <MaterialIcons name="chevron-right" size={24} color="#999" />
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -144,10 +165,10 @@ const styles = StyleSheet.create({
     borderRadius: horizontalScale(25),
     marginRight: horizontalScale(12),
   },
-  userInfo: {
+  userInfoCol: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   userName: {
     fontSize: fontScale(16),
@@ -165,6 +186,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: fontScale(12),
     fontWeight: '500',
+  },
+  userEmail: {
+    fontSize: fontScale(13),
+    color: '#888',
+    marginTop: 2,
   },
   loadingContainer: {
     flex: 1,

@@ -46,6 +46,19 @@ export default function Users() {
       return;
     }
 
+    // Nếu là AI thì chuyển thẳng sang chat bot, không tạo phòng, không join socket
+    if (user.isAI) {
+      router.push({
+        pathname: '/pages/chat/chat',
+        params: {
+          chatId: 'ai',
+          chatName: user.name,
+          isGroup: 'false'
+        }
+      });
+      return;
+    }
+
     try {
       // Tạo phòng chat với user được chọn (chỉ truyền user._id, không truyền currentUser._id)
       const response = await chatService.createChatRoom(

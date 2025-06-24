@@ -198,7 +198,7 @@ function Profile() {
                   </TouchableOpacity>
                 ) : (
                   accStatus !== 'Premium' && accStatus !== 'VIP' && (
-                    <TouchableOpacity
+                    <TouchableOpacity 
                       style={styles.premiumButton}
                       onPress={() => router.push('/pages/premium/premium')}
                     >

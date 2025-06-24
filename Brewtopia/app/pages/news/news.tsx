@@ -136,7 +136,19 @@ function News() {
       }
 
       const response = await ApiService.posts.getPosts(pageNum, 10);
-      const uiPosts = response.posts.map(convertApiPostToUIPost);
+      console.log('API getPosts response:', response);
+
+      // Sử dụng response.data thay vì response.posts
+      if (!response || !Array.isArray(response.data)) {
+        console.error('API trả về không có trường data:', response);
+        Alert.alert('Lỗi', 'Không lấy được danh sách bài viết từ server.');
+        setPosts([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      const uiPosts = response.data.map(convertApiPostToUIPost);
 
       if (isRefresh || pageNum === 1) {
         setPosts(uiPosts);
