@@ -11,6 +11,8 @@ import { sendMessageToGemini } from '../../services/geminiService';
 import { withAuth } from '../../components/withAuth';
 import ApiService from '../../utils/ApiService';
 import SocketService from '../../services/socketService';
+import { LinearGradient } from 'expo-linear-gradient';
+import { PRIMARY_BROWN } from '../../config/constants';
 
 interface Message {
   text: string;
@@ -309,17 +311,20 @@ function Home() {
     if (!userId) return;
     SocketService.emit('followOrUnfollow', { eventId, userId });
     // Cập nhật UI tạm thời
-    setEvents(prev => prev.map(ev =>
-      ev._id === eventId
-        ? {
-            ...ev,
-            followers: isFollowing
-              ? ev.followers.filter((id: string) => id !== userId)
-              : [...ev.followers, userId],
-            Countfollower: isFollowing ? ev.Countfollower - 1 : ev.Countfollower + 1
-          }
-        : ev
-    ));
+    setEvents(prev => prev.map(ev => {
+      if (ev._id !== eventId) return ev;
+      let newFollowers = isFollowing
+        ? ev.followers.filter((id: string) => id !== userId)
+        : [...ev.followers, userId];
+      let newCount = isFollowing
+        ? Math.max(0, ev.Countfollower - 1)
+        : ev.Countfollower + 1;
+      return {
+        ...ev,
+        followers: newFollowers,
+        Countfollower: newCount
+      };
+    }));
   };
 
   // Lắng nghe socket cập nhật event (nếu có)
@@ -333,75 +338,67 @@ function Home() {
     };
   }, []);
 
+  const [showWelcomeToast, setShowWelcomeToast] = useState(false);
+
+  useEffect(() => {
+    // Kiểm tra đã hiện toast chưa
+    const checkWelcomeToast = async () => {
+      const shown = await AsyncStorage.getItem('welcome_toast_shown');
+      if (!shown) {
+        setShowWelcomeToast(true);
+        await AsyncStorage.setItem('welcome_toast_shown', '1');
+        setTimeout(() => setShowWelcomeToast(false), 2500);
+      }
+    };
+    checkWelcomeToast();
+  }, []);
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Animated Welcome Popup */}
-      {showWelcomePopup && (
-        <Animated.View 
-          style={[
-            styles.welcomePopup,
-            {
-              opacity: welcomePopupOpacity,
-              transform: [{ translateY: welcomePopupTranslateY }],
-            }
-          ]}
-        >
-          <Text style={styles.welcomePopupText}>
-            Welcome, {userName || 'User'} ({UserRoleHelper.getDisplayName(userRole)})
-          </Text>
-        </Animated.View>
-      )}
-      
-      <ScrollView style={styles.content}>
-        <View style={styles.topSection}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.locationContainer}>
-              <MaterialIcons name="location-on" size={24} color="#FFFFFF" />
-              <Text style={styles.locationText}>Ho Chi Minh, Viet Nam</Text>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#FAF6F2'}}>
+      <ScrollView style={styles.content} contentContainerStyle={{paddingBottom: 32}}>
+        {/* Card lớn chứa search + quick actions */}
+        <View style={styles.topCard}>
+          {/* Search Bar + Camera + Chuông cùng hàng */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchBarWrapShort}>
+              <MaterialIcons name="search" size={20} color={PRIMARY_BROWN} style={{marginLeft: 8}} />
+              <TouchableOpacity 
+                style={styles.searchBar}
+                onPress={() => router.push("/pages/search/search")}
+              >
+                <Text style={styles.searchInput}>Tìm đồ uống, quán cafe...</Text>
+              </TouchableOpacity>
             </View>
             <TouchableOpacity 
-              style={styles.notificationButton}
+              style={styles.iconButton}
+              onPress={handleCameraPress}
+            >
+              <MaterialIcons name="camera-alt" size={20} color={PRIMARY_BROWN} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.iconButton}
               onPress={() => router.push("/pages/notifications/notifications")}
             >
-              <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <TouchableOpacity 
-              style={styles.searchBar}
-              onPress={() => router.push("/pages/search/search")}
-            >
-              <MaterialIcons name="search" size={24} color="#6E543C" />
-              <Text style={styles.searchInput}>Search for drinks...</Text>
-              <TouchableOpacity 
-                style={styles.filterButton}
-                onPress={handleCameraPress}
-              >
-                <MaterialIcons name="camera-alt" size={24} color="#6E543C" />
-              </TouchableOpacity>
+              <Ionicons name="notifications-outline" size={22} color={PRIMARY_BROWN} />
             </TouchableOpacity>
           </View>
 
           {/* Quick Actions */}
-          <View style={styles.quickActions}>
+          <View style={styles.quickActionsRow}>
             <TouchableOpacity 
-              style={styles.paymentCard}
+              style={styles.quickActionCard}
               onPress={() => router.push("/pages/payment/payment")}
             >
-              <View style={styles.paymentContent}>
-                <Text style={styles.paymentTitle}>Payment</Text>
-                <Text style={styles.paymentSubtitle}>Add card</Text>
-                <MaterialIcons name="credit-card" size={24} color="#000000" style={styles.paymentIcon} />
-              </View>
+              <MaterialIcons name="credit-card" size={28} color={PRIMARY_BROWN} style={styles.quickActionIcon} />
+              <Text style={styles.quickActionTitle}>Payment</Text>
+              <Text style={styles.quickActionSubtitle}>Add card</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.rewardsCard}
+              style={styles.quickActionCard}
               onPress={() => router.push("/pages/rewards/rewards")}
             >
-              <Text style={styles.rewardsTitle}>Brewtopia Rewards</Text>
+              <FontAwesome5 name="coins" size={26} color="#FFD700" style={styles.quickActionIcon} />
+              <Text style={styles.quickActionTitle}>Rewards</Text>
               <View style={styles.rewardsPointsContainer}>
                 <Text style={styles.rewardsPoints}>100</Text>
                 <Image 
@@ -414,32 +411,37 @@ function Home() {
           </View>
         </View>
 
-        {/* Event Section */}
+        {/* Sự kiện nổi bật */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
+            <MaterialIcons name="local-fire-department" size={22} color="#FF5722" style={{marginRight: 6}} />
             <Text style={styles.sectionTitle}>Sự kiện nổi bật</Text>
           </View>
           {eventLoading ? (
-            <Text>Đang tải sự kiện...</Text>
+            <Text style={styles.sectionLoading}>Đang tải sự kiện...</Text>
           ) : (
             events.length === 0 ? (
-              <Text>Không có sự kiện nào.</Text>
+              <View style={styles.emptyEventWrap}>
+                <Image source={require('../../../assets/images/didyouknow.png')} style={{width: 60, height: 60, marginBottom: 8}} />
+                <Text style={{color: '#888'}}>Chưa có sự kiện nào</Text>
+              </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginVertical: 8}}>
                 {events.map(event => {
-                  const isFollowing = userId && event.followers.includes(userId);
+                  const isFollowing = !!(userId && event.followers.includes(userId));
                   return (
-                    <View key={event._id} style={{width: 260, marginRight: 16, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', elevation: 2}}>
-                      <Image source={{uri: event.image}} style={{width: 260, height: 140}} resizeMode="cover" />
-                      <View style={{padding: 10}}>
-                        <Text style={{fontWeight: 'bold', fontSize: 16, color: '#6E543C'}} numberOfLines={1}>{event.title}</Text>
-                        <Text style={{color: '#333', marginVertical: 4}} numberOfLines={2}>{event.description}</Text>
-                        <Text style={{color: '#888', fontSize: 12}}>Người theo dõi: {event.Countfollower}</Text>
+                    <View key={event._id} style={styles.eventCard}>
+                      <Image source={{uri: event.image}} style={styles.eventImage} resizeMode="cover" />
+                      <View style={styles.eventInfo}>
+                        <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
+                        <Text style={styles.eventDesc} numberOfLines={2}>{event.description}</Text>
+                        <Text style={styles.eventFollower}>Người theo dõi: {event.Countfollower}</Text>
                         <TouchableOpacity
-                          style={{marginTop: 8, backgroundColor: isFollowing ? '#ccc' : '#6E543C', borderRadius: 8, paddingVertical: 6, alignItems: 'center'}}
+                          style={[styles.eventFollowBtn, isFollowing && styles.eventFollowedBtn]}
                           onPress={() => handleFollowToggle(event._id, isFollowing)}
+                          disabled={!userId}
                         >
-                          <Text style={{color: '#fff', fontWeight: 'bold'}}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
+                          <Text style={styles.eventFollowText}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -453,9 +455,10 @@ function Home() {
         {/* Special Offers */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Special Offers</Text>
+            <FontAwesome5 name="gift" size={20} color="#E91E63" style={{marginRight: 6}} />
+            <Text style={styles.sectionTitle}>Ưu đãi đặc biệt</Text>
             <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -486,55 +489,33 @@ function Home() {
                 flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
               });
             }}
+            style={{marginTop: 8}}
           />
         </View>
 
-        {/* Did you know section */}
-        <View style={styles.didYouKnow}>
-          <Text style={styles.sectionTitle}>Did you know ...</Text>
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedImage(require('../../../assets/images/didyouknow.png'));
-              setShowImageModal(true);
-            }}
-          >
-            <Image 
-              source={require('../../../assets/images/didyouknow.png')}
-              style={styles.didYouKnowImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
+        {/* Did you know */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <MaterialIcons name="lightbulb-outline" size={20} color="#FFD700" style={{marginRight: 6}} />
+            <Text style={styles.sectionTitle}>Bạn có biết?</Text>
+          </View>
+          <View style={styles.didYouKnowCard}>
+            <Image source={require('../../../assets/images/didyouknow.png')} style={styles.didYouKnowImage} resizeMode="cover" />
+            <View style={{flex: 1, marginLeft: 12}}>
+              <Text style={styles.didYouKnowText}>Cà phê là thức uống phổ biến thứ 2 trên thế giới, chỉ sau nước lọc!</Text>
+            </View>
+          </View>
         </View>
-
-        {/* Add spacing for chatbot */}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* AI Chat Bot */}
-      <View style={styles.chatBotContainer}>
-        {showBotMessage && (
-          <Animated.View style={[
-            styles.chatBubble,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { scale: scaleAnim },
-              ],
-            }
-          ]}>
-            <Text style={styles.chatBubbleText}>How can i help you...</Text>
-          </Animated.View>
-        )}
-        <TouchableOpacity 
-          style={styles.chatBot}
-          onPress={() => router.push('/pages/chat/users')}
-        >
-          <Image 
-            source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
-            style={styles.botImage}
-          />
-        </TouchableOpacity>
-      </View>
+      {/* Nút chat nổi ngoài cùng, không bị che tab bar */}
+      <TouchableOpacity
+        style={[styles.floatingButton, {bottom: 90, right: 18}]}
+        onPress={() => router.push('/pages/chat/users')}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={32} color={PRIMARY_BROWN} />
+      </TouchableOpacity>
 
       <BottomBar />
 
@@ -590,7 +571,7 @@ function Home() {
                 onPress={() => setShowChatModal(false)}
                 style={styles.chatCloseButton}
               >
-                <MaterialIcons name="close" size={24} color="#6E543C" />
+                <MaterialIcons name="close" size={24} color={PRIMARY_BROWN} />
               </TouchableOpacity>
             </View>
 
@@ -630,7 +611,7 @@ function Home() {
                 <MaterialIcons 
                   name={isLoading ? "hourglass-empty" : "send"} 
                   size={24} 
-                  color={isLoading ? "#999" : "#6E543C"} 
+                  color={isLoading ? "#999" : PRIMARY_BROWN} 
                 />
               </TouchableOpacity>
             </View>
@@ -676,218 +657,242 @@ export default withAuth(Home);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAF6F2',
   },
   content: {
     flex: 1,
+    paddingHorizontal: 0,
   },
-  topSection: {
-    backgroundColor: '#6E543C',
-    paddingBottom: 16,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  locationText: {
-    fontSize: fontScale(16),
-    fontWeight: '600',
-    marginLeft: horizontalScale(8),
-    color: '#FFFFFF',
-  },
-  notificationButton: {
-    padding: moderateScale(8),
-  },
-  searchContainer: {
+  topCard: {
+    backgroundColor: '#F5E9DA',
+    borderRadius: 28,
+    marginHorizontal: 16,
+    marginTop: 24,
+    paddingTop: 18,
+    paddingBottom: 18,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    shadowColor: '#6E543C',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    zIndex: 3,
+    position: 'relative',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  searchBarWrapShort: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#E3D6C7',
+    marginRight: 8,
   },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8E8E8',
-    padding: moderateScale(12),
-    borderRadius: moderateScale(10),
+    flex: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
   },
   searchInput: {
-    flex: 1,
-    marginLeft: horizontalScale(8),
-    fontSize: fontScale(14),
-    color: '#999',
+    color: '#6E543C',
+    fontSize: fontScale(15),
+    fontWeight: '500',
   },
-  filterButton: {
-    backgroundColor: '#FFFFFF',
-    padding: moderateScale(8),
-    borderRadius: moderateScale(8),
+  iconButton: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 8,
+    marginLeft: 4,
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  quickActions: {
+  quickActionsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 16,
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 14,
   },
-  paymentCard: {
+  quickActionCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(15),
-    padding: moderateScale(12),
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: verticalScale(2),
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: moderateScale(3),
-    elevation: 3,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    alignItems: 'center',
+    paddingVertical: 18,
+    marginHorizontal: 0,
+    borderWidth: 1,
+    borderColor: '#E3D6C7',
+    shadowColor: 'transparent',
+    shadowOffset: {width: 0, height: 0},
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
-  paymentContent: {
-    alignItems: 'flex-start',
+  quickActionIcon: {
+    marginBottom: 6,
   },
-  paymentTitle: {
-    fontSize: fontScale(16),
-    fontWeight: '500',
-    color: '#000000',
+  quickActionTitle: {
+    fontSize: fontScale(15),
+    fontWeight: '700',
+    color: '#6E543C',
   },
-  paymentSubtitle: {
-    fontSize: fontScale(14),
-    color: '#000000',
-    marginTop: verticalScale(2),
-  },
-  paymentIcon: {
-    position: 'absolute',
-    right: 0,
-    top: '50%',
-    marginTop: -12,
-  },
-  rewardsCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  rewardsTitle: {
-    fontSize: fontScale(16),
-    fontWeight: '500',
-    color: '#000000',
+  quickActionSubtitle: {
+    fontSize: fontScale(12),
+    color: '#BCA483',
+    marginTop: 2,
   },
   rewardsPointsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 2,
   },
   rewardsPoints: {
-    fontSize: fontScale(20),
+    fontSize: fontScale(16),
     fontWeight: 'bold',
-    color: '#000000',
-    marginRight: horizontalScale(4),
+    color: '#FFD700',
+    marginRight: 4,
   },
   rewardsIcon: {
-    width: horizontalScale(24),
-    height: verticalScale(24),
-    marginLeft: horizontalScale(4),
+    width: 18,
+    height: 18,
   },
   section: {
-    padding: moderateScale(16),
-    marginBottom: verticalScale(16),
+    marginTop: 24,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: verticalScale(12),
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: fontScale(18),
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#6E543C',
+  },
+  sectionLoading: {
+    color: '#888',
+    marginVertical: 12,
+    textAlign: 'center',
   },
   seeAllText: {
-    fontSize: fontScale(14),
-    color: '#6E543C',
+    color: '#E91E63',
+    fontWeight: '600',
+    marginLeft: 'auto',
+    fontSize: fontScale(13),
   },
-  didYouKnow: {
-    padding: 16,
+  emptyEventWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+  },
+  eventCard: {
+    width: 260,
+    marginRight: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  eventImage: {
+    width: 260,
+    height: 140,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  eventInfo: {
+    padding: 12,
+  },
+  eventTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#6E543C',
+    marginBottom: 2,
+  },
+  eventDesc: {
+    color: '#333',
+    marginVertical: 4,
+    fontSize: 13,
+  },
+  eventFollower: {
+    color: '#888',
+    fontSize: 12,
+  },
+  eventFollowBtn: {
+    marginTop: 10,
+    backgroundColor: '#6E543C',
+    borderRadius: 8,
+    paddingVertical: 7,
+    alignItems: 'center',
+  },
+  eventFollowedBtn: {
+    backgroundColor: '#ccc',
+  },
+  eventFollowText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  didYouKnowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 2,
   },
   didYouKnowImage: {
-    width: '100%',
-    height: verticalScale(150),
-    borderRadius: moderateScale(20),
+    width: 48,
+    height: 48,
+    borderRadius: 10,
   },
-  chatBotContainer: {
+  didYouKnowText: {
+    color: '#6E543C',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  fabChatBotWrap: {
     position: 'absolute',
-    bottom: verticalScale(80),
-    right: horizontalScale(16),
-    alignItems: 'flex-end',
-    zIndex: 1000,
+    right: 18,
+    bottom: 28,
+    zIndex: 100,
   },
-  chatBot: {
-    width: horizontalScale(60),
-    height: verticalScale(60),
+  fabChatBot: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  botImage: {
-    width: horizontalScale(60),
-    height: verticalScale(60),
-  },
-  chatBubble: {
-    backgroundColor: '#D9D9D9',
-    padding: moderateScale(12),
-    borderRadius: moderateScale(30),
-    marginBottom: verticalScale(8),
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  chatBubbleText: {
-    color: '#6E543C',
-    fontSize: fontScale(18),
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: horizontalScale(16),
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  activeNavItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(20),
-    paddingHorizontal: horizontalScale(16),
-  },
-  navText: {
-    marginTop: verticalScale(4),
-    fontSize: fontScale(12),
-    color: '#999',
-  },
-  activeNavText: {
-    color: '#6E543C',
+  fabBotImage: {
+    width: 40,
+    height: 40,
   },
   modalOverlay: {
     flex: 1,
@@ -921,18 +926,6 @@ const styles = StyleSheet.create({
     padding: moderateScale(8),
     zIndex: 1000,
     elevation: 5,
-  },
-  specialOfferImage: {
-    width: Dimensions.get('window').width - horizontalScale(32),
-    height: verticalScale(180),
-    borderRadius: moderateScale(20),
-    marginRight: horizontalScale(16),
-  },
-  specialOfferContainer: {
-    marginBottom: verticalScale(20),
-  },
-  specialOfferHeader: {
-    marginBottom: verticalScale(10),
   },
   chatModalOverlay: {
     flex: 1,
@@ -1058,5 +1051,37 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  welcomeToast: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    backgroundColor: PRIMARY_BROWN,
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    zIndex: 200,
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  welcomeToastText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  floatingButton: {
+    position: 'absolute',
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 10,
+    zIndex: 100,
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
   },
 }); 

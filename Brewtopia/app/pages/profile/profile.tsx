@@ -8,6 +8,7 @@ import BottomBar from '../../components/BottomBar';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { withAuth } from '../../components/withAuth';
+import { PRIMARY_BROWN } from '../../config/constants';
 
 function Profile() {
   const router = useRouter();
@@ -222,9 +223,9 @@ function Profile() {
                     style={styles.menuItem}
                     onPress={item.onPress}
                   >
-                    <MaterialIcons name={item.icon as any} size={24} color="#6E543C" />
+                    <MaterialIcons name={item.icon as any} size={24} color={PRIMARY_BROWN} />
                     <Text style={styles.menuText}>{item.title}</Text>
-                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+                    <MaterialIcons name="chevron-right" size={24} color={PRIMARY_BROWN} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -240,9 +241,9 @@ function Profile() {
                     style={styles.menuItem}
                     onPress={item.onPress}
                   >
-                    <MaterialIcons name="chat-bubble-outline" size={24} color="#6E543C" />
+                    <MaterialIcons name="chat-bubble-outline" size={24} color={PRIMARY_BROWN} />
                     <Text style={styles.menuText}>{item.title}</Text>
-                    <MaterialIcons name="chevron-right" size={24} color="#6E543C" />
+                    <MaterialIcons name="chevron-right" size={24} color={PRIMARY_BROWN} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -267,7 +268,7 @@ function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#6E543C',
+    backgroundColor: PRIMARY_BROWN,
   },
   gradient: {
     flex: 1,
@@ -350,7 +351,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontScale(18),
     fontWeight: '600',
-    color: '#6E543C',
+    color: PRIMARY_BROWN,
     marginBottom: verticalScale(16),
   },
   menuContainer: {
