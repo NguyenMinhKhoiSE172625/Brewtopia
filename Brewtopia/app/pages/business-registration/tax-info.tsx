@@ -22,7 +22,7 @@ export default function TaxInfo() {
 
   const handleNext = async () => {
     if (!selectedType) {
-      Alert.alert('Error', 'Please select a business type');
+      Alert.alert('Lỗi', 'Vui lòng chọn loại hình kinh doanh');
       return;
     }
     try {
@@ -35,7 +35,7 @@ export default function TaxInfo() {
       });
       router.push('/pages/business-registration/identification');
     } catch (error) {
-      Alert.alert('Error', 'Cập nhật thông tin thất bại');
+      Alert.alert('Lỗi', 'Cập nhật thông tin thất bại');
     }
   };
 
@@ -45,7 +45,7 @@ export default function TaxInfo() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tax Information</Text>
+        <Text style={styles.headerTitle}>Thông tin thuế</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -60,10 +60,10 @@ export default function TaxInfo() {
       </View>
 
       <View style={styles.labels}>
-        <Text style={styles.labelText}>Information</Text>
+        <Text style={styles.labelText}>Thông tin</Text>
         <Text style={styles.labelText}>Menu</Text>
-        <Text style={styles.labelText}>Tax{'\n'}Information</Text>
-        <Text style={styles.labelText}>Identification{'\n'}Information</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}thuế</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}định danh</Text>
       </View>
 
       <View style={styles.content}>
@@ -108,10 +108,10 @@ export default function TaxInfo() {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>Quay lại</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>Next</Text>
+          <Text style={styles.nextButtonText}>Tiếp theo</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

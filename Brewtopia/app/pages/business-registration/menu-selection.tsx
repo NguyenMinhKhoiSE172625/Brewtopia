@@ -73,13 +73,13 @@ export default function MenuSelection() {
         }
       })
       .catch(() => {
-        Alert.alert('Error', 'Failed to load cafe information');
+        Alert.alert('Lỗi', 'Tải thông tin quán cà phê thất bại');
       });
   }, [cafeId]);
 
   const handleAddMenuItem = () => {
     if (!menuId) {
-      Alert.alert('Error', 'Menu not ready. Please wait a moment and try again.');
+              Alert.alert('Lỗi', 'Menu chưa sẵn sàng. Vui lòng đợi một chút và thử lại.');
       return;
     }
 
@@ -90,7 +90,7 @@ export default function MenuSelection() {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please allow access to your photo library');
+        Alert.alert('Quyền truy cập bị từ chối', 'Vui lòng cho phép truy cập thư viện ảnh');
         return;
       }
 
@@ -105,34 +105,34 @@ export default function MenuSelection() {
         setNewItemImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not pick image');
+      Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
   };
 
   const handleSaveItem = async () => {
     if (!newItemName.trim()) {
-      Alert.alert('Error', 'Please enter a name for the menu item');
+      Alert.alert('Lỗi', 'Vui lòng nhập tên cho món ăn');
       return;
     }
     if (!newItemImage) {
-      Alert.alert('Error', 'Please upload an image for the menu item');
+      Alert.alert('Lỗi', 'Vui lòng tải lên hình ảnh cho món ăn');
       return;
     }
     if (!newItemPrice.trim()) {
-      Alert.alert('Error', 'Please enter a price for the menu item');
+      Alert.alert('Lỗi', 'Vui lòng nhập giá cho món ăn');
       return;
     }
     if (!newItemCategory.trim()) {
-      Alert.alert('Error', 'Please enter a category for the menu item');
+      Alert.alert('Lỗi', 'Vui lòng nhập danh mục cho món ăn');
       return;
     }
     if (!menuId) {
-      Alert.alert('Error', 'Menu ID not found');
+      Alert.alert('Lỗi', 'Không tìm thấy ID menu');
       return;
     }
     try {
       if (!menuId) {
-        Alert.alert('Error', 'Menu ID not available. Please try again.');
+        Alert.alert('Lỗi', 'ID menu không khả dụng. Vui lòng thử lại.');
         return;
       }
 
@@ -170,15 +170,15 @@ export default function MenuSelection() {
       setNewItemPrice('');
       setNewItemCategory('');
 
-      Alert.alert('Success', 'Menu item added successfully!');
+      Alert.alert('Thành công', 'Món ăn đã được thêm thành công!');
     } catch (error) {
-      Alert.alert('Error', `Failed to save menu item: ${error.message}`);
+      Alert.alert('Lỗi', `Lưu món ăn thất bại: ${error.message}`);
     }
   };
 
   const handleNext = () => {
     if (menuItems.length === 0) {
-      Alert.alert('Error', 'Please add at least one menu item');
+      Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một món ăn');
       return;
     }
     router.push('/pages/business-registration/tax-info');
@@ -231,10 +231,10 @@ export default function MenuSelection() {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>Quay lại</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>Next</Text>
+          <Text style={styles.nextButtonText}>Tiếp theo</Text>
         </TouchableOpacity>
       </View>
 
@@ -247,19 +247,19 @@ export default function MenuSelection() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Menu Item</Text>
+              <Text style={styles.modalTitle}>Thêm món mới</Text>
               <TouchableOpacity onPress={() => setIsModalVisible(false)}>
                 <MaterialIcons name="close" size={24} color="#6E543C" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalLabel}>Item Name *</Text>
+              <Text style={styles.modalLabel}>Tên món *</Text>
               <TextInput
                 style={styles.modalInput}
                 value={newItemName}
                 onChangeText={setNewItemName}
-                placeholder="Enter item name"
+                placeholder="Nhập tên món"
                 maxLength={50}
               />
               <Text style={styles.charCount}>{newItemName.length}/50</Text>
@@ -269,7 +269,7 @@ export default function MenuSelection() {
                 style={styles.modalInput}
                 value={newItemCategory}
                 onChangeText={setNewItemCategory}
-                placeholder="Enter category (e.g. Tea, Coffee)"
+                placeholder="Nhập danh mục (VD: Trà, Cà phê)"
               />
 
               <Text style={styles.modalLabel}>Price *</Text>
@@ -277,18 +277,18 @@ export default function MenuSelection() {
                 style={styles.modalInput}
                 value={newItemPrice}
                 onChangeText={setNewItemPrice}
-                placeholder="Enter price"
+                placeholder="Nhập giá tiền"
                 keyboardType="numeric"
               />
 
-              <Text style={styles.modalLabel}>Item Image *</Text>
+              <Text style={styles.modalLabel}>Hình ảnh món *</Text>
               <TouchableOpacity style={styles.uploadContainer} onPress={handleImagePick}>
                 {newItemImage ? (
                   <Image source={{ uri: newItemImage }} style={styles.uploadedImage} />
                 ) : (
                   <>
                     <MaterialIcons name="add-photo-alternate" size={40} color="#6E543C" />
-                    <Text style={styles.uploadText}>Upload photo</Text>
+                    <Text style={styles.uploadText}>Tải lên ảnh</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -299,13 +299,13 @@ export default function MenuSelection() {
                 style={[styles.modalButton, styles.cancelButton]} 
                 onPress={() => setIsModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.saveButton]} 
                 onPress={handleSaveItem}
               >
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={styles.saveButtonText}>Lưu</Text>
               </TouchableOpacity>
             </View>
           </View>

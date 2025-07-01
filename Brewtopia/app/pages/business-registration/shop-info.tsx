@@ -209,7 +209,7 @@ export default function ShopInfo() {
 
   const handleSaveAddress = () => {
     if (!street || !selectedDistrict || !selectedProvince) {
-      Alert.alert('Error', 'Vui lòng nhập đầy đủ địa chỉ');
+              Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ địa chỉ');
       return;
     }
     // Ghép số nhà và tên đường thành 1 cụm
@@ -251,7 +251,7 @@ export default function ShopInfo() {
 
   const handleNext = async () => {
     if (!shopName || !address || !email || !phoneNumber) {
-      Alert.alert('Error', 'Please fill in all fields');
+              Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin');
       return;
     }
 
@@ -271,7 +271,7 @@ export default function ShopInfo() {
     console.log('ShopInfo - All AsyncStorage values:', allValues);
 
     if (!currentCafeId) {
-      Alert.alert('Error', 'Cafe ID not found. Please try logging in again or restart the app.');
+      Alert.alert('Lỗi', 'Không tìm thấy ID quán. Vui lòng đăng nhập lại hoặc khởi động lại ứng dụng.');
       return;
     }
 
@@ -347,7 +347,7 @@ export default function ShopInfo() {
       );
     } catch (error) {
       console.error('Error update cafe profile:', error);
-      Alert.alert('Error', 'Failed to update cafe information');
+              Alert.alert('Lỗi', 'Cập nhật thông tin quán thất bại');
     }
   };
 
@@ -413,7 +413,7 @@ export default function ShopInfo() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Shop's Information</Text>
+        <Text style={styles.headerTitle}>Thông tin cửa hàng</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -428,10 +428,10 @@ export default function ShopInfo() {
       </View>
 
       <View style={styles.labels}>
-        <Text style={styles.labelText}>Information</Text>
+        <Text style={styles.labelText}>Thông tin</Text>
         <Text style={styles.labelText}>Menu</Text>
-        <Text style={styles.labelText}>Tax{'\n'}Information</Text>
-        <Text style={styles.labelText}>Identification{'\n'}Information</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}thuế</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}định danh</Text>
       </View>
 
       <View style={styles.form}>
@@ -441,7 +441,7 @@ export default function ShopInfo() {
             style={styles.input}
             value={shopName}
             onChangeText={setShopName}
-            placeholder="Enter shop name"
+                            placeholder="Nhập tên cửa hàng"
             maxLength={50}
           />
           <Text style={styles.charCount}>{shopName.length}/50</Text>
@@ -482,7 +482,7 @@ export default function ShopInfo() {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="Enter email"
+                            placeholder="Nhập email"
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -494,7 +494,7 @@ export default function ShopInfo() {
             style={styles.input}
             value={phoneNumber}
             onChangeText={setPhoneNumber}
-            placeholder="Enter phone number"
+                            placeholder="Nhập số điện thoại"
             keyboardType="phone-pad"
           />
         </View>
@@ -502,10 +502,10 @@ export default function ShopInfo() {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>Quay lại</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>Next</Text>
+          <Text style={styles.nextButtonText}>Tiếp theo</Text>
         </TouchableOpacity>
       </View>
 

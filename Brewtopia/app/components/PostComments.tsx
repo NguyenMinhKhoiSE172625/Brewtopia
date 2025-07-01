@@ -37,7 +37,7 @@ export default function PostComments({ comments, loadingComments, handleAddComme
           <View style={styles.addCommentSection}>
             <TextInput
               style={styles.commentInput}
-              placeholder="Add a comment..."
+              placeholder="Thêm bình luận..."
               value={newComment}
               onChangeText={setNewComment}
             />
@@ -45,7 +45,7 @@ export default function PostComments({ comments, loadingComments, handleAddComme
               style={styles.postCommentButton}
               onPress={handleAddComment}
             >
-              <Text style={styles.postCommentText}>Post</Text>
+              <Text style={styles.postCommentText}>Đăng</Text>
             </TouchableOpacity>
           </View>
         </>

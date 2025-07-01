@@ -204,7 +204,7 @@ export default function VerifyCode() {
           borderRadius: 31 * scale,
           marginTop: 30 * scale,
         }]}>
-          <Text style={styles.title}>Enter Verification Code</Text>
+          <Text style={styles.title}>Nhập mã xác thực</Text>
           <Text style={styles.subtitle}>
             We've sent a verification code to your email{email ? `: ${email}` : ''}
           </Text>
@@ -259,7 +259,7 @@ export default function VerifyCode() {
                 styles.resendText, 
                 (timeLeft > 0 || isLoading || isSuccess) && styles.resendTextDisabled
               ]}>
-                {isLoading ? 'Sending...' : 'Resend Code'}
+                {isLoading ? 'Đang gửi...' : 'Gửi lại mã'}
               </Text>
             </TouchableOpacity>
             {timeLeft > 0 && (

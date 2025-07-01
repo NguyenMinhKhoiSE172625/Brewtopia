@@ -53,6 +53,15 @@ export default function Rewards() {
   const [lastKnownLevel, setLastKnownLevel] = useState<string>('');
   const countdownInterval = useRef<NodeJS.Timeout | null>(null);
 
+  // Cleanup interval khi component unmount
+  useEffect(() => {
+    return () => {
+      if (countdownInterval.current) {
+        clearInterval(countdownInterval.current);
+      }
+    };
+  }, []);
+
   const missionConfigs = [
     {
       id: 'daily',
@@ -109,15 +118,28 @@ export default function Rewards() {
         if (diff <= 0) {
           setDailyCountdown('');
           if (countdownInterval.current) clearInterval(countdownInterval.current);
+          // Reload bonusList để update trạng thái có thể claim lại
+          const fetchPoints = async () => {
+            try {
+              const res = await getBonusList();
+              if (Array.isArray(res)) {
+                setBonusList(res);
+                const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+                setRewardPoints(total);
+              }
+            } catch {}
+          };
+          fetchPoints();
         } else {
-          const minutes = Math.floor(diff / 60000) % 60;
+          const seconds = Math.floor((diff / 1000) % 60);
+          const minutes = Math.floor((diff / 60000) % 60);
           const hours = Math.floor(diff / (60 * 60000));
-          setDailyCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+          setDailyCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
         }
       };
       updateCountdown();
       if (countdownInterval.current) clearInterval(countdownInterval.current);
-      countdownInterval.current = setInterval(updateCountdown, 1000 * 30); // cập nhật mỗi 30s
+      countdownInterval.current = setInterval(updateCountdown, 1000); // cập nhật mỗi giây
       return () => { if (countdownInterval.current) clearInterval(countdownInterval.current); };
     } else {
       setDailyCountdown('');
@@ -196,10 +218,52 @@ export default function Rewards() {
         setRewardPoints(total);
       }
     } catch (err: any) {
-      if (mission.id === 'daily' && err?.message?.includes('24 giờ')) {
-        Alert.alert('Thông báo', 'Bạn cần đợi 24 giờ mới có thể nhận lại điểm danh hằng ngày!');
+      console.log('Error claiming mission:', err);
+      
+      // Xử lý các loại lỗi khác nhau
+      let errorMessage = 'Có lỗi xảy ra, vui lòng thử lại.';
+      
+      if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (typeof err?.data === 'string') {
+        errorMessage = err.data;
+      }
+      
+      // Xử lý đặc biệt cho daily bonus
+      if (mission.id === 'daily' && (
+        errorMessage.includes('24 giờ') || 
+        errorMessage.includes('chưa đủ 24 giờ') ||
+        errorMessage.includes('trong vòng 24 giờ')
+      )) {
+        // Tìm daily bonus gần nhất để tính toán thời gian còn lại
+        const dailyBonus = bonusList.find(b => 
+          b.type === 'daily' && 
+          b.status === 'active' && 
+          new Date().toDateString() === new Date(b.createdAt).toDateString()
+        );
+        
+        if (dailyBonus) {
+          const claimedAt = new Date(dailyBonus.createdAt);
+          const nextClaim = new Date(claimedAt.getTime() + 24 * 60 * 60 * 1000);
+          const diff = nextClaim.getTime() - Date.now();
+          
+          if (diff > 0) {
+            const hours = Math.floor(diff / (60 * 60000));
+            const minutes = Math.floor((diff / 60000) % 60);
+            Alert.alert(
+              'Thông báo', 
+              `Bạn đã nhận điểm danh hôm nay rồi!\nCó thể nhận lại sau: ${hours}h ${minutes}m`
+            );
+          } else {
+            Alert.alert('Thông báo', 'Bạn có thể nhận điểm danh lại rồi! Hãy thử lại.');
+          }
+        } else {
+          Alert.alert('Thông báo', 'Bạn cần đợi 24 giờ mới có thể nhận lại điểm danh hằng ngày!');
+        }
       } else {
-        Alert.alert('Lỗi', err?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+        Alert.alert('Lỗi', errorMessage);
       }
     } finally {
       setClaiming(null);
@@ -215,7 +279,7 @@ export default function Rewards() {
         >
           <MaterialIcons name="home" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Rewards</Text>
+        <Text style={styles.headerTitle}>Phần thưởng của tôi</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -226,7 +290,7 @@ export default function Rewards() {
             style={styles.pointsBackground}
             resizeMode="cover"
           />
-          <Text style={styles.pointsTitle}>Total Points</Text>
+          <Text style={styles.pointsTitle}>Tổng điểm</Text>
           <Text style={styles.pointsValue}>{rewardPoints}</Text>
         </View>
 
@@ -239,7 +303,7 @@ export default function Rewards() {
               color={getLevelColor(getCurrentMembershipLevel(rewardPoints).name)} 
             />
             <View style={styles.membershipTitleContainer}>
-              <Text style={styles.membershipTitle}>Membership Level</Text>
+              <Text style={styles.membershipTitle}>Cấp thành viên</Text>
               <Text style={[styles.membershipLevel, { color: getLevelColor(getCurrentMembershipLevel(rewardPoints).name) }]}>
                 {getCurrentMembershipLevel(rewardPoints).name}
               </Text>
@@ -290,7 +354,7 @@ export default function Rewards() {
 
         {/* Missions */}
         <View style={styles.missionsSection}>
-          <Text style={styles.sectionTitle}>Available Missions</Text>
+          <Text style={styles.sectionTitle}>Nhiệm vụ có sẵn</Text>
           {missionConfigs.map(mission => (
             <View key={mission.id} style={styles.missionCard}>
               <View style={styles.missionIcon}>
@@ -305,7 +369,7 @@ export default function Rewards() {
                 <Text style={styles.missionPoints}>+{mission.points} points</Text>
                 {/* Nếu là daily và đã claim thì hiển thị countdown */}
                 {mission.id === 'daily' && claimedMissions['daily'] && dailyCountdown && (
-                  <Text style={{color:'#888',fontSize:13,marginTop:2}}>Có thể nhận lại sau: {dailyCountdown}</Text>
+                  <Text style={{color:'#FF6B6B',fontSize:13,marginTop:2,fontWeight:'600'}}>⏰ Có thể nhận lại sau: {dailyCountdown}</Text>
                 )}
               </View>
               <View style={styles.missionStatus}>
@@ -317,7 +381,7 @@ export default function Rewards() {
                     onPress={() => handleClaim(mission)}
                     disabled={claiming === mission.id}
                   >
-                    <Text style={styles.claimButtonText}>{claiming === mission.id ? 'Đang nhận...' : 'Claim'}</Text>
+                    <Text style={styles.claimButtonText}>{claiming === mission.id ? 'Đang nhận...' : 'Nhận'}</Text>
                   </TouchableOpacity>
                 )}
               </View>

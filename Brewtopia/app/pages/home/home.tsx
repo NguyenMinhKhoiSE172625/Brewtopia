@@ -70,7 +70,7 @@ function Home() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [messages, setMessages] = useState<Array<{text: string, isUser: boolean}>>([
-    {text: "Hello User", isUser: false},
+          {text: "Xin chào người dùng", isUser: false},
     {text: "My name is Brewbot", isUser: false},
     {text: "I'm here to help you, don't hesitate to ask me anything!!", isUser: false},
     {text: "Welcome", isUser: true},
@@ -245,7 +245,7 @@ function Home() {
     try {
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
       if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera permission is required to use this feature');
+        Alert.alert('Quyền truy cập cần thiết', 'Quyền camera cần thiết để sử dụng tính năng này');
         return;
       }
 
@@ -421,7 +421,7 @@ function Home() {
                   <FontAwesome5 name="coins" size={28} color="#FFD700" />
                 </View>
                 <View style={styles.rewardsTextContainer}>
-                  <Text style={styles.rewardsCardTitle}>My Rewards</Text>
+                  <Text style={styles.rewardsCardTitle}>Phần thưởng</Text>
                   <Text style={styles.rewardsCardSubtitle}>Tích điểm và nhận ưu đãi</Text>
                 </View>
               </View>
@@ -535,7 +535,7 @@ function Home() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -18}} contentContainerStyle={{paddingVertical: 4, paddingHorizontal: 18}}>
               {coffeeTips.map((tip, idx) => (
                 <View key={idx} style={styles.tipCard}>
-                  <Ionicons name={tip.icon} size={24} color={PRIMARY_BROWN} style={{marginRight: 10}} />
+                  <Ionicons name={tip.icon as any} size={24} color={PRIMARY_BROWN} style={{marginRight: 10}} />
                   <Text style={styles.tipText}>{tip.text}</Text>
                 </View>
               ))}
@@ -815,7 +815,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rewardsCardTitle: {
-    fontSize: fontScale(18),
+    fontSize: fontScale(16),
     fontWeight: '700',
     color: '#8B5A2B',
     marginBottom: 4,

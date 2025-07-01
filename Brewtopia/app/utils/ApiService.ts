@@ -15,17 +15,10 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
 // Use physical device IP when running on real devices
 
 /**
- * Smart API URL selection:
- * 1. EMULATOR: Use 10.0.2.2 (Android) or localhost (iOS)
- * 2. PHYSICAL DEVICE: Use computer's IP address on the network
+ * Production API URL:
+ * Using deployed backend on Render
  */
-// const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const API_HOST = Platform.OS === 'android' ? '10.0.2.2' : '192.168.2.125'; // Đã cập nhật IP theo mạng của bạn
-const API_PORT = '4000';
-const API_PATH = '/api';
-
-// Use localhost for development
-const DEFAULT_API_URL = `http://${API_HOST}:${API_PORT}${API_PATH}`;
+const DEFAULT_API_URL = 'https://brewtopia-pcr6.onrender.com/api';
 
 // Increase default timeout for slower network connections (30 seconds)
 const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;

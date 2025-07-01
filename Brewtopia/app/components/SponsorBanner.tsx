@@ -10,7 +10,7 @@ interface SponsorBannerProps {
 const { width } = Dimensions.get('window');
 
 const SponsorBanner: React.FC<SponsorBannerProps> = ({ 
-  title = "Sponsored By Our Partners", 
+  title = "Được tài trợ bởi đối tác", 
   showTitle = true 
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);

@@ -133,9 +133,9 @@ function Stream() {
         {/* Categories */}
         <View style={styles.categoriesContainer}>
           <View style={styles.categoriesHeader}>
-            <Text style={styles.categoriesTitle}>ALL LIVE NOW</Text>
+            <Text style={styles.categoriesTitle}>TẤT CẢ ĐANG PHÁT TRỰC TIẾP</Text>
             <TouchableOpacity>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={styles.viewAllText}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
           
@@ -276,7 +276,7 @@ function Stream() {
           onPress={() => setShowStartModal(true)}
         >
           <MaterialIcons name="videocam" size={24} color="#FFFFFF" />
-          <Text style={styles.goLiveText}>Go Live</Text>
+          <Text style={styles.goLiveText}>Phát trực tiếp</Text>
         </TouchableOpacity>
       )}
 
@@ -290,17 +290,17 @@ function Stream() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Start Streaming</Text>
+              <Text style={styles.modalTitle}>Bắt đầu phát trực tiếp</Text>
               <TouchableOpacity onPress={() => setShowStartModal(false)}>
                 <MaterialIcons name="close" size={24} color="#6E543C" />
               </TouchableOpacity>
             </View>
             
             <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Stream Title</Text>
+              <Text style={styles.inputLabel}>Tiêu đề phát trực tiếp</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter a title for your stream"
+                placeholder="Nhập tiêu đề cho phát trực tiếp của bạn"
                 placeholderTextColor="#999"
                 value={streamTitle}
                 onChangeText={setStreamTitle}
@@ -308,11 +308,11 @@ function Stream() {
               
               <View style={styles.cameraPreview}>
                 <MaterialIcons name="videocam" size={48} color="#6E543C" />
-                <Text style={styles.previewText}>Camera Preview</Text>
+                <Text style={styles.previewText}>Xem trước camera</Text>
               </View>
               
               <TouchableOpacity style={styles.startStreamButton}>
-                <Text style={styles.startStreamText}>Start Broadcasting</Text>
+                <Text style={styles.startStreamText}>Bắt đầu phát sóng</Text>
               </TouchableOpacity>
             </View>
           </View>

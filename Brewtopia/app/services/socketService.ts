@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import jwt_decode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -16,7 +16,7 @@ class SocketService {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      this.socket = io('http://10.0.2.2:4000', {
+      this.socket = io('https://brewtopia-pcr6.onrender.com', {
         auth: {
           token
         },
@@ -62,7 +62,7 @@ class SocketService {
       const token = await AsyncStorage.getItem('token');
       let realUserId = userId;
       if (!realUserId && token) {
-        const decoded: any = jwt_decode(token);
+        const decoded: any = jwtDecode(token);
         realUserId = decoded.id || decoded._id || decoded.sub || decoded.userId;
       }
       if (this.socket) {

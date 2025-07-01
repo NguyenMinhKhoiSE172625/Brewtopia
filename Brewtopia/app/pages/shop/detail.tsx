@@ -104,7 +104,7 @@ export default function ShopDetail() {
             style={[styles.tab, activeTab === 'Menu' && styles.activeTab]} 
             onPress={() => setActiveTab('Menu')}
           >
-            <Text style={[styles.tabText, activeTab === 'Menu' && styles.activeTabText]}>Menu</Text>
+            <Text style={[styles.tabText, activeTab === 'Menu' && styles.activeTabText]}>Thực đơn</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'Event' && styles.activeTab]} 

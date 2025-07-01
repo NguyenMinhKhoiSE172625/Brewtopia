@@ -68,7 +68,7 @@ export default function Role() {
                   router.push("/pages/login/login");
                 }}
               >
-                <Text style={styles.buttonText}>USER</Text>
+                <Text style={styles.buttonText}>KHÁCH HÀNG</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -80,7 +80,7 @@ export default function Role() {
                   router.push("/pages/login/login?role=admin");
                 }}
               >
-                <Text style={styles.buttonText}>BUSINESS</Text>
+                <Text style={styles.buttonText}>DOANH NGHIỆP</Text>
               </TouchableOpacity>
             </View>
           </View>

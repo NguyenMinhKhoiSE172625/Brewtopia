@@ -13,9 +13,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.brewtopia.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
-        "NSLocationAlwaysUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow Brewtopia to use your location to find nearby cafes and show directions.",
+        "NSLocationWhenInUseUsageDescription": "Cho phép Brewtopia sử dụng vị trí của bạn để tìm các quán cà phê gần đây và chỉ đường.",
+        "NSLocationAlwaysUsageDescription": "Cho phép Brewtopia sử dụng vị trí của bạn để tìm các quán cà phê gần đây và chỉ đường.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cho phép Brewtopia sử dụng vị trí của bạn để tìm các quán cà phê gần đây và chỉ đường.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -61,7 +61,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Brewtopia to use your location to find nearby cafes and show directions."
+          "locationAlwaysAndWhenInUsePermission": "Cho phép Brewtopia sử dụng vị trí của bạn để tìm các quán cà phê gần đây và chỉ đường."
         }
       ]
     ],

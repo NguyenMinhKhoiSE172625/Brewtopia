@@ -116,13 +116,13 @@ function News() {
     const diffInDays = Math.floor(diffInHours / 24);
 
     if (diffInHours < 1) {
-      return 'Just now';
-    } else if (diffInHours < 24) {
-      return `${diffInHours} hours ago`;
-    } else if (diffInDays === 1) {
-      return '1 day ago';
-    } else {
-      return `${diffInDays} days ago`;
+      return 'Vừa xong';
+          } else if (diffInHours < 24) {
+        return `${diffInHours} giờ trước`;
+      } else if (diffInDays === 1) {
+        return '1 ngày trước';
+      } else {
+        return `${diffInDays} ngày trước`;
     }
   };
 
@@ -204,7 +204,7 @@ function News() {
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Please allow access to your photo library to select images.');
+              Alert.alert('Quyền truy cập bị từ chối', 'Vui lòng cho phép truy cập thư viện ảnh để chọn hình ảnh.');
       return false;
     }
     return true;
@@ -228,7 +228,7 @@ function News() {
         resetPosts(prev => [...prev, ...newImages]);
       }
     } catch (error) {
-      Alert.alert('Error', 'An error occurred while selecting images.');
+              Alert.alert('Lỗi', 'Đã xảy ra lỗi khi chọn hình ảnh.');
       console.error(error);
     }
   };
@@ -248,7 +248,7 @@ function News() {
       // Prepare content with rating if exists
       let content = newPostContent.trim();
       if (rating > 0) {
-        content += `\n\nRated ${ratedCafe || 'this cafe'}: ${rating}⭐`;
+        content += `\n\nĐánh giá ${ratedCafe || 'quán này'}: ${rating}⭐`;
       }
 
       // Create post via API
@@ -264,11 +264,11 @@ function News() {
       // Refresh posts to show the new post
       refetchPosts(1, true);
 
-      Alert.alert('Success', 'Post created successfully!');
+              Alert.alert('Thành công', 'Bài đăng đã được tạo thành công!');
 
     } catch (error) {
       console.error('Error creating post:', error);
-      Alert.alert('Error', 'Failed to create post. Please try again.');
+              Alert.alert('Lỗi', 'Tạo bài đăng thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -319,7 +319,7 @@ function News() {
             style={styles.createPostInput}
             onPress={() => setShowPostModal(true)}
           >
-            <Text style={styles.createPostPlaceholder}>What's on your mind?</Text>
+            <Text style={styles.createPostPlaceholder}>Bạn đang nghĩ gì?</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.createPostActions}>
@@ -475,7 +475,7 @@ function News() {
               <TouchableOpacity onPress={() => setShowPostModal(false)}>
                 <MaterialIcons name="close" size={24} color="#000" />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Create Post</Text>
+              <Text style={styles.modalTitle}>Tạo bài đăng</Text>
               <TouchableOpacity 
                 style={[
                   styles.postButton,
@@ -515,13 +515,13 @@ function News() {
             
             {rating > 0 && (
               <View style={styles.ratingPreview}>
-                <Text style={styles.ratingText}>Your rating for {ratedCafe || 'this cafe'}: {rating} ⭐</Text>
+                <Text style={styles.ratingText}>Đánh giá của bạn cho {ratedCafe || 'quán này'}: {rating} ⭐</Text>
               </View>
             )}
             
             <TextInput
               style={styles.modalInput}
-              placeholder="What's on your mind?"
+              placeholder="Bạn đang nghĩ gì?"
               placeholderTextColor="#999"
               multiline
               value={newPostContent}
@@ -541,7 +541,7 @@ function News() {
                 onPress={openRatingModal}
               >
                 <MaterialIcons name="star" size={24} color="#6E543C" />
-                <Text style={styles.modalActionText}>Add Rating</Text>
+                <Text style={styles.modalActionText}>Thêm đánh giá</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -557,7 +557,7 @@ function News() {
       >
         <View style={styles.ratingModalOverlay}>
           <View style={styles.ratingModalContent}>
-            <Text style={styles.ratingModalTitle}>Rate this cafe</Text>
+            <Text style={styles.ratingModalTitle}>Đánh giá quán này</Text>
             
             <TextInput
               style={styles.ratingCafeInput}
@@ -574,7 +574,7 @@ function News() {
                 style={[styles.ratingModalButton, styles.ratingModalCancelButton]}
                 onPress={() => setShowRatingModal(false)}
               >
-                <Text style={styles.ratingModalCancelText}>Cancel</Text>
+                <Text style={styles.ratingModalCancelText}>Hủy</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -586,7 +586,7 @@ function News() {
                 onPress={() => setShowRatingModal(false)}
                 disabled={rating === 0}
               >
-                <Text style={styles.ratingModalSubmitText}>Submit</Text>
+                <Text style={styles.ratingModalSubmitText}>Xác nhận</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -59,7 +59,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     console.log('Converting comment:', JSON.stringify(apiComment, null, 2));
     console.log('User field:', apiComment.user, 'Type:', typeof apiComment.user);
 
-    let username = 'Unknown User';
+    let username = 'Người dùng ẩn danh';
     if (apiComment.user && typeof apiComment.user === 'string') {
       username = `User ${apiComment.user.slice(-4)}`;
     }
@@ -80,9 +80,9 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
 
     if (diffInHours < 1) {
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      return diffInMinutes < 1 ? 'Just now' : `${diffInMinutes}m ago`;
+      return diffInMinutes < 1 ? 'Vừa xong' : `${diffInMinutes} phút trước`;
     } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
+              return `${diffInHours} giờ trước`;
     } else {
       const diffInDays = Math.floor(diffInHours / 24);
       return `${diffInDays}d ago`;
@@ -102,7 +102,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
       setCommentsLoaded(true);
     } catch (error) {
       console.error('Error fetching comments:', error);
-      Alert.alert('Error', 'Failed to load comments. Please try again.');
+                Alert.alert('Lỗi', 'Tải bình luận thất bại. Vui lòng thử lại.');
     } finally {
       setLoadingComments(false);
     }
@@ -142,15 +142,15 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
             id: response._id || Date.now().toString(),
             username: 'You',
             text: newComment.trim(),
-            timestamp: 'Just now'
+            timestamp: 'Vừa xong'
           };
           setComments([...comments, fallbackComment]);
           setNewComment('');
-          Alert.alert('Success', 'Comment added successfully!');
+          Alert.alert('Thành công', 'Bình luận đã được thêm thành công!');
         }
       } catch (error) {
         console.error('Error adding comment:', error);
-        Alert.alert('Error', 'Failed to add comment. Please try again.');
+        Alert.alert('Lỗi', 'Thêm bình luận thất bại. Vui lòng thử lại.');
       }
     }
   };
@@ -223,7 +223,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         } catch (error) {
           if (isMounted) {
             console.error('Error fetching comments:', error);
-            Alert.alert('Error', 'Failed to load comments. Please try again.');
+            Alert.alert('Lỗi', 'Tải bình luận thất bại. Vui lòng thử lại.');
           }
         } finally {
           if (isMounted) setLoadingComments(false);
@@ -286,7 +286,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
             size={24} 
             color={isLiked ? "#FF0000" : "#6E543C"} 
           />
-          <Text style={styles.actionText}>{Number.isFinite(likes) ? likes : 0} likes</Text>
+          <Text style={styles.actionText}>{Number.isFinite(likes) ? likes : 0} thích</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -294,7 +294,7 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
           onPress={handleToggleComments}
         >
           <MaterialIcons name="comment" size={24} color="#6E543C" />
-          <Text style={styles.actionText}>{comments.length} comments</Text>
+          <Text style={styles.actionText}>{comments.length} bình luận</Text>
         </TouchableOpacity>
       </View>
 

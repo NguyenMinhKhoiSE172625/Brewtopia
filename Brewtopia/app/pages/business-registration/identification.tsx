@@ -16,7 +16,7 @@ export default function Identification() {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please allow access to your photo library');
+        Alert.alert('Quyền truy cập bị từ chối', 'Vui lòng cho phép truy cập thư viện ảnh');
         return;
       }
 
@@ -31,19 +31,19 @@ export default function Identification() {
         setFrontIdImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not pick image');
+      Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
   };
 
   const handleDone = async () => {
     if (!frontIdImage) {
-      Alert.alert('Error', 'Please upload your identification document');
+      Alert.alert('Lỗi', 'Vui lòng tải lên giấy tờ tùy thân');
       return;
     }
     try {
       const cafeId = await AsyncStorage.getItem('cafeId');
       if (!cafeId) {
-        Alert.alert('Error', 'Không tìm thấy cafeId');
+        Alert.alert('Lỗi', 'Không tìm thấy cafeId');
         return;
       }
       await ApiService.cafe.updateProfile(cafeId, {
@@ -55,7 +55,7 @@ export default function Identification() {
       });
       router.push('/pages/login-user/login-user?role=admin');
     } catch (error) {
-      Alert.alert('Error', 'Cập nhật thông tin thất bại');
+      Alert.alert('Lỗi', 'Cập nhật thông tin thất bại');
     }
   };
 
@@ -65,7 +65,7 @@ export default function Identification() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Identification Information</Text>
+        <Text style={styles.headerTitle}>Thông tin định danh</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -80,10 +80,10 @@ export default function Identification() {
       </View>
 
       <View style={styles.labels}>
-        <Text style={styles.labelText}>Information</Text>
+        <Text style={styles.labelText}>Thông tin</Text>
         <Text style={styles.labelText}>Menu</Text>
-        <Text style={styles.labelText}>Tax{'\n'}Information</Text>
-        <Text style={styles.labelText}>Identification{'\n'}Information</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}thuế</Text>
+        <Text style={styles.labelText}>Thông tin{'\n'}định danh</Text>
       </View>
 
       <View style={styles.content}>
@@ -167,10 +167,10 @@ export default function Identification() {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>Quay lại</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.nextButton} onPress={handleDone}>
-          <Text style={styles.nextButtonText}>Done</Text>
+          <Text style={styles.nextButtonText}>Hoàn thành</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

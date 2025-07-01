@@ -301,22 +301,22 @@ export default function LoginUser() {
 
           {/* Form container */}
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Login {role === 'admin' ? 'Business' : 'User'}</Text>
+            <Text style={styles.title}>Đăng nhập {role === 'admin' ? 'doanh nghiệp' : 'người dùng'}</Text>
 
             {/* Network Status Banner */}
             {!isNetworkAvailable && (
               <View style={styles.networkBanner}>
                 <Ionicons name="cloud-offline-outline" size={24} color="#fff" />
-                <Text style={styles.networkBannerText}>You are offline</Text>
+                <Text style={styles.networkBannerText}>Bạn đang ngoại tuyến</Text>
                 <TouchableOpacity onPress={retryConnection}>
-                  <Text style={styles.retryText}>Retry</Text>
+                  <Text style={styles.retryText}>Thử lại</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             {/* Email Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
+              <Text style={styles.label}>Địa chỉ email</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -336,7 +336,7 @@ export default function LoginUser() {
 
             {/* Password Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Mật khẩu</Text>
               <View style={[
                 styles.passwordContainer,
                 isError && styles.inputError
@@ -364,7 +364,7 @@ export default function LoginUser() {
                 style={styles.forgotPassword}
                 onPress={() => router.push("/pages/forgot-password/forgot-password")}
               >
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
               </TouchableOpacity>
             </View>
 
@@ -374,7 +374,7 @@ export default function LoginUser() {
                 <Text style={styles.errorText}>{errorMessage}</Text>
                 {errorMessage.includes('network') && (
                   <TouchableOpacity onPress={retryConnection}>
-                    <Text style={styles.retryTextInError}>Retry Connection</Text>
+                    <Text style={styles.retryTextInError}>Thử kết nối lại</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -392,13 +392,13 @@ export default function LoginUser() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.buttonText}>Login</Text>
+                <Text style={styles.buttonText}>Đăng nhập</Text>
               )}
             </TouchableOpacity>
 
             {/* Social Login */}
             <View style={styles.socialContainer}>
-              <Text style={styles.orText}>Or Login with</Text>
+              <Text style={styles.orText}>Hoặc đăng nhập bằng</Text>
               <View style={styles.socialButtons}>
                 <TouchableOpacity 
                   style={styles.socialButton} 
@@ -422,11 +422,11 @@ export default function LoginUser() {
 
             {/* Sign up link */}
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
+              <Text style={styles.signupText}>Chưa có tài khoản? </Text>
               <TouchableOpacity onPress={() => router.push(role === 'admin' 
                 ? `/pages/register/register?role=${role}` 
                 : "/pages/register/register")}>
-                <Text style={styles.signupLink}>Sign up</Text>
+                <Text style={styles.signupLink}>Đăng ký</Text>
               </TouchableOpacity>
             </View>
           </View>

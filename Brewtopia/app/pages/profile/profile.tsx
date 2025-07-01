@@ -70,25 +70,25 @@ function Profile() {
   const userMenuItems = [
     {
       id: '1',
-      title: 'Account Details',
+      title: 'Chi tiết tài khoản',
       icon: 'person-outline',
       onPress: () => console.log('Account Details')
     },
     {
       id: '2',
-      title: 'Payment Details',
+      title: 'Chi tiết thanh toán',
       icon: 'credit-card',
       onPress: () => console.log('Payment Details')
     },
     {
       id: '3',
-      title: 'Redeem Rewards',
+      title: 'Đổi phần thưởng',
       icon: 'card-giftcard',
       onPress: () => console.log('Redeem Rewards')
     },
     {
       id: '4',
-      title: 'Notification Details',
+      title: 'Chi tiết thông báo',
       icon: 'notifications-none',
       onPress: () => console.log('Notification Details')
     }
@@ -97,31 +97,31 @@ function Profile() {
   const adminMenuItems = [
     {
       id: '1',
-      title: 'Shop Management',
+      title: 'Quản lý cửa hàng',
       icon: 'store',
       onPress: () => console.log('Shop Management')
     },
     {
       id: '2',
-      title: 'Product Menu',
+      title: 'Menu sản phẩm',
       icon: 'restaurant-menu',
       onPress: () => console.log('Product Menu')
     },
     {
       id: '3',
-      title: 'Customer Feedback',
+      title: 'Phản hồi khách hàng',
       icon: 'feedback',
       onPress: () => console.log('Customer Feedback')
     },
     {
       id: '4',
-      title: 'Event Management',
+      title: 'Quản lý sự kiện',
       icon: 'event',
       onPress: () => console.log('Event Management')
     },
     {
       id: '5',
-      title: 'Account Settings',
+      title: 'Cài đặt tài khoản',
       icon: 'settings',
       onPress: () => console.log('Account Settings')
     }
@@ -158,7 +158,7 @@ function Profile() {
         style={styles.gradient}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>Hồ sơ</Text>
         </View>
 
         <ScrollView style={styles.content}>
@@ -187,7 +187,7 @@ function Profile() {
               <View style={styles.statusContainer}>
                 {(accStatus !== 'VIP' && accStatus !== 'Premium') ? (
                   <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
-                    <Text style={styles.statusText}>{isAdmin ? 'Business Account' : 'Limited User'}</Text>
+                    <Text style={styles.statusText}>{isAdmin ? 'Tài khoản doanh nghiệp' : 'Người dùng giới hạn'}</Text>
                   </View>
                 ) : null}
                 {isAdmin ? (
@@ -195,7 +195,7 @@ function Profile() {
                     style={styles.bookingAdsButton}
                     onPress={() => router.push('/pages/booking-ads/booking-ads')}
                   >
-                    <Text style={styles.bookingAdsText}>Booking Ads</Text>
+                    <Text style={styles.bookingAdsText}>Đặt quảng cáo</Text>
                   </TouchableOpacity>
                 ) : (
                   accStatus !== 'Premium' && accStatus !== 'VIP' && (
@@ -203,7 +203,7 @@ function Profile() {
                       style={styles.premiumButton}
                       onPress={() => router.push('/pages/premium/premium')}
                     >
-                      <Text style={styles.premiumButtonText}>Buy Premium ?</Text>
+                      <Text style={styles.premiumButtonText}>Mua Premium ?</Text>
                     </TouchableOpacity>
                   )
                 )}
@@ -215,7 +215,7 @@ function Profile() {
           <View style={styles.mainContent}>
             {/* Menu Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{isAdmin ? 'Business Management' : 'Account'}</Text>
+              <Text style={styles.sectionTitle}>{isAdmin ? 'Quản lý doanh nghiệp' : 'Tài khoản'}</Text>
               <View style={styles.menuContainer}>
                 {(isAdmin ? adminMenuItems : userMenuItems).map((item) => (
                   <TouchableOpacity 
@@ -233,7 +233,7 @@ function Profile() {
 
             {/* Chat Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Chat</Text>
+              <Text style={styles.sectionTitle}>Trò chuyện</Text>
               <View style={styles.menuContainer}>
                 {chatItems.map((item) => (
                   <TouchableOpacity 
@@ -255,7 +255,7 @@ function Profile() {
               onPress={handleLogout}
             >
               <MaterialIcons name="logout" size={24} color="#FF0000" />
-              <Text style={styles.logoutText}>Logout</Text>
+              <Text style={styles.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

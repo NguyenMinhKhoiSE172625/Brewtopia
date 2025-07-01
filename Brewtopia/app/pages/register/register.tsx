@@ -94,14 +94,14 @@ export default function Register() {
 
           {/* Form container */}
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Create {role === 'admin' ? 'Business' : 'User'} Account</Text>
+            <Text style={styles.title}>Tạo tài khoản {role === 'admin' ? 'kinh doanh' : 'người dùng'}</Text>
 
             {/* Username Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Username</Text>
+              <Text style={styles.label}>Tên đăng nhập</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Your username"
+                placeholder="Tên đăng nhập của bạn"
                 placeholderTextColor="#999"
                 value={name}
                 onChangeText={setName}
@@ -113,7 +113,7 @@ export default function Register() {
               <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Your email"
+                placeholder="Email của bạn"
                 placeholderTextColor="#999"
                 keyboardType="email-address"
                 value={email}
@@ -124,7 +124,7 @@ export default function Register() {
 
             {/* Password Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Mật khẩu</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, { flex: 1, borderWidth: 0 }]}
@@ -167,7 +167,7 @@ export default function Register() {
                 )}
               </TouchableOpacity>
               <Text style={styles.terms}>
-                I accept the terms and privacy policy
+                Tôi đồng ý với điều khoản và chính sách bảo mật
               </Text>
             </View>
 
@@ -180,20 +180,20 @@ export default function Register() {
               onPress={handleRegister}
               disabled={!termsAccepted}
             >
-              <Text style={styles.buttonText}>Register</Text>
+              <Text style={styles.buttonText}>Đăng ký</Text>
             </TouchableOpacity>
 
             <Text style={styles.policyText}>
-              By creating an account or signing in, you agree to our{' '}
-              <Text style={styles.linkText}>Terms</Text> and{' '}
-              <Text style={styles.linkText}>Conditions</Text>
+              Bằng việc tạo tài khoản hoặc đăng nhập, bạn đồng ý với{' '}
+              <Text style={styles.linkText}>Điều khoản</Text> và{' '}
+              <Text style={styles.linkText}>Điều kiện</Text> của chúng tôi
             </Text>
 
             {/* Login link */}
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
+              <Text style={styles.loginText}>Đã có tài khoản? </Text>
               <TouchableOpacity onPress={() => router.back()}>
-                <Text style={styles.loginLink}>Login</Text>
+                <Text style={styles.loginLink}>Đăng nhập</Text>
               </TouchableOpacity>
             </View>
           </View>

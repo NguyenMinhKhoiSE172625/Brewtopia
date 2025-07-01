@@ -10,17 +10,17 @@ export default function BottomBar() {
 
   const tabs = [
     {
-      name: 'Nearby',
+      name: 'Gần đây',
       icon: 'place',
       route: '/pages/nearby',
     },
     {
-      name: 'News',
+      name: 'Tin tức',
       icon: 'article',
       route: '/pages/news/news',
     },
     {
-      name: 'Home',
+      name: 'Trang chủ',
       icon: 'home',
       route: '/pages/home/home',
     },
@@ -30,7 +30,7 @@ export default function BottomBar() {
       route: '/pages/stream/stream',
     },
     {
-      name: 'Profile',
+      name: 'Hồ sơ',
       icon: 'person',
       route: '/pages/profile/profile',
     },
@@ -52,13 +52,16 @@ export default function BottomBar() {
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.name}
-          style={styles.tab}
+          style={[
+            styles.tab,
+            isActiveTab(tab.route) && styles.tabActive,
+          ]}
           onPress={() => handleNavigation(tab.route)}
         >
           <MaterialIcons
             name={tab.icon as any}
-            size={24}
-            color={isActiveTab(tab.route) ? '#6E543C' : '#999999'}
+            size={26}
+            color={isActiveTab(tab.route) ? '#6E543C' : '#666666'}
           />
           <Text
             style={[
@@ -81,30 +84,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingVertical: verticalScale(8),
+    paddingVertical: verticalScale(12),
     borderTopWidth: 1,
-    borderTopColor: '#F5F5F5',
-    elevation: 8,
+    borderTopColor: '#E8E8E8',
+    elevation: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: -3,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
   },
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: horizontalScale(12),
+    paddingHorizontal: horizontalScale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(8),
+    minWidth: horizontalScale(60),
   },
   tabText: {
-    fontSize: fontScale(12),
-    color: '#999999',
-    marginTop: verticalScale(4),
+    fontSize: fontScale(13),
+    color: '#666666',
+    marginTop: verticalScale(2),
+    fontWeight: '400',
   },
   tabTextActive: {
     color: '#6E543C',
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  tabActive: {
+    backgroundColor: '#F9F7F4',
   },
 }); 

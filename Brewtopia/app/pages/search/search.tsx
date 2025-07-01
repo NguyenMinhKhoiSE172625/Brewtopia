@@ -246,7 +246,7 @@ export default function Search() {
           <Ionicons name="search" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Are you thirsty?"
+            placeholder="Bạn có khát không?"
             value={searchText}
             onChangeText={setSearchText}
             placeholderTextColor="#999"
@@ -275,25 +275,25 @@ export default function Search() {
             style={[styles.filterButton, selectedFilter === 'cafe' && styles.filterButtonActive]}
             onPress={() => setSelectedFilter('cafe')}
           >
-            <Text style={[styles.filterText, selectedFilter === 'cafe' && styles.filterTextActive]}>Cafe</Text>
+            <Text style={[styles.filterText, selectedFilter === 'cafe' && styles.filterTextActive]}>Quán cà phê</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.filterButton, selectedFilter === 'distance' && styles.filterButtonActive]}
             onPress={() => setSelectedFilter('distance')}
           >
-            <Text style={[styles.filterText, selectedFilter === 'distance' && styles.filterTextActive]}>Distance</Text>
+            <Text style={[styles.filterText, selectedFilter === 'distance' && styles.filterTextActive]}>Khoảng cách</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.filterButton, selectedFilter === 'opening' && styles.filterButtonActive]}
             onPress={() => setSelectedFilter('opening')}
           >
-            <Text style={[styles.filterText, selectedFilter === 'opening' && styles.filterTextActive]}>Opening</Text>
+            <Text style={[styles.filterText, selectedFilter === 'opening' && styles.filterTextActive]}>Đang mở cửa</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.filterButton, selectedFilter === 'discount' && styles.filterButtonActive]}
             onPress={() => setSelectedFilter('discount')}
           >
-            <Text style={[styles.filterText, selectedFilter === 'discount' && styles.filterTextActive]}>Discount</Text>
+            <Text style={[styles.filterText, selectedFilter === 'discount' && styles.filterTextActive]}>Giảm giá</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -301,7 +301,7 @@ export default function Search() {
       <ScrollView style={styles.content}>
         {/* Recent Hot Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RECENT HOT</Text>
+          <Text style={styles.sectionTitle}>THỊNH HÀNH GẦN ĐÂY</Text>
           <FlatList
             data={recentHotItems}
             renderItem={renderRecentHotItem}
@@ -320,7 +320,7 @@ export default function Search() {
         {/* BREWTOPIA RECOMMEND Section */}
         <View style={styles.section}>
           <View style={styles.recommendHeader}>
-            <Text style={styles.sectionTitle}>BREWTOPIA RECOMMEND</Text>
+            <Text style={styles.sectionTitle}>BREWTOPIA GỢI Ý</Text>
             <View style={styles.viewOptions}>
               <TouchableOpacity style={styles.viewOption}>
                 <MaterialIcons name="view-agenda" size={24} color="#6E543C" />
@@ -331,7 +331,7 @@ export default function Search() {
             </View>
           </View>
 
-          <Text style={styles.subSectionTitle}>Popular Drinks</Text>
+          <Text style={styles.subSectionTitle}>Đồ uống phổ biến</Text>
           <View style={styles.drinksGrid}>
             {recommendedDrinks.map((drink) => (
               <TouchableOpacity 
@@ -348,7 +348,7 @@ export default function Search() {
             ))}
           </View>
           
-          <Text style={styles.subSectionTitle}>Popular Cafes</Text>
+          <Text style={styles.subSectionTitle}>Quán cà phê phổ biến</Text>
           <View style={styles.cafeList}>
             {recommendedCafes.map((cafe) => (
               <TouchableOpacity key={cafe.id} style={styles.cafeCard}>
@@ -391,9 +391,9 @@ export default function Search() {
                 <View style={styles.modalInfo}>
                   <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
                   <Text style={styles.modalDescription}>{selectedProduct.description}</Text>
-                  <Text style={styles.modalPrice}>Price: {selectedProduct.price}</Text>
+                  <Text style={styles.modalPrice}>Giá: {selectedProduct.price}</Text>
                   
-                  <Text style={styles.recommendedTitle}>Recommended</Text>
+                  <Text style={styles.recommendedTitle}>Gợi ý</Text>
                   <FlatList
                     data={selectedProduct.recommended}
                     renderItem={renderRecommendedItem}

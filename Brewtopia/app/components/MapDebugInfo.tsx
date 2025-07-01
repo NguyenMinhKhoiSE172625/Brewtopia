@@ -20,7 +20,7 @@ const MapDebugInfo: React.FC<MapDebugInfoProps> = ({ visible = true, onClose }) 
         available ? '✅ Google Maps khả dụng' : '❌ Google Maps không khả dụng'
       );
     } catch (error) {
-      Alert.alert('Google Maps Error', `❌ Lỗi: ${error}`);
+      Alert.alert('Lỗi Google Maps', `❌ Lỗi: ${error}`);
     }
   };
 
