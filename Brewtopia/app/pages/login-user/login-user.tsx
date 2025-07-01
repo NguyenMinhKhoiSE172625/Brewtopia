@@ -157,20 +157,20 @@ export default function LoginUser() {
     setIsError(false);
     
     try {
-      console.log('Attempting login with:', { email, role });
+      DebugService.log('Attempting login with:', { email, role });
       // Use ApiService with role validation
       const expectedRole = role === 'admin' ? UserRole.ADMIN : UserRole.USER;
       const data = await ApiService.auth.login(email, password, expectedRole);
       
-      console.log('Login response:', data);
+      DebugService.log('Login response:', data);
       
       // Verify token was stored
       const storedToken = await AsyncStorage.getItem('token');
-      console.log('Stored token:', storedToken);
+      DebugService.log('Stored token:', storedToken);
       
       // Log cafeId nếu có
       if (data.cafeId) {
-        console.log('Đã lưu cafeId:', data.cafeId);
+        DebugService.log('Đã lưu cafeId:', data.cafeId);
       }
       
       setIsError(false);
@@ -195,7 +195,7 @@ export default function LoginUser() {
       // User thường hoặc admin đã hoàn thiện profile
       router.push("/pages/home/home");
     } catch (error: any) {
-      console.error('Login error:', error);
+      DebugService.log('Login error:', error);
       setIsError(true);
       if (error.status === 0) {
         // Network error

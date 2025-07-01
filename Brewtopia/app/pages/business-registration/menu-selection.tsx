@@ -20,100 +20,69 @@ export default function MenuSelection() {
   const [newItemCategory, setNewItemCategory] = useState('');
 
   useEffect(() => {
-    console.log('MenuSelection params:', params);
-    console.log('MenuSelection - cafeId from params:', cafeId);
     AsyncStorage.getItem('cafeId').then(storedCafeId => {
-      console.log('MenuSelection - cafeId from AsyncStorage:', storedCafeId);
     });
 
     if (!cafeId) {
-      console.log('MenuSelection - No cafeId provided');
       return;
     }
-    console.log('MenuSelection - Fetching cafe with ID:', cafeId);
     fetch(`${API_URL}/cafes/${cafeId}`)
       .then(res => res.json())
       .then(data => {
-        console.log('MenuSelection - Cafe data:', data);
-        console.log('MenuSelection - Data type:', typeof data);
-        console.log('MenuSelection - Is array:', Array.isArray(data));
-
-        // Handle both array and object response formats
         let cafeData = data;
         if (Array.isArray(data) && data.length > 0) {
-          cafeData = data[0]; // Take first cafe if response is array
-          console.log('MenuSelection - Using first cafe from array:', cafeData);
+          cafeData = data[0];
         }
-
-        // Log all possible menu-related fields
-        console.log('MenuSelection - cafeData.menu:', cafeData.menu);
-        console.log('MenuSelection - cafeData.menuId:', cafeData.menuId);
-        console.log('MenuSelection - cafeData._id:', cafeData._id);
-        console.log('MenuSelection - cafeData.id:', cafeData.id);
-        console.log('MenuSelection - Full cafeData keys:', Object.keys(cafeData));
-
-        // Try to extract menuId from different possible locations
-        let extractedMenuId = null;
 
         if (cafeData.menu && Array.isArray(cafeData.menu) && cafeData.menu.length > 0) {
-          extractedMenuId = cafeData.menu[0];
-          console.log('MenuSelection - Found menuId in menu array:', extractedMenuId);
-        } else if (cafeData.menuId) {
-          extractedMenuId = cafeData.menuId;
-          console.log('MenuSelection - Found menuId in menuId field:', extractedMenuId);
-        } else if (cafeData.menu && typeof cafeData.menu === 'string') {
-          extractedMenuId = cafeData.menu;
-          console.log('MenuSelection - Found menuId as string in menu field:', extractedMenuId);
-        } else {
-          // Use cafeId as menuId (common pattern)
-          extractedMenuId = cafeData._id || cafeData.id || cafeId;
-          console.log('MenuSelection - Using cafeId as menuId:', extractedMenuId);
-        }
+          setMenuId(cafeData.menu[0]);
 
-        if (extractedMenuId) {
-          setMenuId(extractedMenuId);
-          console.log('MenuSelection - Set menuId to:', extractedMenuId);
-
-          // Fetch menu items using the correct API
-          console.log('MenuSelection - Fetching menu items from:', `${API_URL}/menu-items/${extractedMenuId}`);
-          fetch(`${API_URL}/menu-items/${extractedMenuId}`)
+          fetch(`${API_URL}/menu-items/${cafeData.menu[0]}`)
             .then(res => {
-              console.log('MenuSelection - Menu items response status:', res.status);
-              return res.json();
-            })
-            .then(items => {
-              console.log('MenuSelection - Menu items response:', items);
-              // Handle different response formats
-              const menuItemsArray = Array.isArray(items) ? items : (items.items || items.menuItems || []);
-              console.log('MenuSelection - Processed menu items array:', menuItemsArray);
+              const menuItemsArray = Array.isArray(res.json()) ? res.json() : (res.json().items || res.json().menuItems || []);
               setMenuItems(menuItemsArray);
             })
-            .catch(error => {
-              console.error('MenuSelection - Error fetching menu items:', error);
-              // Don't show alert, just start with empty menu
+            .catch(() => {
+              setMenuItems([]);
+            });
+        } else if (cafeData.menuId) {
+          setMenuId(cafeData.menuId);
+
+          fetch(`${API_URL}/menu-items/${cafeData.menuId}`)
+            .then(res => {
+              const menuItemsArray = Array.isArray(res.json()) ? res.json() : (res.json().items || res.json().menuItems || []);
+              setMenuItems(menuItemsArray);
+            })
+            .catch(() => {
+              setMenuItems([]);
+            });
+        } else if (cafeData.menu && typeof cafeData.menu === 'string') {
+          setMenuId(cafeData.menu);
+
+          fetch(`${API_URL}/menu-items/${cafeData.menu}`)
+            .then(res => {
+              const menuItemsArray = Array.isArray(res.json()) ? res.json() : (res.json().items || res.json().menuItems || []);
+              setMenuItems(menuItemsArray);
+            })
+            .catch(() => {
               setMenuItems([]);
             });
         } else {
-          console.log('MenuSelection - No menuId found, starting with empty menu');
+          setMenuId(cafeData._id || cafeData.id || cafeId);
           setMenuItems([]);
         }
       })
-      .catch(error => {
-        console.error('MenuSelection - Error fetching cafe:', error);
+      .catch(() => {
         Alert.alert('Error', 'Failed to load cafe information');
       });
   }, [cafeId]);
 
   const handleAddMenuItem = () => {
-    console.log('MenuSelection - handleAddMenuItem called, menuId:', menuId);
     if (!menuId) {
-      console.log('MenuSelection - No menuId available');
       Alert.alert('Error', 'Menu not ready. Please wait a moment and try again.');
       return;
     }
 
-    // Allow adding items even with temporary menu ID
-    console.log('MenuSelection - Opening add item modal');
     setIsModalVisible(true);
   };
 
@@ -162,8 +131,6 @@ export default function MenuSelection() {
       return;
     }
     try {
-      console.log('MenuSelection - Creating menu item for menuId:', menuId);
-
       if (!menuId) {
         Alert.alert('Error', 'Menu ID not available. Please try again.');
         return;
@@ -179,28 +146,20 @@ export default function MenuSelection() {
         type: 'image/jpeg',
       } as any);
 
-      console.log('MenuSelection - Sending POST to:', `${API_URL}/menu-items/create-Item/${menuId}`);
-
       const createResponse = await fetch(`${API_URL}/menu-items/create-Item/${menuId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'multipart/form-data' },
         body: formData,
       });
 
-      console.log('MenuSelection - Response status:', createResponse.status);
       const createResult = await createResponse.json();
-      console.log('MenuSelection - Create item response:', createResult);
 
       if (!createResponse.ok) {
-        console.error('MenuSelection - API Error:', createResult);
         throw new Error(`Failed to create menu item: ${createResult.message || createResult.error || 'Unknown error'}`);
       }
 
-      // Refresh menu items using the correct API
-      console.log('MenuSelection - Fetching updated menu items from:', `${API_URL}/menu-items/${menuId}`);
       const res = await fetch(`${API_URL}/menu-items/${menuId}`);
       const data = await res.json();
-      console.log('MenuSelection - Updated menu items:', data);
 
       const menuItemsArray = Array.isArray(data) ? data : (data.items || data.menuItems || []);
       setMenuItems(menuItemsArray);
@@ -213,7 +172,6 @@ export default function MenuSelection() {
 
       Alert.alert('Success', 'Menu item added successfully!');
     } catch (error) {
-      console.error('MenuSelection - Error saving menu item:', error);
       Alert.alert('Error', `Failed to save menu item: ${error.message}`);
     }
   };
@@ -223,7 +181,6 @@ export default function MenuSelection() {
       Alert.alert('Error', 'Please add at least one menu item');
       return;
     }
-    // Save data and navigate to tax information
     router.push('/pages/business-registration/tax-info');
   };
 

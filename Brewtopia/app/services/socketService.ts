@@ -25,23 +25,18 @@ class SocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket?.id);
       });
 
       this.socket.on('disconnect', () => {
-        console.log('Socket disconnected');
       });
 
       this.socket.on('connect_error', (err) => {
-        console.log('Socket connect error:', err);
       });
 
       this.socket.on('error', (error) => {
-        console.error('Socket error:', error);
       });
 
     } catch (error) {
-      console.error('Error initializing socket:', error);
     }
   }
 
@@ -65,23 +60,19 @@ class SocketService {
   public async joinRoom(roomId: string, userId?: string) {
     try {
       const token = await AsyncStorage.getItem('token');
-      console.log('JWT token khi joinRoom:', token);
       let realUserId = userId;
       if (!realUserId && token) {
         const decoded: any = jwt_decode(token);
         realUserId = decoded.id || decoded._id || decoded.sub || decoded.userId;
-        console.log('UserId lấy từ JWT:', realUserId);
       }
       if (this.socket) {
         this.socket.emit('joinRoom', roomId, realUserId);
       }
     } catch (e) {
-      console.warn('Không lấy được JWT token khi joinRoom');
     }
   }
 
   public leaveRoom(roomId: string, userId: string) {
-    console.log('Leaving room:', roomId, userId);
     if (this.socket) {
       this.socket.emit('leaveRoom', roomId, userId);
     }

@@ -20,7 +20,6 @@ export const isGoogleMapsAvailable = (): boolean => {
     require('react-native-maps');
     return true;
   } catch (error) {
-    console.log('Google Maps not available:', error);
     return false;
   }
 };
@@ -29,11 +28,9 @@ export const isGoogleMapsAvailable = (): boolean => {
 export const getBestMapProvider = async (): Promise<MapProvider> => {
   // Use Google Maps
   if (isGoogleMapsAvailable()) {
-    console.log('✅ Using Google Maps');
     return 'google';
   }
 
-  console.log('❌ No map provider available');
   return null;
 };
 
@@ -48,8 +45,6 @@ export const MAP_ERROR_MESSAGES = {
 
 // Utility function to handle map errors
 export const handleMapError = (error: any, context: string = '') => {
-  console.error(`Map error ${context}:`, error);
-  
   if (error?.message?.includes('network')) {
     return MAP_ERROR_MESSAGES.NETWORK_ERROR;
   }

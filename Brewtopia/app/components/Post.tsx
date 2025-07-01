@@ -5,6 +5,8 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../uti
 import ApiService from '../utils/ApiService';
 import socketService from '../services/socketService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import PostImages from './PostImages';
+import PostComments from './PostComments';
 
 interface Comment {
   id: string;
@@ -169,154 +171,6 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
     setImageViewVisible(false);
   };
 
-  const renderImages = () => {
-    if (images.length === 0 || !images[0]) return null;
-
-    if (images.length === 1) {
-      // Single image
-      return (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => openImageViewer(0)}
-        >
-          <Image
-            source={images[0]}
-            style={styles.postImage}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-      );
-    } else if (images.length === 2) {
-      // Two images - show side by side
-      return (
-        <View style={styles.twoImagesContainer}>
-          <TouchableOpacity
-            style={styles.halfImageContainer}
-            activeOpacity={0.9}
-            onPress={() => openImageViewer(0)}
-          >
-            <Image
-              source={images[0]}
-              style={styles.halfImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.halfImageContainer}
-            activeOpacity={0.9}
-            onPress={() => openImageViewer(1)}
-          >
-            <Image
-              source={images[1]}
-              style={styles.halfImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        </View>
-      );
-    } else if (images.length === 3) {
-      // Three images - first large, two small on right
-      return (
-        <View style={styles.threeImagesContainer}>
-          <TouchableOpacity
-            style={styles.largeImageContainer}
-            activeOpacity={0.9}
-            onPress={() => openImageViewer(0)}
-          >
-            <Image
-              source={images[0]}
-              style={styles.largeImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-          <View style={styles.smallImagesColumn}>
-            <TouchableOpacity
-              style={styles.smallImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(1)}
-            >
-              <Image
-                source={images[1]}
-                style={styles.smallImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.smallImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(2)}
-            >
-              <Image
-                source={images[2]}
-                style={styles.smallImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    } else {
-      // Four or more images - 2x2 grid with overlay for remaining
-      return (
-        <View style={styles.multipleImagesContainer}>
-          <View style={styles.topRow}>
-            <TouchableOpacity
-              style={styles.quarterImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(0)}
-            >
-              <Image
-                source={images[0]}
-                style={styles.quarterImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quarterImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(1)}
-            >
-              <Image
-                source={images[1]}
-                style={styles.quarterImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.bottomRow}>
-            <TouchableOpacity
-              style={styles.quarterImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(2)}
-            >
-              <Image
-                source={images[2]}
-                style={styles.quarterImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quarterImageContainer}
-              activeOpacity={0.9}
-              onPress={() => openImageViewer(3)}
-            >
-              <Image
-                source={images[3]}
-                style={styles.quarterImage}
-                resizeMode="cover"
-              />
-              {images.length > 4 && (
-                <View style={styles.moreImagesOverlay}>
-                  <Text style={styles.moreImagesText}>+{images.length - 4}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
-  };
-
   useEffect(() => {
     // Lấy userId hiện tại từ AsyncStorage
     const getUserId = async () => {
@@ -417,7 +271,13 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
         </View>
       </View>
 
-      {renderImages()}
+      <PostImages
+        images={images}
+        openImageViewer={openImageViewer}
+        currentImageIndex={currentImageIndex}
+        imageViewVisible={imageViewVisible}
+        closeImageViewer={closeImageViewer}
+      />
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
@@ -441,121 +301,14 @@ export default function Post({ id, username, timestamp, imageUrl, caption, likes
       <Text style={styles.caption}>{caption}</Text>
 
       {showComments && (
-        <View style={styles.commentsSection}>
-          {loadingComments ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#6E543C" />
-              <Text style={styles.loadingText}>Loading comments...</Text>
-            </View>
-          ) : (
-            <>
-              {comments.map(comment => (
-                <View key={comment.id} style={styles.commentItem}>
-                  <Text style={styles.commentUsername}>{comment.username}</Text>
-                  <Text style={styles.commentText}>{comment.text}</Text>
-                  <Text style={styles.commentTimestamp}>{comment.timestamp}</Text>
-                </View>
-              ))}
-
-              <View style={styles.addCommentSection}>
-                <TextInput
-                  style={styles.commentInput}
-                  placeholder="Add a comment..."
-                  value={newComment}
-                  onChangeText={setNewComment}
-                />
-                <TouchableOpacity
-                  style={styles.postCommentButton}
-                  onPress={handleAddComment}
-                >
-                  <Text style={styles.postCommentText}>Post</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
+        <PostComments
+          comments={comments}
+          loadingComments={loadingComments}
+          handleAddComment={handleAddComment}
+          newComment={newComment}
+          setNewComment={setNewComment}
+        />
       )}
-
-      {/* Image Viewer Modal */}
-      <Modal
-        visible={imageViewVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={closeImageViewer}
-      >
-        <View style={styles.imageViewerContainer}>
-          {/* Background overlay - tap to close */}
-          <TouchableWithoutFeedback onPress={closeImageViewer}>
-            <View style={styles.modalBackground} />
-          </TouchableWithoutFeedback>
-
-          {/* Header with close button and counter */}
-          <View style={styles.imageViewerHeader}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={closeImageViewer}
-            >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-            {images.length > 1 && (
-              <View style={styles.imageCounter}>
-                <Text style={styles.imageCounterText}>
-                  {currentImageIndex + 1} / {images.length}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Images - Optimized for smooth scrolling */}
-          <View style={styles.imageViewerContent}>
-            <FlatList
-              data={images}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              initialScrollIndex={currentImageIndex}
-              getItemLayout={(data, index) => ({
-                length: SCREEN_WIDTH,
-                offset: SCREEN_WIDTH * index,
-                index,
-              })}
-              renderItem={({ item }) => (
-                <View style={styles.imageSlide}>
-                  <Image
-                    source={item}
-                    style={styles.fullImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              )}
-              keyExtractor={(item, index) => index.toString()}
-              onMomentumScrollEnd={(event) => {
-                const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-                setCurrentImageIndex(index);
-              }}
-              scrollEventThrottle={16}
-              decelerationRate="fast"
-              bounces={false}
-              overScrollMode="never"
-            />
-          </View>
-
-          {/* Navigation dots for multiple images */}
-          {images.length > 1 && (
-            <View style={styles.dotsContainer}>
-              {images.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    index === currentImageIndex && styles.activeDot
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-      </Modal>
     </View>
   );
 }
