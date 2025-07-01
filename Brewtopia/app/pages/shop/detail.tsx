@@ -17,49 +17,56 @@ interface ShopDetail {
   closingTime: string;
   rating: number;
   images: any[];
+  menuid: string;
 }
 
 export default function ShopDetail() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { shopId } = params;
+  const { shopId, name, address, description, status, closingTime, rating, images, menuid } = params;
   const [activeTab, setActiveTab] = useState('Menu');
 
-  // Mock data for the shop detail
-  // In a real app, you would fetch this data from an API based on shopId
+  // Parse images nếu truyền từ Nearby sang
+  let imagesArr: any[] = [];
+  try {
+    if (typeof images === 'string') {
+      imagesArr = JSON.parse(images);
+    } else if (Array.isArray(images)) {
+      imagesArr = images;
+    }
+  } catch (e) {}
+
+  // Dữ liệu động từ params, fallback sang mock nếu thiếu
   const shopData: ShopDetail = {
     id: shopId as string,
-    name: 'COFFEE SHOP 1',
-    address: 'ABC St, WCD District, City A',
-    description: 'A cozy coffee shop with a wide selection of specialty coffees and a relaxing atmosphere.',
-    status: 'Open',
-    closingTime: '23:00',
-    rating: 4.5,
-    images: [
-      require('../../../assets/images/cafe1.png'),
-      require('../../../assets/images/cafe2.png'),
-      require('../../../assets/images/cafe3.png'),
-    ],
+    name: (name as string) || 'COFFEE SHOP 1',
+    address: (address as string) || 'ABC St, WCD District, City A',
+    description: (description as string) || 'A cozy coffee shop with a wide selection of specialty coffees and a relaxing atmosphere.',
+    status: (status as string) || 'Open',
+    closingTime: (closingTime as string) || '23:00',
+    rating: rating ? Number(rating) : 4.5,
+    images: imagesArr.length > 0 ? imagesArr : [require('../../../assets/images/cafe1.png')],
+    menuid: menuid as string,
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Menu':
-        return <CafeMenu cafeId={shopId as string} />;
+        return <CafeMenu cafeId={shopId as string} menuid={menuid as string} />;
       case 'Event':
-        return <CafeEvents cafeId={shopId as string} />;
+        return <CafeEvents cafeId={shopId as string} menuid={menuid as string} />;
       case 'Feed':
-        return <CafeFeed cafeId={shopId as string} />;
+        return <CafeFeed cafeId={shopId as string} menuid={menuid as string} />;
       default:
-        return <CafeMenu cafeId={shopId as string} />;
+        return <CafeMenu cafeId={shopId as string} menuid={menuid as string} />;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      {/* Header with back button */}
+      <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false}>
+        {/* Header cố định */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -72,9 +79,7 @@ export default function ShopDetail() {
           <MaterialIcons name="more-horiz" size={24} color="#6E543C" />
         </TouchableOpacity>
       </View>
-
-      {/* Shop Image and Info */}
-      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Ảnh, info, tabs */}
         <View style={styles.shopImageContainer}>
           <Image 
             source={shopData.images[0]} 
@@ -82,7 +87,6 @@ export default function ShopDetail() {
             resizeMode="cover"
           />
         </View>
-
         <View style={styles.shopInfoContainer}>
           <View style={styles.shopInfoHeader}>
             <Text style={styles.shopName}>{shopData.name}</Text>
@@ -92,12 +96,9 @@ export default function ShopDetail() {
               </Text>
             </View>
           </View>
-          
           <Text style={styles.shopAddress}>{shopData.address}</Text>
           <Text style={styles.shopDescription}>{shopData.description}</Text>
         </View>
-
-        {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'Menu' && styles.activeTab]} 
@@ -105,14 +106,12 @@ export default function ShopDetail() {
           >
             <Text style={[styles.tabText, activeTab === 'Menu' && styles.activeTabText]}>Menu</Text>
           </TouchableOpacity>
-          
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'Event' && styles.activeTab]} 
             onPress={() => setActiveTab('Event')}
           >
             <Text style={[styles.tabText, activeTab === 'Event' && styles.activeTabText]}>Event</Text>
           </TouchableOpacity>
-          
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'Feed' && styles.activeTab]} 
             onPress={() => setActiveTab('Feed')}
@@ -120,13 +119,11 @@ export default function ShopDetail() {
             <Text style={[styles.tabText, activeTab === 'Feed' && styles.activeTabText]}>Feed</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Tab Content */}
+        {/* Tab Content scroll cùng trang */}
         <View style={styles.tabContent}>
           {renderTabContent()}
         </View>
       </ScrollView>
-
       <BottomBar />
     </SafeAreaView>
   );

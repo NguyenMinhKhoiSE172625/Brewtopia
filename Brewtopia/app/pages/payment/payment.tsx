@@ -17,10 +17,14 @@ function Payment() {
   }, [checkoutUrl]);
 
   const handleNavigationStateChange = async (navState: any) => {
+    console.log('Navigation state changed:', navState.url);
+    
     // Handle payment completion or cancellation
-    if (navState.url.includes('status=PAID') || navState.url.includes('payment-success')) {
+    if (navState.url.includes('status=PAID') || 
+        navState.url.includes('payment-success') || 
+        navState.url.includes('brewtopia://payment-success')) {
       // Parse orderCode từ URL
-      const urlParams = new URLSearchParams(navState.url.split('?')[1]);
+      const urlParams = new URLSearchParams(navState.url.split('?')[1] || '');
       const orderCode = urlParams.get('orderCode');
       if (orderCode) {
         try {
@@ -40,7 +44,9 @@ function Payment() {
           }
         ]
       );
-    } else if (navState.url.includes('cancel=true') || navState.url.includes('status=CANCELLED')) {
+    } else if (navState.url.includes('cancel=true') || 
+               navState.url.includes('status=CANCELLED') || 
+               navState.url.includes('brewtopia://payment-cancel')) {
       // Payment cancelled
       Alert.alert(
         'Payment Cancelled',

@@ -488,6 +488,33 @@ class ApiService {
         method: 'GET',
       });
     },
+
+    // Get all cafes
+    getAllCafes: async () => {
+      return this.fetch<Array<{
+        _id: string;
+        name: string;
+        shopName?: string;
+        address: string | {
+          street?: string;
+          ward?: string;
+          district?: string;
+          city?: string;
+          coordinates?: [number, number];
+        };
+        rating?: number;
+        status?: string;
+        closingTime?: string;
+        images?: string[];
+        menu?: string[];
+        menuid?: string;
+        openingHours?: {
+          [key: string]: { open: string; close: string; };
+        };
+      }>>('/cafes', {
+        method: 'GET',
+      });
+    },
   };
 
   // Payment API methods
@@ -516,7 +543,9 @@ class ApiService {
         body: JSON.stringify({
           targetModel,
           amount,
-          description
+          description,
+          returnUrl: 'brewtopia://payment-success',
+          cancelUrl: 'brewtopia://payment-cancel'
         }),
       });
 

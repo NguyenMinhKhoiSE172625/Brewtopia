@@ -13,6 +13,7 @@ import ApiService from '../../utils/ApiService';
 import SocketService from '../../services/socketService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PRIMARY_BROWN } from '../../config/constants';
+import { getBonusList } from '../../services/pointService';
 
 interface Message {
   text: string;
@@ -373,6 +374,21 @@ function Home() {
     },
   ];
 
+  const [rewardPoints, setRewardPoints] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchPoints = async () => {
+      try {
+        const res = await getBonusList();
+        if (Array.isArray(res)) {
+          const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+          setRewardPoints(total);
+        }
+      } catch {}
+    };
+    fetchPoints();
+  }, []);
+
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#FAF6F2'}}>
       <ScrollView style={styles.content} contentContainerStyle={{paddingBottom: 32}}>
@@ -420,7 +436,7 @@ function Home() {
               <FontAwesome5 name="coins" size={26} color="#FFD700" style={styles.quickActionIcon} />
               <Text style={styles.quickActionTitle}>Rewards</Text>
               <View style={styles.rewardsPointsContainer}>
-                <Text style={styles.rewardsPoints}>100</Text>
+                <Text style={styles.rewardsPoints}>{rewardPoints}</Text>
                 <Image 
                   source={require('../../../assets/images/icondongtien.png')}
                   style={styles.rewardsIcon}
@@ -477,9 +493,6 @@ function Home() {
           <View style={styles.sectionHeader}>
             <FontAwesome5 name="gift" size={20} color="#E91E63" style={{marginRight: 6}} />
             <Text style={styles.sectionTitle}>Ưu đãi đặc biệt</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Xem tất cả</Text>
-            </TouchableOpacity>
           </View>
           <FlatList
             ref={flatListRef}

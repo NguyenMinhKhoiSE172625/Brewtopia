@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import BottomBar from '../../components/BottomBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ApiService from '../../utils/ApiService';
+import { getBonusList } from '../../services/pointService';
 
 export default function Rewards() {
   const router = useRouter();
+  const [rewardPoints, setRewardPoints] = useState<number>(0);
+  const [bonusList, setBonusList] = useState<any[]>([]);
 
   const missions = [
     {
@@ -39,6 +44,20 @@ export default function Rewards() {
     },
   ];
 
+  useEffect(() => {
+    const fetchPoints = async () => {
+      try {
+        const res = await getBonusList();
+        if (Array.isArray(res)) {
+          setBonusList(res);
+          const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+          setRewardPoints(total);
+        }
+      } catch {}
+    };
+    fetchPoints();
+  }, []);
+
   const handleRedeemPoints = () => {
     router.push('/pages/mission-complete/mission-complete');
   };
@@ -64,7 +83,7 @@ export default function Rewards() {
             resizeMode="cover"
           />
           <Text style={styles.pointsTitle}>Total Points</Text>
-          <Text style={styles.pointsValue}>350</Text>
+          <Text style={styles.pointsValue}>{rewardPoints}</Text>
           <TouchableOpacity 
             style={styles.redeemButton}
             onPress={handleRedeemPoints}
@@ -99,6 +118,22 @@ export default function Rewards() {
                   color={mission.completed ? '#4CAF50' : '#999999'} 
                 />
               </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Danh sách điểm thưởng */}
+        <View style={{marginTop: 24}}>
+          <Text style={styles.sectionTitle}>Lịch sử điểm thưởng</Text>
+          {bonusList.length === 0 && <Text style={{color:'#888'}}>Chưa có điểm thưởng nào</Text>}
+          {bonusList.map((bonus, idx) => (
+            <View key={idx} style={{backgroundColor:'#fff',borderRadius:8,padding:12,marginBottom:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+              <View>
+                <Text style={{fontWeight:'bold',color:'#6E543C'}}>{bonus.type === 'daily' ? 'Điểm danh' : bonus.type === 'event' ? 'Sự kiện' : bonus.type === 'referral' ? 'Mời bạn bè' : bonus.type === 'admin' ? 'Admin' : 'Nhiệm vụ'}</Text>
+                <Text style={{color:'#888',fontSize:12}}>{bonus.note}</Text>
+                <Text style={{color:'#aaa',fontSize:11}}>{new Date(bonus.createdAt).toLocaleString()}</Text>
+              </View>
+              <Text style={{fontWeight:'bold',color:'#FFD700',fontSize:18}}>+{bonus.points}</Text>
             </View>
           ))}
         </View>

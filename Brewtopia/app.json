@@ -1,10 +1,11 @@
 {
   "expo": {
+    "host": "192.168.139.145",
     "name": "Brewtopia",
     "slug": "Brewtopia",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
+    "scheme": "brewtopia",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "icon": "./assets/images/iconcafe.png",

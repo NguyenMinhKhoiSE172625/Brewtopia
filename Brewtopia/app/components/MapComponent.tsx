@@ -194,7 +194,7 @@ const MapComponent: React.FC<MapComponentProps> = (props) => {
   }
 
   // Render Google Maps component
-  return <GoogleMapsComponent {...props} />;
+    return <GoogleMapsComponent {...props} />;
 };
 
 const mapStyles = StyleSheet.create({

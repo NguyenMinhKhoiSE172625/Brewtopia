@@ -37,6 +37,8 @@ interface Cafe {
     longitude: number;
   };
   visitDate?: string;
+  description?: string;
+  menuid?: string;
 }
 
 // Move cafes array outside the component
@@ -57,6 +59,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7769,
       longitude: 106.7009,
     },
+    description: 'A cozy coffee shop with a wide selection of specialty coffees and a relaxing atmosphere.',
   },
   {
     id: '2',
@@ -73,6 +76,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7799,
       longitude: 106.6999,
     },
+    description: '',
   },
   {
     id: '3',
@@ -89,6 +93,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7785,
       longitude: 106.6990,
     },
+    description: '',
   },
   {
     id: '4',
@@ -105,6 +110,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7762,
       longitude: 106.7030,
     },
+    description: '',
   },
   {
     id: '5',
@@ -121,6 +127,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7790,
       longitude: 106.7040,
     },
+    description: '',
   },
   {
     id: '6',
@@ -137,6 +144,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7740,
       longitude: 106.7020,
     },
+    description: '',
   },
   {
     id: '7',
@@ -153,6 +161,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7820,
       longitude: 106.7000,
     },
+    description: '',
   },
   {
     id: '8',
@@ -169,6 +178,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7810,
       longitude: 106.6960,
     },
+    description: '',
   },
   {
     id: '9',
@@ -185,6 +195,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7750,
       longitude: 106.6970,
     },
+    description: '',
   },
   {
     id: '10',
@@ -201,6 +212,7 @@ const MOCK_CAFES: Cafe[] = [
       latitude: 10.7730,
       longitude: 106.7000,
     },
+    description: '',
   }
 ];
 
@@ -267,7 +279,7 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={styles.cafeAddress}>{cafe.address}</Text>
           <Text style={styles.cafeStatus}>
-            {cafe.status} - Closed at {cafe.closingTime}
+            {(cafe.status === 'success' ? 'Open' : cafe.status)} - Closed at {cafe.closingTime}
           </Text>
         </View>
       </View>
@@ -310,7 +322,17 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
         style={styles.detailButton}
         onPress={() => router.push({
           pathname: 'pages/shop/detail' as any,
-          params: { shopId: cafe.id }
+          params: {
+            shopId: cafe.id,
+            name: cafe.name,
+            address: cafe.address,
+            description: cafe.description || '',
+            status: cafe.status,
+            closingTime: cafe.closingTime,
+            rating: cafe.rating,
+            images: JSON.stringify(cafe.images),
+            menuid: cafe.menuid
+          }
         })}
       >
         <Text style={styles.detailButtonText}>Detail</Text>
@@ -435,9 +457,6 @@ function Nearby() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareRecipients, setShareRecipients] = useState<ShareRecipient[]>([]);
   const [allCafes, setAllCafes] = useState<Cafe[]>([]);
-  const [visibleCafes, setVisibleCafes] = useState<Cafe[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [showRecentlyVisited, setShowRecentlyVisited] = useState(false);
   const mapRef = useRef<MapView>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -449,75 +468,136 @@ function Nearby() {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('Permission to access location was denied');
+        setErrorMsg('Không có quyền truy cập vị trí');
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       setLocation(location);
 
-      // Lấy userId từ AsyncStorage
+      // Lấy userId và user role từ AsyncStorage
       let userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        // Nếu không có userId, thử lấy từ user_data
-        const userDataString = await AsyncStorage.getItem('user_data');
-        if (userDataString) {
-          try {
-            const user = JSON.parse(userDataString);
-            userId = user._id || user.id;
-          } catch (e) {}
-        }
+      let userRole = null;
+      const userDataString = await AsyncStorage.getItem('user_data');
+      if (userDataString) {
+        try {
+          const user = JSON.parse(userDataString);
+          userRole = user.role;
+          if (!userId) userId = user._id || user.id;
+        } catch (e) {}
       }
 
       let cafesFromApi: Cafe[] = [];
-      if (userId) {
-        try {
-          // Gọi API lấy cafe theo userId
+      try {
+        if (userRole === 'admin' && userId) {
+          // Doanh nghiệp: lấy tất cả quán của doanh nghiệp (nếu API trả về mảng)
           const cafeArr = await ApiService.cafe.getProfile(userId);
-          const cafeRes = Array.isArray(cafeArr) ? cafeArr[0] : cafeArr;
-          let cafeAddress = '';
-          let cafeLat: number | undefined = undefined;
-          let cafeLng: number | undefined = undefined;
-          if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
-            cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
-            cafeLat = cafeRes.address.coordinates[1];
-            cafeLng = cafeRes.address.coordinates[0];
-          } else if (cafeRes && typeof cafeRes.address === 'string') {
-            cafeAddress = cafeRes.address;
-          }
-          if (
-            typeof cafeLat === 'number' &&
-            typeof cafeLng === 'number' &&
-            !isNaN(cafeLat) &&
-            !isNaN(cafeLng) &&
-            Math.abs(cafeLat) > 0.01 &&
-            Math.abs(cafeLng) > 0.01
-          ) {
-            cafesFromApi = [{
-              id: cafeRes._id || cafeRes.id || userId,
-              name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
-              address: cafeAddress,
-              rating: cafeRes.rating || 0,
-              status: cafeRes.status || 'Open',
-              closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
-              images: [require('../../../assets/images/cafe1.png')],
-              coordinate: {
-                latitude: cafeLat,
-                longitude: cafeLng,
-              },
-            }];
-            console.log('CAFES FROM API:', cafesFromApi);
-          } else {
-            console.log('Không có toạ độ hợp lệ:', cafeLat, cafeLng);
-          }
-        } catch (err) {
-          console.log('Lỗi lấy cafe từ API:', err);
+          const cafes = Array.isArray(cafeArr) ? cafeArr : [cafeArr];
+          cafesFromApi = cafes
+            .map((cafeRes: any) => {
+              let cafeAddress = '';
+              let cafeLat: number | undefined = undefined;
+              let cafeLng: number | undefined = undefined;
+              if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
+                cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
+                cafeLat = cafeRes.address.coordinates[1];
+                cafeLng = cafeRes.address.coordinates[0];
+              } else if (cafeRes && typeof cafeRes.address === 'string') {
+                cafeAddress = cafeRes.address;
+              }
+              let menuid = '';
+              if (Array.isArray(cafeRes.menu) && cafeRes.menu.length > 0) {
+                menuid = cafeRes.menu[0];
+              } else if (cafeRes.menuid) {
+                menuid = cafeRes.menuid;
+              } else if (cafeRes.id) {
+                menuid = cafeRes.id;
+              } else {
+                menuid = userId;
+              }
+              if (
+                typeof cafeLat === 'number' &&
+                typeof cafeLng === 'number' &&
+                !isNaN(cafeLat) &&
+                !isNaN(cafeLng) &&
+                Math.abs(cafeLat) > 0.01 &&
+                Math.abs(cafeLng) > 0.01
+              ) {
+                return {
+                  id: cafeRes._id || cafeRes.id || userId,
+                  name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
+                  address: cafeAddress,
+                  rating: cafeRes.rating || 0,
+                  status: cafeRes.status || 'Open',
+                  closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
+                  images: [require('../../../assets/images/cafe1.png')],
+                  coordinate: {
+                    latitude: cafeLat,
+                    longitude: cafeLng,
+                  },
+                  menuid,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean) as Cafe[];
+        } else {
+          // User thường: lấy tất cả quán từ API
+          const allCafes = await ApiService.cafe.getAllCafes();
+          cafesFromApi = (allCafes || []).map((cafeRes: any) => {
+            let cafeAddress = '';
+            let cafeLat: number | undefined = undefined;
+            let cafeLng: number | undefined = undefined;
+            if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
+              cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
+              cafeLat = cafeRes.address.coordinates[1];
+              cafeLng = cafeRes.address.coordinates[0];
+            } else if (cafeRes && typeof cafeRes.address === 'string') {
+              cafeAddress = cafeRes.address;
+            }
+            let menuid = '';
+            if (Array.isArray(cafeRes.menu) && cafeRes.menu.length > 0) {
+              menuid = cafeRes.menu[0];
+            } else if (cafeRes.menuid) {
+              menuid = cafeRes.menuid;
+            } else if (cafeRes.id) {
+              menuid = cafeRes.id;
+            } else {
+              menuid = cafeRes._id;
+            }
+            if (
+              typeof cafeLat === 'number' &&
+              typeof cafeLng === 'number' &&
+              !isNaN(cafeLat) &&
+              !isNaN(cafeLng) &&
+              Math.abs(cafeLat) > 0.01 &&
+              Math.abs(cafeLng) > 0.01
+            ) {
+              return {
+                id: cafeRes._id || cafeRes.id,
+                name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
+                address: cafeAddress,
+                rating: cafeRes.rating || 0,
+                status: cafeRes.status || 'Open',
+                closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
+                images: [require('../../../assets/images/cafe1.png')],
+                coordinate: {
+                  latitude: cafeLat,
+                  longitude: cafeLng,
+                },
+                menuid,
+              };
+            }
+            return null;
+          }).filter(Boolean) as Cafe[];
         }
+      } catch (err) {
+        console.log('Lỗi lấy cafe từ API:', err);
       }
 
       if (cafesFromApi.length > 0) {
         setAllCafes(cafesFromApi);
-        // Zoom map về vị trí quán
+        // Zoom map về vị trí quán đầu tiên
         if (cafesFromApi[0].coordinate && mapRef.current) {
           mapRef.current.animateToRegion({
             latitude: cafesFromApi[0].coordinate.latitude,
@@ -533,19 +613,6 @@ function Nearby() {
       }
     })();
   }, []);
-
-  // Load visible cafes based on current page
-  useEffect(() => {
-    const startIndex = (currentPage - 1) * CAFES_PER_PAGE;
-    const endIndex = startIndex + CAFES_PER_PAGE;
-    setVisibleCafes(allCafes.slice(startIndex, endIndex));
-  }, [currentPage, allCafes]);
-
-  const handleRegionChange = useCallback((region: Region) => {
-    if (currentPage * CAFES_PER_PAGE >= allCafes.length) {
-      setCurrentPage((prev: number) => prev + 1);
-    }
-  }, [currentPage, allCafes.length]);
 
   // Memoize handlers
   const handleMarkerPress = useCallback((cafe: Cafe) => {
@@ -796,6 +863,11 @@ function Nearby() {
 
   const recentlyVisitedKeyExtractor = useCallback((item: Cafe) => `recent-${item.id}`, []);
 
+  const handleRegionChange = useCallback((region: Region) => {
+    // Nếu muốn lazy load thêm quán theo vùng hiển thị, có thể filter tại đây
+    // Hiện tại không làm gì để tránh bug mất marker khi zoom
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       {errorMsg ? (
@@ -827,7 +899,7 @@ function Nearby() {
             maxZoomLevel={18}
             minZoomLevel={10}
           >
-            {visibleCafes.map((cafe) => (
+            {allCafes.map((cafe) => (
               <CafeMarker
                 key={cafe.id}
                 cafe={cafe}
@@ -1026,7 +1098,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E5DCCB',
     borderTopLeftRadius: moderateScale(20),
     borderTopRightRadius: moderateScale(20),
     padding: moderateScale(16),

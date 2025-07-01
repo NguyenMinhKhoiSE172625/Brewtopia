@@ -1,20 +1,34 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import ApiService from '../../utils/ApiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { claimTaskBonus } from '../../services/pointService';
 
 export default function DrinkOrder() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { cafeId } = params;
+  const { cafeId, cart: cartParam, menuid } = params;
   
+  // Parse cart id+quantity
+  let cartArr: {id: string, quantity: number}[] = [];
+  try {
+    const parsed = cartParam ? JSON.parse(cartParam as string) : [];
+    cartArr = Array.isArray(parsed) ? parsed : [];
+  } catch { cartArr = []; }
+
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [showDateModal, setShowDateModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [requirements, setRequirements] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [bonusMessage, setBonusMessage] = useState('');
   
   // Date options for the picker
   const today = new Date();
@@ -37,6 +51,31 @@ export default function DrinkOrder() {
     timeOptions.push(new Date(t));
   }
   
+  // Lấy menu từ API
+  useEffect(() => {
+    if (menuid) {
+      ApiService.fetch(`/menu-items/${menuid}`)
+        .then((data) => setMenuItems(Array.isArray(data) ? data : []))
+        .catch(() => setMenuItems([]));
+    }
+  }, [menuid]);
+
+  // Ghép quantity vào từng item
+  useEffect(() => {
+    if (menuItems.length && cartArr.length) {
+      const selected = cartArr.map(ci => {
+        const item = menuItems.find(mi => String(mi._id) === String(ci.id));
+        return item ? { ...item, quantity: ci.quantity } : null;
+      }).filter(Boolean);
+      setSelectedItems(selected);
+    } else {
+      setSelectedItems([]);
+    }
+  }, [menuItems, cartParam]);
+
+  // Tính tổng tiền động
+  const totalPrice = selectedItems.reduce((sum, ci) => sum + (ci.price || 0) * (ci.quantity || 1), 0);
+  
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -54,19 +93,22 @@ export default function DrinkOrder() {
   };
   
   const handlePay = async () => {
+    setPaying(true);
     try {
-      const checkoutUrl = await ApiService.payment.createPayosPayment(
-        100000, // Example amount, replace with actual amount
-        `Drink Order - ${formatDate(date)} ${formatTime(time)}`
-      );
-
-      router.push({
-        pathname: '/pages/payment/payment',
-        params: { url: checkoutUrl }
-      });
-    } catch (error) {
-      console.error('Payment creation failed:', error);
-      // Handle error appropriately
+      // Gọi API PayOS ở đây (mock)
+      await new Promise(res => setTimeout(res, 1500)); // giả lập delay
+      setShowSuccess(true);
+      // Gọi API cộng điểm thưởng
+      try {
+        await claimTaskBonus();
+        setBonusMessage('Bạn đã được cộng 20 điểm thưởng!');
+      } catch (e) {
+        setBonusMessage('Đặt hàng thành công, nhưng cộng điểm thất bại!');
+      }
+    } catch (e) {
+      setShowSuccess(true);
+    } finally {
+      setPaying(false);
     }
   };
   
@@ -113,30 +155,23 @@ export default function DrinkOrder() {
         
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Selected Drinks</Text>
-          
-          <View style={styles.selectedDrinkItem}>
+          {selectedItems.length === 0 && (
+            <Text style={{color:'#999',marginBottom:12}}>Chưa chọn món nào</Text>
+          )}
+          {selectedItems.map((ci, idx) => (
+            <View key={ci._id || idx} style={styles.selectedDrinkItem}>
             <View style={styles.drinkInfo}>
-              <Text style={styles.drinkName}>Cappuccino</Text>
-              <Text style={styles.drinkPrice}>$4.50</Text>
+                <Text style={styles.drinkName}>{ci.name || '---'}</Text>
+                <Text style={styles.drinkPrice}>{ci.price?.toLocaleString()}đ</Text>
             </View>
             <View style={styles.drinkQuantity}>
-              <Text style={styles.quantityText}>× 1</Text>
-            </View>
+                <Text style={styles.quantityText}>× {ci.quantity}</Text>
           </View>
-          
-          <View style={styles.selectedDrinkItem}>
-            <View style={styles.drinkInfo}>
-              <Text style={styles.drinkName}>Espresso</Text>
-              <Text style={styles.drinkPrice}>$3.50</Text>
             </View>
-            <View style={styles.drinkQuantity}>
-              <Text style={styles.quantityText}>× 2</Text>
-            </View>
-          </View>
-          
+          ))}
           <View style={styles.orderTotal}>
             <Text style={styles.orderTotalLabel}>Total:</Text>
-            <Text style={styles.orderTotalAmount}>$11.50</Text>
+            <Text style={styles.orderTotalAmount}>{totalPrice.toLocaleString()}đ</Text>
           </View>
         </View>
         
@@ -154,8 +189,9 @@ export default function DrinkOrder() {
         </View>
         
         <TouchableOpacity 
-          style={styles.payButton}
+          style={[styles.payButton, paying && {opacity:0.5}]}
           onPress={handlePay}
+          disabled={paying}
         >
           <Text style={styles.payButtonText}>Pay for Order</Text>
           <MaterialIcons name="payment" size={24} color="#FFFFFF" />
@@ -251,6 +287,22 @@ export default function DrinkOrder() {
               onPress={() => setShowTimeModal(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      <Modal visible={showSuccess} transparent>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
+          <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 12 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'green' }}>Đặt hàng thành công!</Text>
+            {!!bonusMessage && <Text style={{ marginTop: 8, color: '#6E543C', fontWeight: 'bold' }}>{bonusMessage}</Text>}
+            <TouchableOpacity onPress={() => {
+              setShowSuccess(false);
+              setBonusMessage('');
+              router.replace('/pages/payment-success/payment-success');
+            }}>
+              <Text style={{ marginTop: 16, color: '#6E543C', fontWeight: 'bold' }}>Tiếp tục</Text>
             </TouchableOpacity>
           </View>
         </View>

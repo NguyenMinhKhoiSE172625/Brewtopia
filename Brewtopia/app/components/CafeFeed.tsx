@@ -12,43 +12,43 @@ type FeedbackItem = {
   likes: number;
 };
 
-export default function CafeFeed({ cafeId }: { cafeId: string }) {
-  // Mock feedback data
+export default function CafeFeed({ cafeId, menuid }: { cafeId: string; menuid?: string }) {
+  // Feedback tiếng Việt code cứng
   const feedbacks: FeedbackItem[] = [
     {
       id: '1',
-      userName: 'John Doe',
+      userName: 'Nguyễn Văn A',
       userImage: require('../../assets/images/avatar1.png'),
       rating: 5,
-      comment: 'Great atmosphere and excellent coffee! The staff was very friendly and the pastries were delicious. Will definitely come back again.',
-      date: '2 days ago',
+      comment: 'Quán rất đẹp, cà phê ngon, nhân viên thân thiện. Sẽ quay lại!',
+      date: '2 ngày trước',
       likes: 24,
     },
     {
       id: '2',
-      userName: 'Alice Smith',
+      userName: 'Trần Thị B',
       userImage: require('../../assets/images/avatar2.png'),
       rating: 4,
-      comment: 'Nice place to work remotely. The Wi-Fi is stable and the coffee is good. A bit crowded during peak hours though.',
-      date: '1 week ago',
+      comment: 'Không gian yên tĩnh, phù hợp làm việc. Đồ uống ổn.',
+      date: '1 tuần trước',
       likes: 15,
     },
     {
       id: '3',
-      userName: 'Robert Johnson',
+      userName: 'Lê Minh C',
       userImage: require('../../assets/images/avatar3.png'),
       rating: 5,
-      comment: 'The best coffee shop in town! I love their specialty drinks and the ambiance is perfect for catching up with friends.',
-      date: '2 weeks ago',
+      comment: 'Món signature rất đáng thử, view đẹp!',
+      date: '2 tuần trước',
       likes: 32,
     },
     {
       id: '4',
-      userName: 'Emily Wilson',
+      userName: 'Phạm Thảo D',
       userImage: require('../../assets/images/avatar2.png'),
       rating: 3,
-      comment: 'Decent coffee but I found it a bit overpriced. The service was good though.',
-      date: '3 weeks ago',
+      comment: 'Giá hơi cao nhưng chất lượng tốt.',
+      date: '3 tuần trước',
       likes: 8,
     },
   ];
