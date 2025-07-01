@@ -763,6 +763,8 @@ function Home() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+
     </SafeAreaView>
   );
 }
@@ -1386,4 +1388,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 12,
   },
+
 }); 

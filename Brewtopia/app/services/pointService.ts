@@ -44,6 +44,16 @@ export async function getBonusList() {
   });
 }
 
+// Lấy danh sách điểm thưởng với phân trang
+export async function getBonusListWithPagination(page: number = 1, limit: number = 10) {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Không tìm thấy userId');
+  return ApiService.fetch(`/point-Bonus?page=${page}&limit=${limit}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+  });
+}
+
 // Hàm nhận điểm daily
 export async function claimDailyBonus() {
   return createBonus({ type: 'daily' });

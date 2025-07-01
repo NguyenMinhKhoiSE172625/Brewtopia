@@ -6,7 +6,7 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import BottomBar from '../../components/BottomBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../../utils/ApiService';
-import { getBonusList, claimDailyBonus, claimTaskBonus, claimEventBonus, claimReferralBonus } from '../../services/pointService';
+import { getBonusList, getBonusListWithPagination, claimDailyBonus, claimTaskBonus, claimEventBonus, claimReferralBonus } from '../../services/pointService';
 
 // Định nghĩa hệ thống cấp độ thành viên
 const membershipLevels = [
@@ -49,9 +49,16 @@ export default function Rewards() {
   const router = useRouter();
   const [rewardPoints, setRewardPoints] = useState<number>(0);
   const [bonusList, setBonusList] = useState<any[]>([]);
+  const [allBonusList, setAllBonusList] = useState<any[]>([]);
   const [dailyCountdown, setDailyCountdown] = useState<string>('');
   const [lastKnownLevel, setLastKnownLevel] = useState<string>('');
   const countdownInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [totalItems, setTotalItems] = useState<number>(0);
 
   // Cleanup interval khi component unmount
   useEffect(() => {
@@ -136,17 +143,8 @@ export default function Rewards() {
           setDailyCountdown('');
           if (countdownInterval.current) clearInterval(countdownInterval.current);
           // Reload bonusList để update trạng thái có thể claim lại
-          const fetchPoints = async () => {
-            try {
-              const res = await getBonusList();
-              if (Array.isArray(res)) {
-                setBonusList(res);
-                const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
-                setRewardPoints(total);
-              }
-            } catch {}
-          };
-          fetchPoints();
+          setCurrentPage(1);
+          fetchBonusListPaginated(1);
         } else {
           const seconds = Math.floor((diff / 1000) % 60);
           const minutes = Math.floor((diff / 60000) % 60);
@@ -168,13 +166,27 @@ export default function Rewards() {
     }
   }, [bonusList]);
 
-  useEffect(() => {
-    const fetchPoints = async () => {
-      try {
-        const res = await getBonusList();
-        if (Array.isArray(res)) {
-          setBonusList(res);
-          const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+  // Function để fetch bonus list với pagination
+  const fetchBonusListPaginated = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      
+      const res = await getBonusListWithPagination(page, 10);
+      
+      if (res && Array.isArray(res.data)) {
+        const newBonuses = res.data;
+        
+        // Chỉ hiển thị data của trang hiện tại
+        setAllBonusList(newBonuses);
+        
+        setCurrentPage(res.currentPage || page);
+        setTotalPages(res.totalPages || 1);
+        setTotalItems(res.totalItems || res.total || newBonuses.length);
+        
+        // Set bonusList với toàn bộ data để tính điểm và logic missions
+        if (res.allData && Array.isArray(res.allData)) {
+          setBonusList(res.allData);
+          const total = res.allData.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
           
           // Kiểm tra xem có nâng cấp không
           const currentLevel = getCurrentMembershipLevel(total);
@@ -192,10 +204,57 @@ export default function Rewards() {
           await AsyncStorage.setItem('lastMembershipLevel', currentLevel.name);
           setLastKnownLevel(currentLevel.name);
           setRewardPoints(total);
+        } else {
+          setBonusList(newBonuses);
+        }
+      } else {
+        // Fallback to old API if pagination not supported
+        const fallbackRes = await getBonusList();
+        if (Array.isArray(fallbackRes)) {
+          setBonusList(fallbackRes);
+          // Calculate pagination for current page
+          const startIndex = (page - 1) * 10;
+          const endIndex = startIndex + 10;
+          setAllBonusList(fallbackRes.slice(startIndex, endIndex));
+          setTotalPages(Math.ceil(fallbackRes.length / 10));
+          setTotalItems(fallbackRes.length);
+          setCurrentPage(page);
+          const total = fallbackRes.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+          setRewardPoints(total);
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching bonus list:', error);
+      // Fallback to old API
+      try {
+        const fallbackRes = await getBonusList();
+        if (Array.isArray(fallbackRes)) {
+          setBonusList(fallbackRes);
+          // Calculate pagination for current page
+          const startIndex = (page - 1) * 10;
+          const endIndex = startIndex + 10;
+          setAllBonusList(fallbackRes.slice(startIndex, endIndex));
+          setTotalPages(Math.ceil(fallbackRes.length / 10));
+          setTotalItems(fallbackRes.length);
+          setCurrentPage(page);
+          const total = fallbackRes.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+          setRewardPoints(total);
         }
       } catch {}
-    };
-    fetchPoints();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function để chuyển trang
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage && !loading) {
+      fetchBonusListPaginated(page);
+    }
+  };
+
+  useEffect(() => {
+    fetchBonusListPaginated(1);
   }, []);
 
   const handleRedeemPoints = async () => {
@@ -231,13 +290,9 @@ export default function Rewards() {
     try {
       await mission.claim();
       Alert.alert('Thành công', `Bạn đã nhận được +${mission.points} điểm!`);
-      // Reload bonus list và điểm
-      const bonusRes = await getBonusList();
-      if (Array.isArray(bonusRes)) {
-        setBonusList(bonusRes);
-        const total = bonusRes.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
-        setRewardPoints(total);
-      }
+      // Reload bonus list và điểm - quay về trang 1
+      setCurrentPage(1);
+      await fetchBonusListPaginated(1);
     } catch (err: any) {
       console.log('Error claiming mission:', err);
       
@@ -280,17 +335,8 @@ export default function Rewards() {
           } else {
             Alert.alert('Thông báo', 'Bạn có thể nhận điểm danh lại rồi! Hãy thử lại.');
             // Reload để cập nhật trạng thái
-            const fetchPoints = async () => {
-              try {
-                const res = await getBonusList();
-                if (Array.isArray(res)) {
-                  setBonusList(res);
-                  const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
-                  setRewardPoints(total);
-                }
-              } catch {}
-            };
-            fetchPoints();
+            setCurrentPage(1);
+            fetchBonusListPaginated(1);
           }
         } else {
           Alert.alert('Thông báo', 'Bạn có thể nhận điểm danh rồi!');
@@ -437,18 +483,110 @@ export default function Rewards() {
 
         {/* Danh sách điểm thưởng */}
         <View style={{marginTop: 24}}>
-          <Text style={styles.sectionTitle}>Lịch sử điểm thưởng</Text>
-          {bonusList.length === 0 && <Text style={{color:'#888'}}>Chưa có điểm thưởng nào</Text>}
-          {bonusList.map((bonus, idx) => (
-            <View key={idx} style={{backgroundColor:'#fff',borderRadius:8,padding:12,marginBottom:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
-              <View>
-                <Text style={{fontWeight:'bold',color:'#6E543C'}}>{bonus.type === 'daily' ? 'Điểm danh' : bonus.type === 'event' ? 'Sự kiện' : bonus.type === 'referral' ? 'Mời bạn bè' : bonus.type === 'admin' ? 'Admin' : 'Nhiệm vụ'}</Text>
-                <Text style={{color:'#888',fontSize:12}}>{bonus.note}</Text>
-                <Text style={{color:'#aaa',fontSize:11}}>{new Date(bonus.createdAt).toLocaleString()}</Text>
+          <View style={styles.historyHeader}>
+            <Text style={styles.sectionTitle}>Lịch sử điểm thưởng</Text>
+            {totalItems > 0 && (
+              <Text style={styles.pageInfo}>
+                {totalPages > 1 ? `Trang ${currentPage}/${totalPages}` : `${totalItems} mục`}
+              </Text>
+            )}
+          </View>
+          
+          {allBonusList.length === 0 && <Text style={{color:'#888', textAlign: 'center', marginVertical: 20}}>Chưa có điểm thưởng nào</Text>}
+          
+          {allBonusList.map((bonus, idx) => (
+            <View key={`${bonus._id || bonus.id || idx}`} style={styles.bonusHistoryCard}>
+              <View style={styles.bonusInfo}>
+                <Text style={styles.bonusType}>
+                  {bonus.type === 'daily' ? 'Điểm danh' : 
+                   bonus.type === 'event' ? 'Sự kiện' : 
+                   bonus.type === 'referral' ? 'Mời bạn bè' : 
+                   bonus.type === 'admin' ? 'Admin' : 'Nhiệm vụ'}
+                </Text>
+                <Text style={styles.bonusNote}>{bonus.note || 'Không có ghi chú'}</Text>
+                <Text style={styles.bonusDate}>{new Date(bonus.createdAt).toLocaleString('vi-VN')}</Text>
               </View>
-              <Text style={{fontWeight:'bold',color:'#FFD700',fontSize:18}}>+{bonus.points}</Text>
+              <View style={styles.bonusPoints}>
+                <Text style={styles.bonusPointsText}>+{bonus.points}</Text>
+                <Text style={styles.bonusStatus}>{bonus.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}</Text>
+              </View>
             </View>
           ))}
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              {/* Previous Button */}
+              <TouchableOpacity 
+                style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+                onPress={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+              >
+                <MaterialIcons name="chevron-left" size={20} color={currentPage === 1 ? "#CCCCCC" : "#6E543C"} />
+                <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>Trước</Text>
+              </TouchableOpacity>
+
+              {/* Page Numbers */}
+              <View style={styles.pageNumbersContainer}>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, index) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = index + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = index + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + index;
+                  } else {
+                    pageNumber = currentPage - 2 + index;
+                  }
+
+                  return (
+                    <TouchableOpacity
+                      key={pageNumber}
+                      style={[
+                        styles.pageNumberButton,
+                        currentPage === pageNumber && styles.pageNumberButtonActive
+                      ]}
+                      onPress={() => goToPage(pageNumber)}
+                      disabled={loading}
+                    >
+                      <Text style={[
+                        styles.pageNumberText,
+                        currentPage === pageNumber && styles.pageNumberTextActive
+                      ]}>
+                        {pageNumber}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Next Button */}
+              <TouchableOpacity 
+                style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+                onPress={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+              >
+                <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>Sau</Text>
+                <MaterialIcons name="chevron-right" size={20} color={currentPage === totalPages ? "#CCCCCC" : "#6E543C"} />
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Loading Indicator */}
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <MaterialIcons name="hourglass-empty" size={24} color="#6E543C" />
+              <Text style={styles.loadingText}>Đang tải...</Text>
+            </View>
+          )}
+          
+          {/* Info Text */}
+          {totalItems > 0 && (
+            <Text style={styles.totalItemsText}>
+              Hiển thị {((currentPage - 1) * 10) + 1} - {Math.min(currentPage * 10, totalItems)} của {totalItems} lịch sử
+            </Text>
+          )}
         </View>
       </ScrollView>
 
@@ -665,5 +803,140 @@ const styles = StyleSheet.create({
     fontSize: fontScale(13),
     marginTop: verticalScale(2),
     fontWeight: '600',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: verticalScale(16),
+  },
+  pageInfo: {
+    fontSize: fontScale(12),
+    color: '#888888',
+    fontWeight: '500',
+  },
+  bonusHistoryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
+    marginBottom: verticalScale(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  bonusInfo: {
+    flex: 1,
+    marginRight: horizontalScale(12),
+  },
+  bonusType: {
+    fontSize: fontScale(16),
+    fontWeight: 'bold',
+    color: '#6E543C',
+    marginBottom: verticalScale(4),
+  },
+  bonusNote: {
+    fontSize: fontScale(13),
+    color: '#888888',
+    marginBottom: verticalScale(2),
+  },
+  bonusDate: {
+    fontSize: fontScale(11),
+    color: '#AAAAAA',
+  },
+  bonusPoints: {
+    alignItems: 'flex-end',
+  },
+  bonusPointsText: {
+    fontSize: fontScale(18),
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: verticalScale(2),
+  },
+  bonusStatus: {
+    fontSize: fontScale(10),
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(10),
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: horizontalScale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: moderateScale(8),
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#F9F9F9',
+    borderColor: '#F0F0F0',
+  },
+  paginationButtonText: {
+    color: '#6E543C',
+    fontSize: fontScale(14),
+    fontWeight: '600',
+    marginHorizontal: horizontalScale(4),
+  },
+  paginationButtonTextDisabled: {
+    color: '#CCCCCC',
+  },
+  pageNumbersContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pageNumberButton: {
+    width: horizontalScale(36),
+    height: verticalScale(36),
+    borderRadius: moderateScale(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(4),
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  pageNumberButtonActive: {
+    backgroundColor: '#6E543C',
+    borderColor: '#6E543C',
+  },
+  pageNumberText: {
+    fontSize: fontScale(14),
+    fontWeight: '600',
+    color: '#6E543C',
+  },
+  pageNumberTextActive: {
+    color: '#FFFFFF',
+  },
+  loadingIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: verticalScale(20),
+  },
+  loadingText: {
+    color: '#6E543C',
+    fontSize: fontScale(14),
+    marginLeft: horizontalScale(8),
+  },
+  totalItemsText: {
+    textAlign: 'center',
+    color: '#888888',
+    fontSize: fontScale(12),
+    marginTop: verticalScale(12),
+    fontStyle: 'italic',
   },
 }); 
