@@ -267,6 +267,7 @@ function Home() {
   const [events, setEvents] = useState<any[]>([]);
   const [eventLoading, setEventLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [cafeLoading, setCafeLoading] = useState(false);
 
   // Lấy danh sách event khi vào trang
   useEffect(() => {
@@ -315,6 +316,60 @@ function Home() {
         Countfollower: newCount
       };
     }));
+  };
+
+  // Hàm xử lý khi ấn vào event để xem chi tiết cafe
+  const handleEventPress = async (event: any) => {
+    try {
+      if (!event.cafe) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin cafe của sự kiện này');
+        return;
+      }
+
+      // Hiển thị loading
+      setCafeLoading(true);
+
+      // Lấy thông tin chi tiết cafe
+      const cafeData = await ApiService.cafe.getProfile(event.cafe);
+      
+      if (!cafeData) {
+        Alert.alert('Lỗi', 'Không thể tải thông tin cafe');
+        return;
+      }
+
+      // Chuẩn bị địa chỉ cafe
+      let cafeAddress = '';
+      if (cafeData.address && typeof cafeData.address === 'object') {
+        cafeAddress = (cafeData.address.street || '') + 
+                     (cafeData.address.ward ? (', ' + cafeData.address.ward) : '') +
+                     (cafeData.address.district ? (', ' + cafeData.address.district) : '') +
+                     (cafeData.address.city ? (', ' + cafeData.address.city) : '');
+      } else if (typeof cafeData.address === 'string') {
+        cafeAddress = cafeData.address;
+      }
+
+      // Navigate đến trang chi tiết cafe
+      router.push({
+        pathname: 'pages/shop/detail' as any,
+        params: {
+          shopId: cafeData.id || event.cafe,
+          name: cafeData.name || 'Cafe',
+          address: cafeAddress || 'Địa chỉ không có sẵn',
+          description: cafeData.description || '',
+          status: cafeData.status || 'Open',
+          closingTime: '22:00', // Default closing time
+          rating: '4.5', // Default rating
+          images: JSON.stringify(cafeData.images || []),
+          menuid: cafeData.id || event.cafe
+        }
+      });
+
+    } catch (error) {
+      console.error('Error loading cafe details:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin cafe. Vui lòng thử lại sau.');
+    } finally {
+      setCafeLoading(false);
+    }
   };
 
   // Lắng nghe socket cập nhật event (nếu có)
@@ -460,7 +515,12 @@ function Home() {
                   {events.map(event => {
                     const isFollowing = !!(userId && event.followers.includes(userId));
                     return (
-                      <View key={event._id} style={styles.eventCard}>
+                      <TouchableOpacity 
+                        key={event._id} 
+                        style={styles.eventCard}
+                        onPress={() => handleEventPress(event)}
+                        activeOpacity={0.8}
+                      >
                         <Image source={{uri: event.image}} style={styles.eventImage} resizeMode="cover" />
                         <View style={styles.eventInfo}>
                           <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
@@ -468,13 +528,16 @@ function Home() {
                           <Text style={styles.eventFollower}>Người theo dõi: {event.Countfollower}</Text>
                           <TouchableOpacity
                             style={[styles.eventFollowBtn, isFollowing && styles.eventFollowedBtn]}
-                            onPress={() => handleFollowToggle(event._id, isFollowing)}
+                            onPress={(e) => {
+                              e.stopPropagation(); // Prevent event card press
+                              handleFollowToggle(event._id, isFollowing);
+                            }}
                             disabled={!userId}
                           >
                             <Text style={styles.eventFollowText}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
                           </TouchableOpacity>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
@@ -554,6 +617,22 @@ function Home() {
       </TouchableOpacity>
 
       <BottomBar />
+
+      {/* Loading Modal for Cafe Details */}
+      {cafeLoading && (
+        <Modal
+          visible={cafeLoading}
+          transparent={true}
+          animationType="fade"
+        >
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContainer}>
+              <MaterialIcons name="local-cafe" size={40} color={PRIMARY_BROWN} />
+              <Text style={styles.loadingText}>Đang tải thông tin cafe...</Text>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Image Modal */}
       <Modal
@@ -1283,5 +1362,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     lineHeight: 20,
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  loadingText: {
+    color: PRIMARY_BROWN,
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    marginTop: 12,
   },
 }); 

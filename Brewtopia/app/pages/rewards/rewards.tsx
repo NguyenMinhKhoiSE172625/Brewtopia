@@ -99,20 +99,37 @@ export default function Rewards() {
   // Xác định nhiệm vụ đã nhận dựa vào bonusList
   const claimedMissions = missionConfigs.reduce((acc, m) => {
     if (m.id === 'daily') {
-      acc[m.id] = bonusList.some(b => b.type === 'daily' && b.status === 'active' && new Date().toDateString() === new Date(b.createdAt).toDateString());
+      // Tìm daily bonus gần nhất
+      const latestDaily = bonusList
+        .filter(b => b.type === 'daily' && b.status === 'active')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      if (latestDaily) {
+        // Kiểm tra xem đã đủ 24 giờ từ lần claim cuối chưa
+        const claimedAt = new Date(latestDaily.createdAt);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - claimedAt.getTime()) / (1000 * 60 * 60);
+        acc[m.id] = Boolean(hoursDiff < 24); // Đã claim nếu chưa đủ 24 giờ
+      } else {
+        acc[m.id] = false; // Chưa claim lần nào
+      }
     } else {
-      acc[m.id] = bonusList.some(b => b.type === m.id && b.status === 'active');
+      acc[m.id] = Boolean(bonusList.some(b => b.type === m.id && b.status === 'active'));
     }
     return acc;
   }, {} as Record<string, boolean>);
 
   // Tính thời gian còn lại cho daily
   useEffect(() => {
-    const dailyBonus = bonusList.find(b => b.type === 'daily' && b.status === 'active' && new Date().toDateString() === new Date(b.createdAt).toDateString());
-    if (dailyBonus) {
-      const now = new Date();
-      const claimedAt = new Date(dailyBonus.createdAt);
+    // Tìm daily bonus gần nhất
+    const latestDaily = bonusList
+      .filter(b => b.type === 'daily' && b.status === 'active')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+    if (latestDaily) {
+      const claimedAt = new Date(latestDaily.createdAt);
       const nextClaim = new Date(claimedAt.getTime() + 24 * 60 * 60 * 1000);
+      
       const updateCountdown = () => {
         const diff = nextClaim.getTime() - Date.now();
         if (diff <= 0) {
@@ -137,10 +154,14 @@ export default function Rewards() {
           setDailyCountdown(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
         }
       };
+      
       updateCountdown();
       if (countdownInterval.current) clearInterval(countdownInterval.current);
-      countdownInterval.current = setInterval(updateCountdown, 1000); // cập nhật mỗi giây
-      return () => { if (countdownInterval.current) clearInterval(countdownInterval.current); };
+      countdownInterval.current = setInterval(updateCountdown, 1000);
+      
+      return () => { 
+        if (countdownInterval.current) clearInterval(countdownInterval.current); 
+      };
     } else {
       setDailyCountdown('');
       if (countdownInterval.current) clearInterval(countdownInterval.current);
@@ -235,32 +256,44 @@ export default function Rewards() {
       if (mission.id === 'daily' && (
         errorMessage.includes('24 giờ') || 
         errorMessage.includes('chưa đủ 24 giờ') ||
-        errorMessage.includes('trong vòng 24 giờ')
+        errorMessage.includes('trong vòng 24 giờ') ||
+        errorMessage.includes('đã nhận điểm daily')
       )) {
         // Tìm daily bonus gần nhất để tính toán thời gian còn lại
-        const dailyBonus = bonusList.find(b => 
-          b.type === 'daily' && 
-          b.status === 'active' && 
-          new Date().toDateString() === new Date(b.createdAt).toDateString()
-        );
+        const latestDaily = bonusList
+          .filter(b => b.type === 'daily' && b.status === 'active')
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
         
-        if (dailyBonus) {
-          const claimedAt = new Date(dailyBonus.createdAt);
+        if (latestDaily) {
+          const claimedAt = new Date(latestDaily.createdAt);
           const nextClaim = new Date(claimedAt.getTime() + 24 * 60 * 60 * 1000);
           const diff = nextClaim.getTime() - Date.now();
           
           if (diff > 0) {
             const hours = Math.floor(diff / (60 * 60000));
             const minutes = Math.floor((diff / 60000) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
             Alert.alert(
               'Thông báo', 
-              `Bạn đã nhận điểm danh hôm nay rồi!\nCó thể nhận lại sau: ${hours}h ${minutes}m`
+              `Bạn đã nhận điểm danh rồi!\nCó thể nhận lại sau: ${hours}h ${minutes}m ${seconds}s`
             );
           } else {
             Alert.alert('Thông báo', 'Bạn có thể nhận điểm danh lại rồi! Hãy thử lại.');
+            // Reload để cập nhật trạng thái
+            const fetchPoints = async () => {
+              try {
+                const res = await getBonusList();
+                if (Array.isArray(res)) {
+                  setBonusList(res);
+                  const total = res.filter((b: any) => b.status === 'active').reduce((sum: number, b: any) => sum + (b.points || 0), 0);
+                  setRewardPoints(total);
+                }
+              } catch {}
+            };
+            fetchPoints();
           }
         } else {
-          Alert.alert('Thông báo', 'Bạn cần đợi 24 giờ mới có thể nhận lại điểm danh hằng ngày!');
+          Alert.alert('Thông báo', 'Bạn có thể nhận điểm danh rồi!');
         }
       } else {
         Alert.alert('Lỗi', errorMessage);
@@ -367,21 +400,34 @@ export default function Rewards() {
               <View style={styles.missionInfo}>
                 <Text style={styles.missionTitle}>{mission.title}</Text>
                 <Text style={styles.missionPoints}>+{mission.points} points</Text>
-                {/* Nếu là daily và đã claim thì hiển thị countdown */}
-                {mission.id === 'daily' && claimedMissions['daily'] && dailyCountdown && (
-                  <Text style={{color:'#FF6B6B',fontSize:13,marginTop:2,fontWeight:'600'}}>⏰ Có thể nhận lại sau: {dailyCountdown}</Text>
-                )}
+                                 {/* Hiển thị trạng thái cho daily mission */}
+                 {mission.id === 'daily' && (
+                   <>
+                     {Boolean(claimedMissions['daily']) && Boolean(dailyCountdown) ? (
+                       <Text style={styles.countdownText}>⏰ Nhận lại sau: {dailyCountdown}</Text>
+                     ) : Boolean(claimedMissions['daily']) && !Boolean(dailyCountdown) ? (
+                       <Text style={styles.readyText}>✅ Có thể nhận lại rồi!</Text>
+                     ) : (
+                       <Text style={styles.availableText}>🎯 Sẵn sàng nhận!</Text>
+                     )}
+                   </>
+                 )}
               </View>
               <View style={styles.missionStatus}>
-                {claimedMissions[mission.id] ? (
+                {claimedMissions[mission.id] && (mission.id !== 'daily' || Boolean(dailyCountdown)) ? (
                   <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
                 ) : (
                   <TouchableOpacity
-                    style={styles.claimButton}
+                    style={[
+                      styles.claimButton,
+                      (claiming === mission.id || (mission.id === 'daily' && claimedMissions['daily'] && Boolean(dailyCountdown))) && styles.claimButtonDisabled
+                    ]}
                     onPress={() => handleClaim(mission)}
-                    disabled={claiming === mission.id}
+                    disabled={Boolean(claiming === mission.id || (mission.id === 'daily' && claimedMissions['daily'] && Boolean(dailyCountdown)))}
                   >
-                    <Text style={styles.claimButtonText}>{claiming === mission.id ? 'Đang nhận...' : 'Nhận'}</Text>
+                    <Text style={styles.claimButtonText}>
+                      {claiming === mission.id ? 'Đang nhận...' : 'Nhận'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -593,9 +639,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  claimButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#999999',
+  },
   progressPercentage: {
     fontSize: fontScale(12),
     color: '#666666',
     marginTop: verticalScale(4),
+  },
+  countdownText: {
+    color: '#FF6B6B',
+    fontSize: fontScale(13),
+    marginTop: verticalScale(2),
+    fontWeight: '600',
+  },
+  readyText: {
+    color: '#4CAF50',
+    fontSize: fontScale(13),
+    marginTop: verticalScale(2),
+    fontWeight: '600',
+  },
+  availableText: {
+    color: '#2196F3',
+    fontSize: fontScale(13),
+    marginTop: verticalScale(2),
+    fontWeight: '600',
   },
 }); 
