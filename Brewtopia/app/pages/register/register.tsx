@@ -7,6 +7,9 @@ import ApiService from '../../utils/ApiService';
 import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
+const PRIMARY_BROWN = '#7B4B27';
+const SECONDARY_BROWN = '#8B6F47';
+
 export default function Register() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -161,9 +164,9 @@ export default function Register() {
                 onPress={() => setTermsAccepted(!termsAccepted)}
               >
                 {termsAccepted ? (
-                  <Ionicons name="checkbox" size={24} color="#FFFFFF" />
+                  <Ionicons name="checkbox" size={24} color={PRIMARY_BROWN} />
                 ) : (
-                  <Ionicons name="square-outline" size={24} color="#FFFFFF" />
+                  <Ionicons name="square-outline" size={24} color="#666" />
                 )}
               </TouchableOpacity>
               <Text style={styles.terms}>
@@ -206,6 +209,7 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    background: 'linear-gradient(180deg, #FFFFFF 0%, #F8F6F2 100%)',
     backgroundColor: '#FFFFFF',
   },
   keyboardAvoidingView: {
@@ -225,15 +229,25 @@ const styles = StyleSheet.create({
     height: verticalScale(80),
   },
   formContainer: {
-    backgroundColor: '#6E543C',
-    borderRadius: moderateScale(31),
-    padding: moderateScale(20),
+    backgroundColor: '#FFFFFF',
+    borderRadius: moderateScale(20),
+    padding: moderateScale(24),
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   title: {
     fontSize: fontScale(24),
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: PRIMARY_BROWN,
     marginBottom: verticalScale(30),
     textAlign: 'center',
   },
@@ -241,22 +255,28 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
   },
   label: {
-    color: '#FFFFFF',
+    color: '#333',
     marginBottom: verticalScale(8),
     fontSize: fontScale(16),
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(10),
+    backgroundColor: '#FAFAFA',
+    borderRadius: moderateScale(12),
     padding: moderateScale(15),
     fontSize: fontScale(16),
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    color: '#333',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(10),
+    backgroundColor: '#FAFAFA',
+    borderRadius: moderateScale(12),
     paddingRight: moderateScale(15),
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
   eyeButton: {
     padding: moderateScale(5),
@@ -266,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(15),
   },
   errorText: {
-    color: '#FF0000',
+    color: '#FF4444',
     fontSize: fontScale(14),
     textAlign: 'center',
   },
@@ -279,31 +299,41 @@ const styles = StyleSheet.create({
     marginRight: horizontalScale(10),
   },
   terms: {
-    color: '#FFFFFF',
+    color: '#666',
     fontSize: fontScale(14),
     flex: 1,
   },
   registerButton: {
-    backgroundColor: '#B68D5F',
+    backgroundColor: PRIMARY_BROWN,
     height: verticalScale(50),
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: moderateScale(10),
+    borderRadius: moderateScale(12),
     marginTop: verticalScale(20),
+    shadowColor: PRIMARY_BROWN,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   buttonText: {
     fontSize: fontScale(16),
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   policyText: {
-    color: '#FFFFFF',
+    color: '#666',
     fontSize: fontScale(12),
     textAlign: 'center',
     marginTop: verticalScale(20),
+    lineHeight: fontScale(16),
   },
   linkText: {
     textDecorationLine: 'underline',
+    color: SECONDARY_BROWN,
   },
   loginContainer: {
     flexDirection: 'row',
@@ -311,12 +341,12 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(30),
   },
   loginText: {
-    color: '#FFFFFF',
+    color: '#666',
     fontSize: fontScale(14),
   },
   loginLink: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: PRIMARY_BROWN,
+    fontWeight: '700',
     textDecorationLine: 'underline',
     fontSize: fontScale(14),
   },
