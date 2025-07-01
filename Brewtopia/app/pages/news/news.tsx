@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal, Alert, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image, TextInput, Modal, Alert, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
@@ -11,6 +11,8 @@ import { withAuth } from '../../components/withAuth';
 import ApiService from '../../utils/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import socketService from '../../services/socketService';
+import AppLoading from '../../components/AppLoading';
+import useFetchData from '../../utils/useFetchData';
 
 // Interface for API Post data
 interface ApiPost {
@@ -52,9 +54,6 @@ function News() {
   const router = useRouter();
 
   // State for posts and loading
-  const [posts, setPosts] = useState<UIPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [hasMorePosts, setHasMorePosts] = useState(true);
@@ -71,6 +70,19 @@ function News() {
   const [comments, setComments] = useState<Record<string, any[]>>({}); // { [postId]: [comment, ...] }
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({}); // { [postId]: string }
   const [currentUserId, setCurrentUserId] = useState('');
+
+  // Thay thế toàn bộ state posts, loading, error, fetchPosts bằng:
+  const {
+    data: posts,
+    loading,
+    error,
+    refetch: refetchPosts,
+    reset: resetPosts
+  } = useFetchData(async () => {
+    const response = await ApiService.posts.getPosts(page, 10);
+    if (!response || !Array.isArray(response.data)) return [];
+    return response.data.map(convertApiPostToUIPost);
+  }, [page]);
 
   // Function to convert API post to UI post format
   const convertApiPostToUIPost = (apiPost: ApiPost): UIPost => {
@@ -126,66 +138,24 @@ function News() {
     }
   };
 
-  // Fetch posts from API
-  const fetchPosts = async (pageNum: number = 1, isRefresh: boolean = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else if (pageNum === 1) {
-        setLoading(true);
-      }
-
-      const response = await ApiService.posts.getPosts(pageNum, 10);
-      console.log('API getPosts response:', response);
-
-      // Sử dụng response.data thay vì response.posts
-      if (!response || !Array.isArray(response.data)) {
-        console.error('API trả về không có trường data:', response);
-        Alert.alert('Lỗi', 'Không lấy được danh sách bài viết từ server.');
-        setPosts([]);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      const uiPosts = response.data.map(convertApiPostToUIPost);
-
-      if (isRefresh || pageNum === 1) {
-        setPosts(uiPosts);
-        setPage(1);
-      } else {
-        setPosts(prev => [...prev, ...uiPosts]);
-      }
-
-      setHasMorePosts(pageNum < response.totalPages);
-
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      Alert.alert('Error', 'Failed to load posts. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
   // Load more posts (pagination)
   const loadMorePosts = () => {
     if (!loading && hasMorePosts) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchPosts(nextPage, false);
+      refetchPosts(nextPage, false);
     }
   };
 
   // Refresh posts
   const onRefresh = () => {
-    fetchPosts(1, true);
+    refetchPosts(1, true);
   };
 
   // useEffect to load data on component mount
   useEffect(() => {
     loadCurrentUser();
-    fetchPosts(1, false);
+    refetchPosts(1, false);
   }, []);
 
   useEffect(() => {
@@ -199,7 +169,7 @@ function News() {
     // Lắng nghe like realtime
     socketService.on('like:update', ({ targetId, likeChange, targetModel }) => {
       if (targetModel === 'Post') {
-        setPosts(prev =>
+        resetPosts(prev =>
           prev.map(post =>
             post.id === targetId
               ? { ...post, likes: (post.likes || 0) + likeChange }
@@ -255,7 +225,7 @@ function News() {
 
       if (!result.canceled && result.assets.length > 0) {
         const newImages = result.assets.map(asset => asset.uri);
-        setSelectedImages([...selectedImages, ...newImages]);
+        resetPosts(prev => [...prev, ...newImages]);
       }
     } catch (error) {
       Alert.alert('Error', 'An error occurred while selecting images.');
@@ -264,7 +234,7 @@ function News() {
   };
 
   const removeImage = (uri: string) => {
-    setSelectedImages(selectedImages.filter(imageUri => imageUri !== uri));
+    resetPosts(prev => prev.filter(imageUri => imageUri !== uri));
   };
 
   const handleCreatePost = async () => {
@@ -292,7 +262,7 @@ function News() {
       setShowPostModal(false);
 
       // Refresh posts to show the new post
-      fetchPosts(1, true);
+      refetchPosts(1, true);
 
       Alert.alert('Success', 'Post created successfully!');
 
@@ -334,6 +304,7 @@ function News() {
 
   // Function to render posts with sponsor banners in between
   const renderPostsWithSponsors = () => {
+    const safePosts = Array.isArray(posts) ? posts : [];
     const result = [];
     
     // Add create post card
@@ -381,12 +352,12 @@ function News() {
     );
     
     // Add posts with sponsor banners in between
-    posts.forEach((post, index) => {
+    safePosts.forEach((post, index) => {
       // Add the post
       result.push(<Post key={post.id} {...post} />);
       
       // After every 2 posts (0, 2, 4, etc.), add a sponsor banner
-      if (index % 2 === 1 && index < posts.length - 1) {
+      if (index % 2 === 1 && index < safePosts.length - 1) {
         result.push(
           <SponsorBanner 
             key={`sponsor-${index}`} 
@@ -449,7 +420,7 @@ function News() {
         style={styles.content}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={loading}
             onRefresh={onRefresh}
             colors={['#6E543C']}
             tintColor="#6E543C"
@@ -465,10 +436,9 @@ function News() {
         scrollEventThrottle={400}
       >
         {/* Loading indicator for initial load */}
-        {loading && posts.length === 0 ? (
+        {loading && (Array.isArray(posts) ? posts.length : 0) === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6E543C" />
-            <Text style={styles.loadingText}>Loading posts...</Text>
+            <AppLoading text="Loading posts..." />
           </View>
         ) : (
           <>
@@ -476,15 +446,14 @@ function News() {
             {renderPostsWithSponsors()}
 
             {/* Loading indicator for pagination */}
-            {loading && posts.length > 0 && (
+            {loading && (Array.isArray(posts) ? posts.length : 0) > 0 && (
               <View style={styles.paginationLoading}>
-                <ActivityIndicator size="small" color="#6E543C" />
-                <Text style={styles.loadingText}>Loading more posts...</Text>
+                <AppLoading text="Loading more posts..." size="small" />
               </View>
             )}
 
             {/* End of posts message */}
-            {!hasMorePosts && posts.length > 0 && (
+            {!hasMorePosts && (Array.isArray(posts) ? posts.length : 0) > 0 && (
               <View style={styles.endOfPostsContainer}>
                 <Text style={styles.endOfPostsText}>You've reached the end!</Text>
               </View>
@@ -890,11 +859,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: verticalScale(50),
-  },
-  loadingText: {
-    marginTop: verticalScale(10),
-    fontSize: fontScale(16),
-    color: '#6E543C',
   },
   paginationLoading: {
     flexDirection: 'row',

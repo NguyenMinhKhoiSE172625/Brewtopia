@@ -1,14 +1,41 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MissionComplete() {
   const router = useRouter();
   const scaleAnim = new Animated.Value(0);
+  const [achievementData, setAchievementData] = useState<any>(null);
 
   useEffect(() => {
+    const loadAchievementData = async () => {
+      try {
+        const data = await AsyncStorage.getItem('newMembershipAchieved');
+        if (data) {
+          setAchievementData(JSON.parse(data));
+        } else {
+          // Fallback data nếu không có dữ liệu
+          setAchievementData({
+            level: 'Silver Member',
+            points: 350,
+            benefits: ['10% giảm giá tất cả đơn hàng', 'Đồ uống miễn phí sinh nhật', '2x điểm cuối tuần']
+          });
+        }
+      } catch (error) {
+        // Fallback data
+        setAchievementData({
+          level: 'Silver Member', 
+          points: 350,
+          benefits: ['10% giảm giá tất cả đơn hàng', 'Đồ uống miễn phí sinh nhật', '2x điểm cuối tuần']
+        });
+      }
+    };
+
+    loadAchievementData();
+
     Animated.spring(scaleAnim, {
       toValue: 1,
       tension: 50,
@@ -20,6 +47,32 @@ export default function MissionComplete() {
   const handleContinue = () => {
     router.back();
   };
+
+  const getLevelIcon = (levelName: string) => {
+    if (levelName.includes('Bronze')) return 'military-tech';
+    if (levelName.includes('Silver')) return 'stars';
+    if (levelName.includes('Gold')) return 'emoji-events';
+    if (levelName.includes('Platinum')) return 'workspace-premium';
+    if (levelName.includes('Diamond')) return 'diamond';
+    return 'stars';
+  };
+
+  const getLevelColor = (levelName: string) => {
+    if (levelName.includes('Bronze')) return '#CD7F32';
+    if (levelName.includes('Silver')) return '#C0C0C0';
+    if (levelName.includes('Gold')) return '#FFD700';
+    if (levelName.includes('Platinum')) return '#E5E4E2';
+    if (levelName.includes('Diamond')) return '#B9F2FF';
+    return '#FFD700';
+  };
+
+  if (!achievementData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Đang tải...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -42,27 +95,21 @@ export default function MissionComplete() {
         />
         
         <Text style={styles.title}>Congratulations!</Text>
-        <Text style={styles.subtitle}>You've reached 350 points!</Text>
+        <Text style={styles.subtitle}>You've reached {achievementData.points} points!</Text>
         
-        <View style={styles.rewardBox}>
-          <MaterialIcons name="stars" size={30} color="#FFD700" />
-          <Text style={styles.rewardText}>Silver Member Achieved!</Text>
+        <View style={[styles.rewardBox, { backgroundColor: getLevelColor(achievementData.level) + '20' }]}>
+          <MaterialIcons name={getLevelIcon(achievementData.level)} size={30} color={getLevelColor(achievementData.level)} />
+          <Text style={[styles.rewardText, { color: getLevelColor(achievementData.level) }]}>{achievementData.level} Achieved!</Text>
         </View>
 
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitsTitle}>Your New Benefits:</Text>
-          <View style={styles.benefitItem}>
-            <MaterialIcons name="local-offer" size={24} color="#6E543C" />
-            <Text style={styles.benefitText}>10% discount on all orders</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <MaterialIcons name="card-giftcard" size={24} color="#6E543C" />
-            <Text style={styles.benefitText}>Free drink on your birthday</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <MaterialIcons name="loyalty" size={24} color="#6E543C" />
-            <Text style={styles.benefitText}>2x points on weekend orders</Text>
-          </View>
+          {achievementData.benefits.map((benefit: string, index: number) => (
+            <View key={index} style={styles.benefitItem}>
+              <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+              <Text style={styles.benefitText}>{benefit}</Text>
+            </View>
+          ))}
         </View>
 
         <TouchableOpacity 

@@ -1,7 +1,7 @@
 import ApiService from '../utils/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type BonusType = 'daily' | 'event' | 'referral' | 'admin' | 'task';
+export type BonusType = 'daily' | 'event' | 'referral' | 'task';
 
 export interface CreateBonusParams {
   type: BonusType;
@@ -57,11 +57,6 @@ export async function claimEventBonus(note?: string) {
 // Hàm nhận điểm referral
 export async function claimReferralBonus(note?: string) {
   return createBonus({ type: 'referral', note });
-}
-
-// Hàm nhận điểm admin
-export async function claimAdminBonus(note?: string) {
-  return createBonus({ type: 'admin', note });
 }
 
 // Hàm nhận điểm task

@@ -1,6 +1,5 @@
 import { Text, View, TouchableOpacity, StyleSheet, Image, ImageBackground, Dimensions, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
-import DebugService from '../../utils/DebugService';
 
 export default function Role() {
   const router = useRouter();
@@ -66,7 +65,6 @@ export default function Role() {
                   borderRadius: 10 * scale,
                 }]}
                 onPress={() => {
-                  DebugService.log('Selected role: User (no role parameter)');
                   router.push("/pages/login/login");
                 }}
               >
@@ -79,7 +77,6 @@ export default function Role() {
                   borderRadius: 10 * scale,
                 }]}
                 onPress={() => {
-                  DebugService.log('Selected role: Admin');
                   router.push("/pages/login/login?role=admin");
                 }}
               >

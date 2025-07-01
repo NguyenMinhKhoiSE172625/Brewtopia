@@ -33,9 +33,6 @@ export default function LoginUser() {
   const params = useLocalSearchParams();
   const role = params.role as string;
   
-  // Debug info
-  DebugService.log('Login User Screen - Role', role);
-  
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +42,6 @@ export default function LoginUser() {
   const [isNetworkAvailable, setIsNetworkAvailable] = useState(true);
 
   const redirectUri = 'https://auth.expo.io/@khoiawesome/brewtopia';
-  console.log('Google OAuth redirectUri:', redirectUri);
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -157,23 +153,12 @@ export default function LoginUser() {
     setIsError(false);
     
     try {
-      DebugService.log('Attempting login with:', { email, role });
       // Use ApiService with role validation
       const expectedRole = role === 'admin' ? UserRole.ADMIN : UserRole.USER;
       const data = await ApiService.auth.login(email, password, expectedRole);
       
-      DebugService.log('Login response:', data);
-      
       // Verify token was stored
       const storedToken = await AsyncStorage.getItem('token');
-      DebugService.log('Stored token:', storedToken);
-      
-      // Log cafeId nếu có
-      if (data.cafeId) {
-        DebugService.log('Đã lưu cafeId:', data.cafeId);
-      }
-      
-      setIsError(false);
       
       // ADMIN: Nếu có message yêu cầu cập nhật profile và có cafeId, ép chuyển trang cập nhật business
       if (role === 'admin' && data.message && data.cafeId) {
@@ -195,7 +180,7 @@ export default function LoginUser() {
       // User thường hoặc admin đã hoàn thiện profile
       router.push("/pages/home/home");
     } catch (error: any) {
-      DebugService.log('Login error:', error);
+      DebugService.logError('Login error:', error);
       setIsError(true);
       if (error.status === 0) {
         // Network error

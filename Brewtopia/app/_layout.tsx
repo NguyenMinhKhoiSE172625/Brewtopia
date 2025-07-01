@@ -52,7 +52,7 @@ export default function RootLayout() {
         });
         
         if (response.ok) {
-          DebugService.log('Network connection available');
+          // DebugService.log('Network connection available');
         } else {
           DebugService.logError('Network check failed with status:', response.status);
         }

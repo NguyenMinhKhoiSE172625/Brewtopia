@@ -1,10 +1,11 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { AntDesign } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from '../../utils/ApiService';
 import DebugService from '../../utils/DebugService';
+import AppLoading from '../../components/AppLoading';
 
 export default function VerifyCode() {
   const router = useRouter();
@@ -33,9 +34,7 @@ export default function VerifyCode() {
         const savedRole = await AsyncStorage.getItem('registration_role');
         if (savedEmail) {
           setEmail(savedEmail);
-          DebugService.log('Retrieved email for verification', savedEmail);
           if (savedRole) {
-            DebugService.log('Retrieved role for verification', savedRole);
           }
         } else {
           setIsError(true);
@@ -246,7 +245,7 @@ export default function VerifyCode() {
 
           {/* Loading Indicator */}
           {isLoading && (
-            <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
+            <AppLoading text="Đang xác thực..." />
           )}
 
           {/* Resend Code */}
@@ -379,8 +378,5 @@ const styles = StyleSheet.create({
   timer: {
     color: '#FFFFFF',
     fontSize: 14,
-  },
-  loader: {
-    marginVertical: 10,
   },
 }); 

@@ -1,9 +1,10 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ActivityIndicator, Alert } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign } from '@expo/vector-icons';
 import { useState } from 'react';
 import ApiService from '../../utils/ApiService';
 import DebugService from '../../utils/DebugService';
+import AppLoading from '../../components/AppLoading';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -51,7 +52,6 @@ export default function ForgotPassword() {
       // Success
       setIsSuccess(true);
       setSuccessMessage('Password reset instructions have been sent to your email');
-      DebugService.log('Reset password email sent successfully', email);
       
     } catch (error: any) {
       // Error handling
@@ -139,7 +139,7 @@ export default function ForgotPassword() {
 
           {/* Loading Indicator */}
           {isLoading && (
-            <ActivityIndicator size="large" color="#FFFFFF" style={styles.loader} />
+            <AppLoading text="Đang gửi mã..." />
           )}
 
           {/* Send Code Button */}
@@ -268,8 +268,5 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '600',
     textDecorationLine: 'underline',
-  },
-  loader: {
-    marginVertical: 10,
   },
 }); 

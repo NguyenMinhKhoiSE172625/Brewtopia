@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image as CachedImage } from 'expo-image';
 import { withAuth } from '../../components/withAuth';
 import ApiService from '../../utils/ApiService';
+import socketService from '../../services/socketService';
 
 // Thay thế bằng Google Maps API key của bạn
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDmwLRVHrEYt9IkLZlf4ylndLQpPpF889w';
@@ -612,6 +613,13 @@ function Nearby() {
         setAllCafes([...MOCK_CAFES, ...randomCafes]);
       }
     })();
+
+    return () => {
+      // Cleanup socket, listener
+      socketService.disconnect();
+      socketService.removeListener('likeOrUnlike');
+      socketService.removeListener('eventUpdated');
+    };
   }, []);
 
   // Memoize handlers

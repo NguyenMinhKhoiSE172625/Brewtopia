@@ -45,18 +45,15 @@ class ApiService {
   private async loadToken() {
     try {
       this.token = await AsyncStorage.getItem('token');
-      DebugService.log('Token loaded:', this.token);
       
       // Validate token if exists
       if (this.token) {
         const isValid = await this.validateToken(this.token);
         if (!isValid) {
-          DebugService.log('Invalid token found, clearing...');
           await this.clearToken();
         }
       }
     } catch (error) {
-      DebugService.logError('Error loading token:', error);
       await this.clearToken();
     }
   }
@@ -72,7 +69,6 @@ class ApiService {
       });
       return response.ok;
     } catch (error) {
-      DebugService.logError('Error validating token:', error);
       return false;
     }
   }
@@ -115,7 +111,6 @@ class ApiService {
       }
       return null;
     } catch (error) {
-      DebugService.logError('Error refreshing token:', error);
       return null;
     } finally {
       this.isRefreshing = false;
@@ -147,11 +142,12 @@ class ApiService {
         ...options.headers,
       };
       
-      DebugService.log('Request headers:', headers);
-      DebugService.log('Current token:', this.token);
+      // Log the request
+      console.log(`Request headers: ${JSON.stringify(headers)}`);
+      console.log(`Current token: ${this.token}`);
       
       // Log the request
-      DebugService.logRequest(fullUrl, method, options.body ? JSON.parse(options.body as string) : null);
+      console.log(`Request: ${method} ${fullUrl}`);
       
       // Make the request
       const response = await fetch(fullUrl, {
@@ -164,7 +160,7 @@ class ApiService {
       
       // Handle 401 Unauthorized
       if (response.status === 401 && this.token) {
-        DebugService.log('Token expired, attempting refresh...');
+        console.log('Token expired, attempting refresh...');
         const newToken = await this.refreshToken();
         if (newToken) {
           // Retry request with new token
@@ -189,7 +185,7 @@ class ApiService {
       }
       
       // Log the response
-      DebugService.logResponse(fullUrl, method, response.status, data);
+      console.log(`Response: ${method} ${fullUrl} - Status: ${response.status}`);
       
       // Handle error responses
       if (!response.ok) {
@@ -204,7 +200,7 @@ class ApiService {
     } catch (error: any) {
       // Handle aborted requests (timeout)
       if (error.name === 'AbortError') {
-        DebugService.logError(`Request timeout for ${method} ${fullUrl}`, error);
+        console.log(`Request timeout for ${method} ${fullUrl}`);
         throw {
           status: 408,
           message: 'Request timeout. Please try again later.',
@@ -217,11 +213,11 @@ class ApiService {
           error.message.includes('Failed to fetch') ||
           error.message.includes('Network error'))) {
         
-        DebugService.logError(`Network error on ${method} ${fullUrl}`, error);
+        console.log(`Network error on ${method} ${fullUrl}`);
         
         // Retry logic
         if (retries > 0) {
-          DebugService.log(`Retrying request (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})...`);
+          console.log(`Retrying request (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})...`);
           return this.fetch(url, options, retries - 1, timeout);
         }
         
@@ -232,7 +228,7 @@ class ApiService {
       }
       
       // Log any other errors
-      DebugService.logError(`API error on ${method} ${fullUrl}`, error);
+      console.log(`API error on ${method} ${fullUrl}`);
       throw error;
     }
   }
@@ -265,16 +261,16 @@ class ApiService {
 
       // Store the token for future requests
       if (response.token) {
-        DebugService.log('ApiService - Login response user:', response.user);
+        console.log('ApiService - Login response user:', response.user);
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
         if (userId) {
-          DebugService.log('ApiService - Saving userId:', userId);
+          console.log('ApiService - Saving userId:', userId);
           await AsyncStorage.setItem('userId', userId);
         } else {
-          DebugService.log('ApiService - No userId found in response.user:', response.user);
+          console.log('ApiService - No userId found in response.user:', response.user);
         }
         this.token = response.token;
 
@@ -282,9 +278,9 @@ class ApiService {
         if (response.user.role === 'admin') {
           if (response.cafeId) {
             await AsyncStorage.setItem('cafeId', response.cafeId);
-            DebugService.log('ApiService - Saved cafeId from login response:', response.cafeId);
+            console.log('ApiService - Saved cafeId from login response:', response.cafeId);
           } else {
-            DebugService.log('ApiService - No cafeId found in login response');
+            console.log('ApiService - No cafeId found in login response');
           }
         }
       }
@@ -357,16 +353,16 @@ class ApiService {
       });
       // Lưu token và user info
       if (response.token) {
-        DebugService.log('ApiService - Google login response user:', response.user);
+        console.log('ApiService - Google login response user:', response.user);
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
         if (userId) {
-          DebugService.log('ApiService - Google login: Saving userId:', userId);
+          console.log('ApiService - Google login: Saving userId:', userId);
           await AsyncStorage.setItem('userId', userId);
         } else {
-          DebugService.log('ApiService - Google login: No userId found in response.user:', response.user);
+          console.log('ApiService - Google login: No userId found in response.user:', response.user);
         }
         this.token = response.token;
 
@@ -374,9 +370,9 @@ class ApiService {
         if (response.user.role === 'admin') {
           if (response.cafeId) {
             await AsyncStorage.setItem('cafeId', response.cafeId);
-            DebugService.log('ApiService - Google login: Saved cafeId from response:', response.cafeId);
+            console.log('ApiService - Google login: Saved cafeId from response:', response.cafeId);
           } else {
-            DebugService.log('ApiService - Google login: No cafeId found in response');
+            console.log('ApiService - Google login: No cafeId found in response');
           }
         }
       }
@@ -396,16 +392,16 @@ class ApiService {
       });
 
       if (response.token) {
-        DebugService.log('ApiService - Facebook login response user:', response.user);
+        console.log('ApiService - Facebook login response user:', response.user);
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         // Store userId separately for easy access (only if it exists)
         const userId = response.user?.id || response.user?._id;
         if (userId) {
-          DebugService.log('ApiService - Facebook login: Saving userId:', userId);
+          console.log('ApiService - Facebook login: Saving userId:', userId);
           await AsyncStorage.setItem('userId', userId);
         } else {
-          DebugService.log('ApiService - Facebook login: No userId found in response.user:', response.user);
+          console.log('ApiService - Facebook login: No userId found in response.user:', response.user);
         }
         this.token = response.token;
 
@@ -413,9 +409,9 @@ class ApiService {
         if (response.user.role === 'admin') {
           if (response.cafeId) {
             await AsyncStorage.setItem('cafeId', response.cafeId);
-            DebugService.log('ApiService - Facebook login: Saved cafeId from response:', response.cafeId);
+            console.log('ApiService - Facebook login: Saved cafeId from response:', response.cafeId);
           } else {
-            DebugService.log('ApiService - Facebook login: No cafeId found in response');
+            console.log('ApiService - Facebook login: No cafeId found in response');
           }
         }
       }
@@ -521,17 +517,17 @@ class ApiService {
   payment = {
     // Create PayOS payment
     createPayosPayment: async (amount: number, description: string, targetModel: string = 'UpgradePremium') => {
-      DebugService.log('Payment API - Current token:', this.token);
+      console.log('Payment API - Current token:', this.token);
 
       if (!this.token) {
-        DebugService.log('Payment API - No token found');
+        console.log('Payment API - No token found');
         throw {
           status: 401,
           message: 'Please login to make payment'
         };
       }
 
-      DebugService.log('Payment API - Making request with token');
+      console.log('Payment API - Making request with token');
       const response = await this.fetch<{
         data: {
           checkoutUrl: string;

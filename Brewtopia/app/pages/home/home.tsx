@@ -91,10 +91,12 @@ function Home() {
     require('../../../assets/images/special2.png'),
     require('../../../assets/images/special3.png'),
     require('../../../assets/images/special4.png'),
-    require('../../../assets/images/special1.png'),
+    require('../../../assets/images/special5.png'),
+    require('../../../assets/images/special6.png'),
+    require('../../../assets/images/special7.png'),
   ];
 
-  const flatListRef = useRef<FlatList | null>(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -125,20 +127,7 @@ function Home() {
     <MessageItem message={message} userRole={userRole} />
   ), [userRole]);
 
-  useEffect(() => {
-    const scrollInterval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = prevIndex < specialOffers.length - 1 ? prevIndex + 1 : 0;
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true
-        });
-        return nextIndex;
-      });
-    }, 3000);
-
-    return () => clearInterval(scrollInterval);
-  }, [specialOffers.length]);
+  // Auto scroll có thể thêm sau nếu cần
 
   // Show bot message after 5 seconds with animation
   useEffect(() => {
@@ -402,7 +391,9 @@ function Home() {
                 style={styles.searchBar}
                 onPress={() => router.push("/pages/search/search")}
               >
-                <Text style={styles.searchInput}>Tìm đồ uống, quán cafe...</Text>
+                <Text style={styles.searchInput} numberOfLines={1} ellipsizeMode="tail">
+                  Tìm đồ uống, quán...
+                </Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
@@ -419,142 +410,137 @@ function Home() {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Actions */}
-          <View style={styles.quickActionsRow}>
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => router.push("/pages/payment/payment")}
-            >
-              <MaterialIcons name="credit-card" size={28} color={PRIMARY_BROWN} style={styles.quickActionIcon} />
-              <Text style={styles.quickActionTitle}>Payment</Text>
-              <Text style={styles.quickActionSubtitle}>Add card</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.quickActionCard}
-              onPress={() => router.push("/pages/rewards/rewards")}
-            >
-              <FontAwesome5 name="coins" size={26} color="#FFD700" style={styles.quickActionIcon} />
-              <Text style={styles.quickActionTitle}>Rewards</Text>
-              <View style={styles.rewardsPointsContainer}>
-                <Text style={styles.rewardsPoints}>{rewardPoints}</Text>
-                <Image 
-                  source={require('../../../assets/images/icondongtien.png')}
-                  style={styles.rewardsIcon}
-                  resizeMode="contain"
-                />
+          {/* Rewards Section */}
+          <TouchableOpacity 
+            style={styles.rewardsActionCard}
+            onPress={() => router.push("/pages/rewards/rewards")}
+          >
+            <View style={styles.rewardsCardContent}>
+              <View style={styles.rewardsCardLeft}>
+                <View style={styles.rewardsIconContainer}>
+                  <FontAwesome5 name="coins" size={28} color="#FFD700" />
+                </View>
+                <View style={styles.rewardsTextContainer}>
+                  <Text style={styles.rewardsCardTitle}>My Rewards</Text>
+                  <Text style={styles.rewardsCardSubtitle}>Tích điểm và nhận ưu đãi</Text>
+                </View>
               </View>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.rewardsCardRight}>
+                <View style={styles.rewardsPointsDisplay}>
+                  <Text style={styles.rewardsPointsNumber}>{rewardPoints}</Text>
+                  <Image 
+                    source={require('../../../assets/images/icondongtien.png')}
+                    style={styles.rewardsPointsIcon}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={styles.rewardsViewText}>Xem chi tiết →</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Sự kiện nổi bật */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialIcons name="local-fire-department" size={22} color="#FF5722" style={{marginRight: 6}} />
-            <Text style={styles.sectionTitle}>Sự kiện nổi bật</Text>
-          </View>
-          {eventLoading ? (
-            <Text style={styles.sectionLoading}>Đang tải sự kiện...</Text>
-          ) : (
-            events.length === 0 ? (
-              <View style={styles.emptyEventWrap}>
-                <Image source={require('../../../assets/images/didyouknow.png')} style={{width: 60, height: 60, marginBottom: 8}} />
-                <Text style={{color: '#888'}}>Chưa có sự kiện nào</Text>
-              </View>
+        <View style={styles.sectionContainer}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="local-fire-department" size={22} color="#FF5722" style={{marginRight: 6}} />
+              <Text style={styles.sectionTitle}>Sự kiện nổi bật</Text>
+            </View>
+            {eventLoading ? (
+              <Text style={styles.sectionLoading}>Đang tải sự kiện...</Text>
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginVertical: 8}}>
-                {events.map(event => {
-                  const isFollowing = !!(userId && event.followers.includes(userId));
-                  return (
-                    <View key={event._id} style={styles.eventCard}>
-                      <Image source={{uri: event.image}} style={styles.eventImage} resizeMode="cover" />
-                      <View style={styles.eventInfo}>
-                        <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
-                        <Text style={styles.eventDesc} numberOfLines={2}>{event.description}</Text>
-                        <Text style={styles.eventFollower}>Người theo dõi: {event.Countfollower}</Text>
-                        <TouchableOpacity
-                          style={[styles.eventFollowBtn, isFollowing && styles.eventFollowedBtn]}
-                          onPress={() => handleFollowToggle(event._id, isFollowing)}
-                          disabled={!userId}
-                        >
-                          <Text style={styles.eventFollowText}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
-                        </TouchableOpacity>
+              events.length === 0 ? (
+                <View style={styles.emptyEventWrap}>
+                  <Image source={require('../../../assets/images/didyouknow.png')} style={{width: 60, height: 60, marginBottom: 8}} />
+                  <Text style={{color: '#888'}}>Chưa có sự kiện nào</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginVertical: 8, marginHorizontal: -18}} contentContainerStyle={{paddingHorizontal: 18}}>
+                  {events.map(event => {
+                    const isFollowing = !!(userId && event.followers.includes(userId));
+                    return (
+                      <View key={event._id} style={styles.eventCard}>
+                        <Image source={{uri: event.image}} style={styles.eventImage} resizeMode="cover" />
+                        <View style={styles.eventInfo}>
+                          <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
+                          <Text style={styles.eventDesc} numberOfLines={2}>{event.description}</Text>
+                          <Text style={styles.eventFollower}>Người theo dõi: {event.Countfollower}</Text>
+                          <TouchableOpacity
+                            style={[styles.eventFollowBtn, isFollowing && styles.eventFollowedBtn]}
+                            onPress={() => handleFollowToggle(event._id, isFollowing)}
+                            disabled={!userId}
+                          >
+                            <Text style={styles.eventFollowText}>{isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
-              </ScrollView>
-            )
-          )}
+                    );
+                  })}
+                </ScrollView>
+              )
+            )}
+          </View>
         </View>
 
         {/* Special Offers */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <FontAwesome5 name="gift" size={20} color="#E91E63" style={{marginRight: 6}} />
-            <Text style={styles.sectionTitle}>Ưu đãi đặc biệt</Text>
-          </View>
-          <FlatList
-            ref={flatListRef}
-            data={specialOffers}
-            renderItem={({item}) => (
-              <View style={styles.specialOfferCard}>
-                <Image
-                  source={item}
-                  style={styles.specialOfferImage}
-                  resizeMode="cover"
-                />
-              </View>
-            )}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={Dimensions.get('window').width - horizontalScale(32) + 16}
-            decelerationRate="fast"
-            keyExtractor={keyExtractor}
-            initialNumToRender={2}
-            maxToRenderPerBatch={2}
-            windowSize={3}
-            removeClippedSubviews={true}
-            updateCellsBatchingPeriod={50}
-            getItemLayout={getItemLayout}
-            onMomentumScrollEnd={(event) => {
-              const newIndex = Math.round(
-                event.nativeEvent.contentOffset.x / (Dimensions.get('window').width - horizontalScale(32) + 16)
-              );
-              setCurrentIndex(newIndex);
-            }}
-            onScrollToIndexFailed={info => {
-              const wait = new Promise(resolve => setTimeout(resolve, 500));
-              wait.then(() => {
-                flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-              });
-            }}
-            style={{marginTop: 8}}
-            contentContainerStyle={{paddingRight: 16}}
-          />
-          {/* Indicator */}
-          <View style={styles.offerIndicatorRow}>
-            {specialOffers.map((_, idx) => (
-              <View key={idx} style={[styles.offerIndicatorDot, idx === currentIndex && styles.offerIndicatorDotActive]} />
-            ))}
+        <View style={styles.sectionContainer}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <FontAwesome5 name="gift" size={20} color="#E91E63" style={{marginRight: 6}} />
+              <Text style={styles.sectionTitle}>Ưu đãi đặc biệt</Text>
+            </View>
+            <ScrollView 
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={Dimensions.get('window').width - 24 - 36 + 16} // width - margins - container padding + card margin
+              snapToAlignment="start"
+              contentInsetAdjustmentBehavior="never"
+              style={{marginTop: 8, marginHorizontal: -18}}
+              contentContainerStyle={{paddingLeft: 18, paddingRight: 18}}
+              onMomentumScrollEnd={(event) => {
+                const cardWidth = Dimensions.get('window').width - 24 - 36 + 16;
+                const newIndex = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
+                setCurrentIndex(newIndex);
+              }}
+            >
+              {specialOffers.map((item, index) => (
+                <View key={index} style={styles.specialOfferCard}>
+                  <Image
+                    source={item}
+                    style={styles.specialOfferImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+            {/* Indicator */}
+            <View style={styles.offerIndicatorRow}>
+              {specialOffers.map((_, idx) => (
+                <View key={idx} style={[styles.offerIndicatorDot, idx === currentIndex && styles.offerIndicatorDotActive]} />
+              ))}
+            </View>
           </View>
         </View>
 
         {/* Bạn có biết */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialIcons name="lightbulb-outline" size={20} color="#FFD700" style={{marginRight: 6}} />
-            <Text style={styles.sectionTitle}>Bạn có biết?</Text>
+        <View style={styles.sectionContainer}>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="lightbulb-outline" size={20} color="#FFD700" style={{marginRight: 6}} />
+              <Text style={styles.sectionTitle}>Bạn có biết?</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginHorizontal: -18}} contentContainerStyle={{paddingVertical: 4, paddingHorizontal: 18}}>
+              {coffeeTips.map((tip, idx) => (
+                <View key={idx} style={styles.tipCard}>
+                  <Ionicons name={tip.icon} size={24} color={PRIMARY_BROWN} style={{marginRight: 10}} />
+                  <Text style={styles.tipText}>{tip.text}</Text>
+                </View>
+              ))}
+            </ScrollView>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingVertical: 4}}>
-            {coffeeTips.map((tip, idx) => (
-              <View key={idx} style={styles.tipCard}>
-                <Ionicons name={tip.icon} size={24} color={PRIMARY_BROWN} style={{marginRight: 10}} />
-                <Text style={styles.tipText}>{tip.text}</Text>
-              </View>
-            ))}
-          </ScrollView>
         </View>
       </ScrollView>
 
@@ -714,18 +700,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   topCard: {
-    backgroundColor: '#F5E9DA',
-    borderRadius: 28,
-    marginHorizontal: 16,
-    marginTop: 24,
-    paddingTop: 18,
-    paddingBottom: 18,
-    paddingHorizontal: 16,
-    shadowColor: '#6E543C',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: '#FFF8F3',
+    borderRadius: 24,
+    marginHorizontal: 12,
+    marginTop: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingHorizontal: 18,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
     zIndex: 3,
     position: 'relative',
   },
@@ -739,88 +727,158 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#E3D6C7',
-    marginRight: 8,
+    borderRadius: 20,
+    height: 44,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: '#E8DDD4',
+    marginRight: 10,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchBar: {
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: 0,
     paddingHorizontal: 8,
     borderRadius: 16,
     backgroundColor: 'transparent',
+    justifyContent: 'center',
   },
   searchInput: {
-    color: '#6E543C',
-    fontSize: fontScale(15),
+    color: '#8B5A2B',
+    fontSize: fontScale(14),
     fontWeight: '500',
+    lineHeight: 18,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   iconButton: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 8,
-    marginLeft: 4,
-    shadowColor: PRIMARY_BROWN,
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 18,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1.5,
+    borderColor: '#E8DDD4',
   },
-  quickActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 14,
-  },
-  quickActionCard: {
-    flex: 1,
+
+  rewardsActionCard: {
     backgroundColor: '#fff',
     borderRadius: 18,
-    alignItems: 'center',
-    paddingVertical: 18,
+    padding: 20,
     marginHorizontal: 0,
-    borderWidth: 1,
-    borderColor: '#E3D6C7',
-    shadowColor: 'transparent',
-    shadowOffset: {width: 0, height: 0},
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    marginVertical: 8,
+    elevation: 4,
+    shadowColor: '#8B4513',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
+    height: 100,
   },
-  quickActionIcon: {
-    marginBottom: 6,
+  rewardsCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  quickActionTitle: {
-    fontSize: fontScale(15),
-    fontWeight: '700',
-    color: '#6E543C',
-  },
-  quickActionSubtitle: {
-    fontSize: fontScale(12),
-    color: '#BCA483',
-    marginTop: 2,
-  },
-  rewardsPointsContainer: {
+  rewardsCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    flex: 1,
   },
-  rewardsPoints: {
-    fontSize: fontScale(16),
+  rewardsIconContainer: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 22,
+    padding: 14,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#F4C430',
+    shadowColor: '#F4C430',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rewardsTextContainer: {
+    justifyContent: 'center',
+    flex: 1,
+  },
+  rewardsCardTitle: {
+    fontSize: fontScale(18),
+    fontWeight: '700',
+    color: '#8B5A2B',
+    marginBottom: 4,
+  },
+  rewardsCardSubtitle: {
+    fontSize: fontScale(14),
+    color: '#A0785A',
+    fontWeight: '500',
+  },
+  rewardsCardRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  rewardsPointsDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F4C430',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E6B800',
+    shadowColor: '#F4C430',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rewardsPointsNumber: {
+    fontSize: fontScale(18),
     fontWeight: 'bold',
-    color: '#FFD700',
-    marginRight: 4,
+    color: '#FFFFFF',
+    marginRight: 6,
   },
-  rewardsIcon: {
-    width: 18,
-    height: 18,
+  rewardsPointsIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#FFFFFF',
+  },
+  rewardsViewText: {
+    color: '#8B5A2B',
+    fontWeight: '600',
+    fontSize: fontScale(13),
+    opacity: 0.9,
+  },
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginHorizontal: 12,
+    marginTop: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
   },
   section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -830,15 +888,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontScale(18),
     fontWeight: '700',
-    color: '#6E543C',
+    color: '#8B5A2B',
   },
   sectionLoading: {
-    color: '#888',
+    color: '#A0785A',
     marginVertical: 12,
     textAlign: 'center',
   },
   seeAllText: {
-    color: '#E91E63',
+    color: '#D2691E',
     fontWeight: '600',
     marginLeft: 'auto',
     fontSize: fontScale(13),
@@ -847,57 +905,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
+    backgroundColor: '#FFF8F3',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0E6D2',
   },
   eventCard: {
     width: 260,
     marginRight: 16,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
   },
   eventImage: {
     width: 260,
     height: 140,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
   },
   eventInfo: {
-    padding: 12,
+    padding: 14,
   },
   eventTitle: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#6E543C',
-    marginBottom: 2,
+    color: '#8B5A2B',
+    marginBottom: 4,
   },
   eventDesc: {
-    color: '#333',
+    color: '#5D4037',
     marginVertical: 4,
     fontSize: 13,
+    lineHeight: 18,
   },
   eventFollower: {
-    color: '#888',
+    color: '#A0785A',
     fontSize: 12,
+    marginBottom: 8,
   },
   eventFollowBtn: {
-    marginTop: 10,
-    backgroundColor: '#6E543C',
-    borderRadius: 8,
-    paddingVertical: 7,
+    marginTop: 8,
+    backgroundColor: '#8B5A2B',
+    borderRadius: 12,
+    paddingVertical: 10,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#6D4423',
+    shadowColor: '#8B5A2B',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   eventFollowedBtn: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#D7CCC8',
+    borderColor: '#BCAAA4',
   },
   eventFollowText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
   },
   didYouKnowCard: {
     flexDirection: 'row',
@@ -971,19 +1045,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: moderateScale(-20),
     right: moderateScale(-20),
-    backgroundColor: '#6E543C',
+    backgroundColor: '#8B5A2B',
     borderRadius: moderateScale(20),
     padding: moderateScale(8),
     zIndex: 1000,
     elevation: 5,
+    borderWidth: 2,
+    borderColor: '#FFF8F3',
   },
   chatModalOverlay: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFF8F3',
   },
   chatModalContent: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFF8F3',
   },
   chatHeader: {
     flexDirection: 'row',
@@ -991,8 +1067,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: moderateScale(16),
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E8E8',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#F0E6D2',
   },
   chatHeaderLeft: {
     flexDirection: 'row',
@@ -1005,8 +1081,8 @@ const styles = StyleSheet.create({
   },
   chatHeaderText: {
     fontSize: fontScale(18),
-    color: '#6E543C',
-    fontWeight: '500',
+    color: '#8B5A2B',
+    fontWeight: '600',
   },
   chatCloseButton: {
     padding: moderateScale(4),
@@ -1037,10 +1113,12 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(20),
   },
   userBubble: {
-    backgroundColor: '#6E543C',
+    backgroundColor: '#8B5A2B',
   },
   botBubble: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F0E6D2',
   },
   messageText: {
     fontSize: fontScale(16),
@@ -1049,24 +1127,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   botMessageText: {
-    color: '#000000',
+    color: '#5D4037',
   },
   chatInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: moderateScale(16),
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    borderTopWidth: 1.5,
+    borderTopColor: '#F0E6D2',
   },
   chatInput: {
     flex: 1,
     height: verticalScale(40),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFF8F3',
     borderRadius: moderateScale(20),
     paddingHorizontal: horizontalScale(16),
     marginRight: horizontalScale(12),
     fontSize: fontScale(16),
+    borderWidth: 1,
+    borderColor: '#E8DDD4',
   },
   welcomePopup: {
     position: 'absolute',
@@ -1074,17 +1154,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    backgroundColor: '#6E543C',
+    backgroundColor: '#8B5A2B',
     padding: verticalScale(15),
     alignItems: 'center',
-    shadowColor: "#000",
+    shadowColor: "#8B4513",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   welcomePopupText: {
     color: '#FFFFFF',
@@ -1096,8 +1176,10 @@ const styles = StyleSheet.create({
     height: verticalScale(40),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#8B5A2B',
     borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: '#6D4423',
   },
   sendButtonDisabled: {
     opacity: 0.5,
@@ -1106,16 +1188,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 80,
     alignSelf: 'center',
-    backgroundColor: PRIMARY_BROWN,
-    borderRadius: 16,
+    backgroundColor: '#8B5A2B',
+    borderRadius: 18,
     paddingHorizontal: 24,
     paddingVertical: 12,
     zIndex: 200,
-    shadowColor: PRIMARY_BROWN,
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.15,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: '#6D4423',
   },
   welcomeToastText: {
     color: '#fff',
@@ -1125,27 +1209,31 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 10,
+    borderRadius: 28,
+    padding: 12,
     zIndex: 100,
-    shadowColor: PRIMARY_BROWN,
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
     elevation: 6,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
   },
   specialOfferCard: {
-    width: Dimensions.get('window').width - horizontalScale(32),
-    height: verticalScale(180),
+    width: Dimensions.get('window').width - 24 - 36, // screen width - container margins - container padding
+    height: 180,
     borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#fff',
     marginRight: 16,
-    shadowColor: PRIMARY_BROWN,
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
   },
   specialOfferImage: {
     width: '100%',
@@ -1156,38 +1244,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 12,
   },
   offerIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#E3D6C7',
-    marginHorizontal: 3,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E8DDD4',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#D4C4B0',
   },
   offerIndicatorDotActive: {
-    backgroundColor: PRIMARY_BROWN,
+    backgroundColor: '#8B5A2B',
+    borderColor: '#6D4423',
   },
   tipCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginRight: 12,
-    shadowColor: PRIMARY_BROWN,
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 14,
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     minWidth: 220,
     maxWidth: 260,
+    borderWidth: 1.5,
+    borderColor: '#F0E6D2',
   },
   tipText: {
-    color: PRIMARY_BROWN,
+    color: '#8B5A2B',
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
+    lineHeight: 20,
   },
 }); 

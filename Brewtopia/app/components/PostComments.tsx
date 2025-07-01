@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import AppLoading from './AppLoading';
 
 interface Comment {
   id: string;
@@ -21,8 +22,7 @@ export default function PostComments({ comments, loadingComments, handleAddComme
     <View style={styles.commentsSection}>
       {loadingComments ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#6E543C" />
-          <Text style={styles.loadingText}>Loading comments...</Text>
+          <AppLoading text="Loading comments..." size="small" />
         </View>
       ) : (
         <>
@@ -65,10 +65,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  loadingText: {
-    color: '#6E543C',
-    marginLeft: 8,
   },
   commentItem: {
     marginBottom: 8,
