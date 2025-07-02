@@ -2,7 +2,7 @@
   "expo": {
     "host": "192.168.139.145",
     "name": "Brewtopia",
-    "slug": "Brewtopia",
+    "slug": "brewtopia",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "brewtopia",
@@ -73,8 +73,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e770227e-3d26-4f44-bdf9-9ff599cc2446"
+        "projectId": "0a243565-20a0-4dfc-a872-4c92055b717d"
       }
-    }
+    },
+    "owner": "khoiawesome"
   }
 }
