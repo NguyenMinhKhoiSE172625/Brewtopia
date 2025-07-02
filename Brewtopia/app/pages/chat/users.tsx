@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView } from 'react-native';
+import { View, StyleSheet, SafeAreaView, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UsersList from './UsersList';
 import chatService from '../../services/chatService';
 import socketService from '../../services/socketService';
+import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
 export default function Users() {
   const router = useRouter();
@@ -100,6 +102,23 @@ export default function Users() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => router.push('/pages/home/home')} 
+          style={styles.backButton}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Chat</Text>
+        </View>
+        <View style={styles.headerRight}>
+          {/* Placeholder for alignment */}
+        </View>
+      </View>
+
+      {/* Users List */}
       <UsersList
         onUserSelect={handleUserSelect}
         currentUserId={currentUser?._id}
@@ -112,5 +131,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF5EA',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6E543C',
+    paddingHorizontal: horizontalScale(16),
+    paddingVertical: verticalScale(12),
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  backButton: {
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: fontScale(20),
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  headerRight: {
+    width: horizontalScale(40),
   },
 }); 

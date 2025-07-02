@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView, BackHandler, Alert } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView, BackHandler, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,88 +9,102 @@ import UserRoleHelper, { UserRole } from '../../utils/UserRoleHelper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { withAuth } from '../../components/withAuth';
 import { PRIMARY_BROWN } from '../../config/constants';
+import ApiService from '../../utils/ApiService';
+import UserAvatar from '../../components/UserAvatar';
 
 function Profile() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('');
   const [accStatus, setAccStatus] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [userAvatarUri, setUserAvatarUri] = useState<string | undefined>(undefined);
+
+
 
   useEffect(() => {
-    const checkUserRole = async () => {
+    const loadUserData = async () => {
       try {
+        setLoading(true);
         const role = await UserRoleHelper.getCurrentRole();
         setIsAdmin(role === UserRole.ADMIN);
+        
         const userData = await AsyncStorage.getItem('user_data');
         if (userData) {
           const user = JSON.parse(userData);
-          setUserName(user.name || '');
+          setUserName(user.name || 'Người dùng');
+          setUserEmail(user.email || '');
           setAccStatus(user.AccStatus || '');
+          
+          // Load user avatar if available
+          if (user.avatar) {
+            setUserAvatarUri(user.avatar);
+          }
         }
       } catch (error) {
-        console.error('Error checking user role:', error);
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
       }
     };
     
-    checkUserRole();
+    loadUserData();
   }, []);
 
   const handleLogout = async () => {
-    try {
-      // Clear all user data
-      await AsyncStorage.multiRemove(['token', 'user_data']);
-      
-      // Show logout message
       Alert.alert(
-        "Đăng xuất thành công",
-        "Vui lòng đăng nhập lại để tiếp tục",
+      "Xác nhận đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
         [
+        { text: "Hủy", style: "cancel" },
           {
-            text: "Đăng nhập",
-            onPress: () => router.replace('/pages/roles/role')
-          }
-        ],
-        { cancelable: false }
-      );
+          text: "Đăng xuất",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove(['token', 'user_data']);
+              router.replace('/pages/roles/role');
     } catch (error) {
       console.error('Error during logout:', error);
-      Alert.alert(
-        "Lỗi",
-        "Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.",
-        [
-          {
-            text: "Đăng nhập lại",
-            onPress: () => router.replace('/pages/roles/role')
+              Alert.alert("Lỗi", "Có lỗi xảy ra khi đăng xuất.");
+            }
+          }
           }
         ]
       );
-    }
   };
 
   const userMenuItems = [
     {
       id: '1',
-      title: 'Chi tiết tài khoản',
+      title: 'Thông tin tài khoản',
       icon: 'person-outline',
-      onPress: () => console.log('Account Details')
+      onPress: () => router.push('/pages/profile/account-details')
     },
     {
       id: '2',
-      title: 'Chi tiết thanh toán',
-      icon: 'credit-card',
-      onPress: () => console.log('Payment Details')
+      title: 'Lịch sử đơn hàng',
+      icon: 'receipt-long',
+      onPress: () => router.push('/pages/profile/order-history')
     },
     {
       id: '3',
-      title: 'Đổi phần thưởng',
+      title: 'Điểm thưởng',
       icon: 'card-giftcard',
-      onPress: () => console.log('Redeem Rewards')
+      onPress: () => router.push('/pages/rewards/rewards')
     },
     {
       id: '4',
-      title: 'Chi tiết thông báo',
+      title: 'Cài đặt thông báo',
       icon: 'notifications-none',
-      onPress: () => console.log('Notification Details')
+      onPress: () => router.push('/pages/notifications/notifications')
+    },
+    {
+      id: '5',
+      title: 'Quán yêu thích',
+      icon: 'favorite',
+      onPress: () => router.push('/pages/profile/favorite-shops')
     }
   ];
 
@@ -99,103 +113,134 @@ function Profile() {
       id: '1',
       title: 'Quản lý cửa hàng',
       icon: 'store',
-      onPress: () => console.log('Shop Management')
+      onPress: () => router.push('/pages/business-registration/shop-info')
     },
     {
       id: '2',
       title: 'Menu sản phẩm',
       icon: 'restaurant-menu',
-      onPress: () => console.log('Product Menu')
+      onPress: () => router.push('/pages/business-registration/menu-selection')
     },
     {
       id: '3',
-      title: 'Phản hồi khách hàng',
-      icon: 'feedback',
-      onPress: () => console.log('Customer Feedback')
+      title: 'Quản lý đơn hàng',
+      icon: 'assignment',
+      onPress: () => router.push('/pages/admin/order-management')
     },
     {
       id: '4',
-      title: 'Quản lý sự kiện',
-      icon: 'event',
-      onPress: () => console.log('Event Management')
+      title: 'Thống kê bán hàng',
+      icon: 'analytics',
+      onPress: () => router.push('/pages/admin/sales-analytics')
     },
     {
       id: '5',
+      title: 'Quản lý sự kiện',
+      icon: 'event',
+      onPress: () => router.push('/pages/admin/event-management')
+    },
+    {
+      id: '6',
       title: 'Cài đặt tài khoản',
       icon: 'settings',
-      onPress: () => console.log('Account Settings')
+      onPress: () => router.push('/pages/profile/account-settings')
     }
   ];
 
-  const chatItems = [
+  const quickActions = [
     {
       id: '1',
-      title: 'Group đi cà phê đê',
-      onPress: () => router.push({
-        pathname: '/pages/chat/chat',
-        params: { chatId: '1', chatName: 'Group đi cà phê đê', isGroup: 'true' }
-      })
+      title: 'Chat',
+      icon: 'chat',
+      color: '#4CAF50',
+      onPress: () => router.push('/pages/chat/users')
     },
     {
       id: '2',
-      title: 'John Weed',
-      onPress: () => router.push({
-        pathname: '/pages/chat/chat',
-        params: { chatId: '2', chatName: 'John Weed', isGroup: 'false' }
-      })
+      title: 'Tìm quán',
+      icon: 'search',
+      color: '#2196F3',
+      onPress: () => router.push('/pages/search/search')
+    },
+    {
+      id: '3',
+      title: 'Đặt bàn',
+      icon: 'table-restaurant',
+      color: '#FF9800',
+      onPress: () => router.push('/pages/order/table-booking')
+    },
+    {
+      id: '4',
+      title: 'Quét QR',
+      icon: 'qr-code-scanner',
+      color: '#9C27B0',
+      onPress: () => console.log('QR Scanner')
     }
   ];
 
-  // Don't render content if not authenticated
-  if (!isAdmin && !userName) {
-    return null;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={PRIMARY_BROWN} />
+          <Text style={styles.loadingText}>Đang tải...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#6E543C', '#B69B80']}
+        colors={['#D4BDAA', '#C4A484']}
         style={styles.gradient}
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Hồ sơ</Text>
         </View>
 
-        <ScrollView style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Profile Section */}
           <View style={styles.profileSection}>
-            <Image 
-              source={require('../../../assets/images/profile1.png')} 
-              style={[styles.profileImage, accStatus === 'Premium' ? styles.premiumAvatar : null]} 
+            <UserAvatar
+              name={userName || 'User'}
+              size={80}
+              imageUri={userAvatarUri}
+              showBorder={accStatus === 'Premium' || accStatus === 'VIP'}
+              borderColor={accStatus === 'VIP' ? '#9C27B0' : '#FFD700'}
+              borderWidth={3}
             />
             <View style={styles.profileInfo}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.profileName}>{userName}</Text>
                 {accStatus === 'Premium' && (
-                  <View style={styles.premiumBadge}>
-                    <MaterialIcons name="diamond" size={16} color="#FFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                  <View style={[styles.statusBadge, styles.premiumBadge]}>
+                    <MaterialIcons name="diamond" size={14} color="#FFF" />
+                    <Text style={styles.badgeText}>Premium</Text>
                   </View>
                 )}
                 {accStatus === 'VIP' && (
-                  <View style={styles.premiumBadge}>
-                    <MaterialIcons name="diamond" size={16} color="#FFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.premiumBadgeText}>VIP</Text>
+                  <View style={[styles.statusBadge, styles.vipBadge]}>
+                    <MaterialIcons name="workspace-premium" size={14} color="#FFF" />
+                    <Text style={styles.badgeText}>VIP</Text>
                   </View>
                 )}
               </View>
+              <Text style={styles.profileEmail}>{userEmail}</Text>
               <View style={styles.statusContainer}>
                 {(accStatus !== 'VIP' && accStatus !== 'Premium') ? (
                   <View style={[styles.statusBadge, isAdmin ? styles.adminBadge : styles.userBadge]}>
-                    <Text style={styles.statusText}>{isAdmin ? 'Tài khoản doanh nghiệp' : 'Người dùng giới hạn'}</Text>
+                    <Text style={styles.statusText}>
+                      {isAdmin ? 'Tài khoản doanh nghiệp' : 'Tài khoản cơ bản'}
+                    </Text>
                   </View>
                 ) : null}
                 {isAdmin ? (
                   <TouchableOpacity 
-                    style={styles.bookingAdsButton}
+                    style={styles.actionButton}
                     onPress={() => router.push('/pages/booking-ads/booking-ads')}
                   >
-                    <Text style={styles.bookingAdsText}>Đặt quảng cáo</Text>
+                    <Text style={styles.actionButtonText}>Đặt quảng cáo</Text>
                   </TouchableOpacity>
                 ) : (
                   accStatus !== 'Premium' && accStatus !== 'VIP' && (
@@ -203,7 +248,8 @@ function Profile() {
                       style={styles.premiumButton}
                       onPress={() => router.push('/pages/premium/premium')}
                     >
-                      <Text style={styles.premiumButtonText}>Mua Premium ?</Text>
+                      <MaterialIcons name="diamond" size={16} color="#000" />
+                      <Text style={styles.premiumButtonText}>Nâng cấp Premium</Text>
                     </TouchableOpacity>
                   )
                 )}
@@ -211,39 +257,49 @@ function Profile() {
             </View>
           </View>
 
+
+
           {/* Main Content */}
           <View style={styles.mainContent}>
-            {/* Menu Section */}
+            {/* Quick Actions */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{isAdmin ? 'Quản lý doanh nghiệp' : 'Tài khoản'}</Text>
-              <View style={styles.menuContainer}>
-                {(isAdmin ? adminMenuItems : userMenuItems).map((item) => (
+              <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
+              <View style={styles.quickActionsContainer}>
+                {quickActions.map((action) => (
                   <TouchableOpacity 
-                    key={item.id} 
-                    style={styles.menuItem}
-                    onPress={item.onPress}
+                    key={action.id} 
+                    style={styles.quickActionItem}
+                    onPress={action.onPress}
                   >
-                    <MaterialIcons name={item.icon as any} size={24} color={PRIMARY_BROWN} />
-                    <Text style={styles.menuText}>{item.title}</Text>
-                    <MaterialIcons name="chevron-right" size={24} color={PRIMARY_BROWN} />
+                    <View style={[styles.quickActionIcon, { backgroundColor: action.color }]}>
+                      <MaterialIcons name={action.icon as any} size={24} color="#FFF" />
+                    </View>
+                    <Text style={styles.quickActionText}>{action.title}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
-            {/* Chat Section */}
+            {/* Menu Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Trò chuyện</Text>
+              <Text style={styles.sectionTitle}>
+                {isAdmin ? 'Quản lý doanh nghiệp' : 'Tài khoản'}
+              </Text>
               <View style={styles.menuContainer}>
-                {chatItems.map((item) => (
+                {(isAdmin ? adminMenuItems : userMenuItems).map((item, index) => (
                   <TouchableOpacity 
                     key={item.id} 
-                    style={styles.menuItem}
+                    style={[
+                      styles.menuItem,
+                      index === (isAdmin ? adminMenuItems : userMenuItems).length - 1 && styles.lastMenuItem
+                    ]}
                     onPress={item.onPress}
                   >
-                    <MaterialIcons name="chat-bubble-outline" size={24} color={PRIMARY_BROWN} />
+                    <View style={styles.menuIconContainer}>
+                      <MaterialIcons name={item.icon as any} size={24} color={PRIMARY_BROWN} />
+                    </View>
                     <Text style={styles.menuText}>{item.title}</Text>
-                    <MaterialIcons name="chevron-right" size={24} color={PRIMARY_BROWN} />
+                    <MaterialIcons name="chevron-right" size={24} color="#CCCCCC" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -254,7 +310,7 @@ function Profile() {
               style={styles.logoutButton}
               onPress={handleLogout}
             >
-              <MaterialIcons name="logout" size={24} color="#FF0000" />
+              <MaterialIcons name="logout" size={24} color="#FF4444" />
               <Text style={styles.logoutText}>Đăng xuất</Text>
             </TouchableOpacity>
           </View>
@@ -290,13 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: horizontalScale(16),
   },
-  profileImage: {
-    width: horizontalScale(80),
-    height: horizontalScale(80),
-    borderRadius: horizontalScale(40),
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
+
   profileInfo: {
     flex: 1,
   },
@@ -306,15 +356,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: verticalScale(4),
   },
+  profileEmail: {
+    color: '#FFFFFF',
+    fontSize: fontScale(12),
+  },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: horizontalScale(8),
+    marginTop: verticalScale(8),
   },
   statusBadge: {
-    paddingHorizontal: horizontalScale(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: horizontalScale(10),
     paddingVertical: verticalScale(4),
     borderRadius: moderateScale(12),
+    marginLeft: horizontalScale(8),
   },
   userBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -327,16 +385,18 @@ const styles = StyleSheet.create({
     fontSize: fontScale(12),
     fontWeight: '500',
   },
-  buyPremiumButton: {
-    backgroundColor: '#FFD700',
+  actionButton: {
+    backgroundColor: '#FF4444',
     paddingHorizontal: horizontalScale(12),
-    paddingVertical: verticalScale(4),
+    paddingVertical: verticalScale(6),
     borderRadius: moderateScale(12),
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  buyPremiumText: {
-    color: '#000000',
+  actionButtonText: {
+    color: '#FFFFFF',
     fontSize: fontScale(12),
-    fontWeight: '500',
+    fontWeight: '600',
   },
   mainContent: {
     flex: 1,
@@ -392,49 +452,88 @@ const styles = StyleSheet.create({
     marginLeft: horizontalScale(8),
     fontSize: fontScale(16),
     fontWeight: '600',
-    color: '#FF0000',
-  },
-  bookingAdsButton: {
-    backgroundColor: '#FF0000',
-    paddingHorizontal: horizontalScale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(12),
-  },
-  bookingAdsText: {
-    color: '#FFFFFF',
-    fontSize: fontScale(12),
-    fontWeight: '500',
+    color: '#FF4444',
   },
   premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#FFD700',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    marginLeft: 10,
-    height: 24,
-    minWidth: 70,
-    justifyContent: 'center',
   },
-  premiumBadgeText: {
-    color: '#000',
+  vipBadge: {
+    backgroundColor: '#9C27B0',
+  },
+  badgeText: {
+    color: '#FFF',
     fontWeight: '600',
-    fontSize: fontScale(13),
+    fontSize: fontScale(10),
+    marginLeft: horizontalScale(4),
   },
-  premiumAvatar: {
-    borderColor: '#FFD700',
-  },
+
   premiumButton: {
     backgroundColor: '#FFD700',
     paddingHorizontal: horizontalScale(12),
-    paddingVertical: verticalScale(4),
+    paddingVertical: verticalScale(6),
     borderRadius: moderateScale(12),
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   premiumButtonText: {
     color: '#000000',
     fontSize: fontScale(12),
-    fontWeight: '500',
+    fontWeight: '600',
+    marginLeft: horizontalScale(4),
+  },
+
+  quickActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: moderateScale(8),
+  },
+  quickActionItem: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(4),
+  },
+  quickActionIcon: {
+    width: horizontalScale(48),
+    height: horizontalScale(48),
+    borderRadius: horizontalScale(24),
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  quickActionText: {
+    marginTop: verticalScale(8),
+    fontSize: fontScale(12),
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
+  },
+  menuIconContainer: {
+    width: horizontalScale(40),
+    height: horizontalScale(40),
+    borderRadius: horizontalScale(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lastMenuItem: {
+    borderBottomWidth: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(16),
+    fontWeight: '600',
+    marginTop: verticalScale(16),
   },
 });
 

@@ -53,8 +53,12 @@ export default function Register() {
         userData.role = 'admin';
       }
       
+      console.log('Register - Sending registration data:', userData);
+      
       // Using ApiService for registration
       const data = await ApiService.auth.register(userData);
+      
+      console.log('Register - Registration response:', data);
       
       // Store email and role for verification
       await AsyncStorage.setItem('registration_email', email);
@@ -62,16 +66,36 @@ export default function Register() {
         await AsyncStorage.setItem('registration_role', 'admin');
       }
       
+      console.log('Register - Stored email and role in AsyncStorage');
+      
       // Registration successful
       setIsError(false);
+      
+      console.log('Register - Navigating to verify-code page');
       router.push("/pages/verify-code/verify-code");
     } catch (error) {
+      console.error('Register - Error occurred:', error);
       setIsError(true);
-      if (typeof error === 'object' && error !== null && 'message' in error) {
-        setErrorMessage(error.message as string);
-      } else {
-        setErrorMessage('Registration failed');
+      
+      // Extract error message from different possible locations
+      let errorMsg = 'Đăng ký thất bại. Vui lòng thử lại.';
+      
+      if (typeof error === 'object' && error !== null) {
+        // Check for server error message in data.error first
+        if ('data' in error && error.data && typeof error.data === 'object' && 'error' in error.data) {
+          errorMsg = error.data.error as string;
+        }
+        // Check for server error message in data.message
+        else if ('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) {
+          errorMsg = error.data.message as string;
+        }
+        // Fallback to error.message
+        else if ('message' in error) {
+          errorMsg = error.message as string;
+        }
       }
+      
+      setErrorMessage(errorMsg);
     }
   };
 
@@ -97,7 +121,7 @@ export default function Register() {
 
           {/* Form container */}
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Tạo tài khoản {role === 'admin' ? 'kinh doanh' : 'người dùng'}</Text>
+            <Text style={styles.title}>Tạo tài khoản {role === 'admin' ? 'doanh nghiệp' : 'người dùng'}</Text>
 
             {/* Username Input */}
             <View style={styles.inputGroup}>
@@ -209,7 +233,6 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    background: 'linear-gradient(180deg, #FFFFFF 0%, #F8F6F2 100%)',
     backgroundColor: '#FFFFFF',
   },
   keyboardAvoidingView: {

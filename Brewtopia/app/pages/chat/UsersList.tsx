@@ -4,6 +4,7 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { API_URL } from '../../config/constants';
+import UserAvatar from '../../components/UserAvatar';
 
 interface User {
   _id: string;
@@ -65,28 +66,35 @@ const UsersList: React.FC<UsersListProps> = ({ onUserSelect, currentUserId }) =>
   };
 
   const renderUserItem = ({ item }: { item: User }) => {
-    // Avatar mặc định random nếu không có
-    let avatarSource;
-    if (item.avatar && item.avatar !== 'false') {
-      avatarSource = typeof item.avatar === 'string' ? { uri: item.avatar } : item.avatar;
+    // Xử lý avatar - ưu tiên avatar từ API, fallback về UserAvatar với initials
+    let avatarUri: string | undefined;
+    
+    if (item.avatar && item.avatar !== 'false' && typeof item.avatar === 'string') {
+      avatarUri = item.avatar;
     } else if (item.isAI) {
-      avatarSource = require('../../../assets/images/bot1.png');
-    } else {
-      // random avatar từ randomuser.me (dựa vào _id để không đổi mỗi lần render)
-      const hash = Math.abs(
-        item._id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-      ) % 100;
-      avatarSource = { uri: `https://randomuser.me/api/portraits/men/${hash}.jpg` };
+      // Giữ avatar bot cũ cho AI
+      avatarUri = undefined; // Sẽ dùng UserAvatar với tên "BREWBOT"
     }
+    
     return (
       <TouchableOpacity 
         style={styles.userItem}
         onPress={() => onUserSelect(item)}
       >
+        {item.isAI ? (
         <Image 
-          source={avatarSource}
+            source={require('../../../assets/images/bot1.png')}
           style={styles.userAvatar}
         />
+        ) : (
+          <View style={{ marginRight: horizontalScale(12) }}>
+            <UserAvatar
+              name={item.name}
+              size={50}
+              imageUri={avatarUri}
+            />
+          </View>
+        )}
         <View style={styles.userInfoCol}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={styles.userName}>{item.name}</Text>

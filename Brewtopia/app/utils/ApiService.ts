@@ -327,9 +327,17 @@ class ApiService {
     
     // Forgot password
     forgotPassword: async (email: string) => {
-      return this.fetch('/auth/forgotPassword', {
+      return this.fetch('/auth/forgot-password', {
         method: 'POST',
         body: JSON.stringify({ email }),
+      });
+    },
+
+    // Reset password
+    resetPassword: async (token: string, newPassword: string) => {
+      return this.fetch('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
       });
     },
     
@@ -698,6 +706,30 @@ class ApiService {
       return this.fetch<{ id: string; status: string; message: string }>(`/users/${userId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
+      });
+    },
+
+    // Get user stats and points
+    getStats: async () => {
+      return this.fetch<{
+        totalOrders: number;
+        totalPoints: number;
+        totalReviews: number;
+        favoriteShops: number;
+      }>('/users/stats', {
+        method: 'GET',
+      });
+    },
+
+    // Get admin stats
+    getAdminStats: async () => {
+      return this.fetch<{
+        totalSales: number;
+        totalCustomers: number;
+        totalEvents: number;
+        totalMenuItems: number;
+      }>('/admin/stats', {
+        method: 'GET',
       });
     },
   };
