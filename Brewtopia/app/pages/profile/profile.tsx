@@ -21,8 +21,6 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [userAvatarUri, setUserAvatarUri] = useState<string | undefined>(undefined);
 
-
-
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -30,6 +28,7 @@ function Profile() {
         const role = await UserRoleHelper.getCurrentRole();
         setIsAdmin(role === UserRole.ADMIN);
         
+        // Load từ AsyncStorage trước
         const userData = await AsyncStorage.getItem('user_data');
         if (userData) {
           const user = JSON.parse(userData);
@@ -37,9 +36,38 @@ function Profile() {
           setUserEmail(user.email || '');
           setAccStatus(user.AccStatus || '');
           
-          // Load user avatar if available
+          // Load user avatar từ AsyncStorage trước
           if (user.avatar) {
             setUserAvatarUri(user.avatar);
+          }
+
+          // Sau đó fetch từ server để có thông tin mới nhất
+          try {
+            const userId = user.id || user._id;
+            if (userId) {
+              const serverUserData = await ApiService.user.getProfile(userId);
+              if (serverUserData) {
+                // Update với data từ server
+                setUserName(serverUserData.name || user.name || 'Người dùng');
+                setUserEmail(serverUserData.email || user.email || '');
+                setAccStatus(serverUserData.AccStatus || user.AccStatus || '');
+                
+                // Update avatar từ server nếu có
+                if (serverUserData.avatar) {
+                  setUserAvatarUri(serverUserData.avatar);
+                }
+
+                // Update AsyncStorage với data mới
+                const updatedUserData = {
+                  ...user,
+                  ...serverUserData
+                };
+                await AsyncStorage.setItem('user_data', JSON.stringify(updatedUserData));
+              }
+            }
+          } catch (serverError) {
+            // Ignore server errors, sử dụng data từ AsyncStorage
+            console.warn('Unable to fetch updated profile from server:', serverError);
           }
         }
       } catch (error) {
@@ -211,8 +239,8 @@ function Profile() {
               borderWidth={3}
             />
             <View style={styles.profileInfo}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.profileName}>{userName}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: horizontalScale(8) }}>
+                <Text style={styles.profileName} numberOfLines={2} ellipsizeMode="tail">{userName}</Text>
                 {accStatus === 'Premium' && (
                   <View style={[styles.statusBadge, styles.premiumBadge]}>
                     <MaterialIcons name="diamond" size={14} color="#FFF" />
@@ -256,8 +284,6 @@ function Profile() {
               </View>
             </View>
           </View>
-
-
 
           {/* Main Content */}
           <View style={styles.mainContent}>
@@ -343,28 +369,31 @@ const styles = StyleSheet.create({
   profileSection: {
     padding: moderateScale(16),
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: horizontalScale(16),
   },
 
   profileInfo: {
     flex: 1,
+    minWidth: 0,
   },
   profileName: {
-    fontSize: fontScale(24),
+    fontSize: fontScale(22),
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: verticalScale(4),
+    flexShrink: 1,
   },
   profileEmail: {
     color: '#FFFFFF',
     fontSize: fontScale(12),
+    marginBottom: verticalScale(8),
   },
   statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: horizontalScale(8),
-    marginTop: verticalScale(8),
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: verticalScale(8),
+    marginTop: verticalScale(4),
   },
   statusBadge: {
     flexDirection: 'row',
@@ -372,7 +401,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: horizontalScale(10),
     paddingVertical: verticalScale(4),
     borderRadius: moderateScale(12),
-    marginLeft: horizontalScale(8),
+    alignSelf: 'flex-start',
   },
   userBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -384,6 +413,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: fontScale(12),
     fontWeight: '500',
+    flexShrink: 1,
   },
   actionButton: {
     backgroundColor: '#FF4444',

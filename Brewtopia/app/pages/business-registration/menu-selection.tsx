@@ -253,7 +253,7 @@ export default function MenuSelection() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <Text style={styles.modalLabel}>Tên món *</Text>
               <TextInput
                 style={styles.modalInput}
@@ -292,7 +292,7 @@ export default function MenuSelection() {
                   </>
                 )}
               </TouchableOpacity>
-            </View>
+            </ScrollView>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity 
@@ -448,94 +448,126 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: moderateScale(16),
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: moderateScale(16),
-    width: '90%',
-    maxHeight: '80%',
+    width: '100%',
+    maxWidth: horizontalScale(400),
+    maxHeight: '90%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: moderateScale(16),
+    padding: moderateScale(20),
     borderBottomWidth: 1,
     borderBottomColor: '#E8E8E8',
   },
   modalTitle: {
-    fontSize: fontScale(18),
+    fontSize: fontScale(20),
     fontWeight: '600',
     color: '#6E543C',
   },
   modalBody: {
-    padding: moderateScale(16),
+    padding: moderateScale(20),
+    maxHeight: verticalScale(400),
   },
   modalLabel: {
-    fontSize: fontScale(14),
+    fontSize: fontScale(16),
+    fontWeight: '500',
     color: '#6E543C',
     marginBottom: verticalScale(8),
+    marginTop: verticalScale(16),
   },
   modalInput: {
     borderWidth: 1,
     borderColor: '#E8E8E8',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(12),
+    borderRadius: moderateScale(12),
+    padding: moderateScale(16),
     fontSize: fontScale(16),
     marginBottom: verticalScale(4),
+    backgroundColor: '#FAFAFA',
   },
   charCount: {
     fontSize: fontScale(12),
     color: '#999',
     textAlign: 'right',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(8),
   },
   uploadContainer: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E8E8E8',
     borderStyle: 'dashed',
-    borderRadius: moderateScale(8),
-    padding: moderateScale(16),
+    borderRadius: moderateScale(12),
+    padding: moderateScale(20),
     alignItems: 'center',
     justifyContent: 'center',
-    height: verticalScale(200),
+    height: verticalScale(180),
+    backgroundColor: '#FAFAFA',
+    marginBottom: verticalScale(16),
   },
   uploadedImage: {
     width: '100%',
     height: '100%',
     borderRadius: moderateScale(8),
+    resizeMode: 'cover',
   },
   uploadText: {
     fontSize: fontScale(16),
     color: '#6E543C',
     marginTop: verticalScale(8),
+    fontWeight: '500',
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: moderateScale(16),
+    padding: moderateScale(20),
     borderTopWidth: 1,
     borderTopColor: '#E8E8E8',
+    gap: horizontalScale(12),
   },
   modalButton: {
     flex: 1,
-    padding: moderateScale(12),
-    borderRadius: moderateScale(8),
+    paddingVertical: moderateScale(16),
+    paddingHorizontal: moderateScale(20),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
-    marginHorizontal: horizontalScale(8),
+    justifyContent: 'center',
   },
   cancelButton: {
     backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
   },
   saveButton: {
     backgroundColor: '#6E543C',
+    elevation: 2,
+    shadowColor: '#6E543C',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   cancelButtonText: {
     fontSize: fontScale(16),
+    fontWeight: '600',
     color: '#6E543C',
   },
   saveButtonText: {
     fontSize: fontScale(16),
+    fontWeight: '600',
     color: '#FFFFFF',
   },
 }); 

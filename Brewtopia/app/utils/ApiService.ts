@@ -701,6 +701,21 @@ class ApiService {
 
   // User API methods
   user = {
+    // Get user profile
+    getProfile: async (userId: string) => {
+      return this.fetch<{
+        _id: string;
+        id: string;
+        name: string;
+        email: string;
+        avatar?: string;
+        AccStatus?: string;
+        [key: string]: any;
+      }>(`/users/${userId}`, {
+        method: 'GET',
+      });
+    },
+
     // Cập nhật thông tin user (ví dụ: AccStatus)
     updateUser: async (userId: string, data: { [key: string]: any }) => {
       return this.fetch<{ id: string; status: string; message: string }>(`/users/${userId}`, {
