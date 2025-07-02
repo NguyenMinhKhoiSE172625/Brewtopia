@@ -490,121 +490,67 @@ function Nearby() {
 
       let cafesFromApi: Cafe[] = [];
       try {
-        if (userRole === 'admin' && userId) {
-          // Doanh nghiệp: lấy tất cả quán của doanh nghiệp (nếu API trả về mảng)
-          const cafeArr = await ApiService.cafe.getProfile(userId);
-          const cafes = Array.isArray(cafeArr) ? cafeArr : [cafeArr];
-          cafesFromApi = cafes
-            .map((cafeRes: any) => {
-              let cafeAddress = '';
-              let cafeLat: number | undefined = undefined;
-              let cafeLng: number | undefined = undefined;
-              if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
-                cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
-                cafeLat = cafeRes.address.coordinates[1];
-                cafeLng = cafeRes.address.coordinates[0];
-              } else if (cafeRes && typeof cafeRes.address === 'string') {
-                cafeAddress = cafeRes.address;
-              }
-              let menuid = '';
-              if (Array.isArray(cafeRes.menu) && cafeRes.menu.length > 0) {
-                menuid = cafeRes.menu[0];
-              } else if (cafeRes.menuid) {
-                menuid = cafeRes.menuid;
-              } else if (cafeRes.id) {
-                menuid = cafeRes.id;
-              } else {
-                menuid = userId;
-              }
-              if (
-                typeof cafeLat === 'number' &&
-                typeof cafeLng === 'number' &&
-                !isNaN(cafeLat) &&
-                !isNaN(cafeLng) &&
-                Math.abs(cafeLat) > 0.01 &&
-                Math.abs(cafeLng) > 0.01
-              ) {
-                return {
-                  id: cafeRes._id || cafeRes.id || userId,
-                  name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
-                  address: cafeAddress,
-                  rating: cafeRes.rating || 0,
-                  status: cafeRes.status || 'Open',
-                  closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
-                  images: [require('../../../assets/images/cafe1.png')],
-                  coordinate: {
-                    latitude: cafeLat,
-                    longitude: cafeLng,
-                  },
-                  menuid,
-                };
-              }
-              return null;
-            })
-            .filter(Boolean) as Cafe[];
-        } else {
-          // User thường: lấy tất cả quán từ API
-          const allCafes = await ApiService.cafe.getAllCafes();
-          cafesFromApi = (allCafes || []).map((cafeRes: any) => {
-            let cafeAddress = '';
-            let cafeLat: number | undefined = undefined;
-            let cafeLng: number | undefined = undefined;
-            if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
-              cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
-              cafeLat = cafeRes.address.coordinates[1];
-              cafeLng = cafeRes.address.coordinates[0];
-            } else if (cafeRes && typeof cafeRes.address === 'string') {
-              cafeAddress = cafeRes.address;
-            }
-            let menuid = '';
-            if (Array.isArray(cafeRes.menu) && cafeRes.menu.length > 0) {
-              menuid = cafeRes.menu[0];
-            } else if (cafeRes.menuid) {
-              menuid = cafeRes.menuid;
-            } else if (cafeRes.id) {
-              menuid = cafeRes.id;
-            } else {
-              menuid = cafeRes._id;
-            }
-            if (
-              typeof cafeLat === 'number' &&
-              typeof cafeLng === 'number' &&
-              !isNaN(cafeLat) &&
-              !isNaN(cafeLng) &&
-              Math.abs(cafeLat) > 0.01 &&
-              Math.abs(cafeLng) > 0.01
-            ) {
-              return {
-                id: cafeRes._id || cafeRes.id,
-                name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
-                address: cafeAddress,
-                rating: cafeRes.rating || 0,
-                status: cafeRes.status || 'Open',
-                closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
-                images: [require('../../../assets/images/cafe1.png')],
-                coordinate: {
-                  latitude: cafeLat,
-                  longitude: cafeLng,
-                },
-                menuid,
-              };
-            }
-            return null;
-          }).filter(Boolean) as Cafe[];
-        }
+        // Luôn lấy tất cả quán từ API để hiển thị cho mọi user role
+        const allCafes = await ApiService.cafe.getAllCafes();
+        cafesFromApi = (allCafes || []).map((cafeRes: any) => {
+          let cafeAddress = '';
+          let cafeLat: number | undefined = undefined;
+          let cafeLng: number | undefined = undefined;
+          if (cafeRes && typeof cafeRes.address === 'object' && Array.isArray(cafeRes.address.coordinates)) {
+            cafeAddress = (cafeRes.address.street || '') + (cafeRes.address.city ? (', ' + cafeRes.address.city) : '');
+            cafeLat = cafeRes.address.coordinates[1];
+            cafeLng = cafeRes.address.coordinates[0];
+          } else if (cafeRes && typeof cafeRes.address === 'string') {
+            cafeAddress = cafeRes.address;
+          }
+          let menuid = '';
+          if (Array.isArray(cafeRes.menu) && cafeRes.menu.length > 0) {
+            menuid = cafeRes.menu[0];
+          } else if (cafeRes.menuid) {
+            menuid = cafeRes.menuid;
+          } else if (cafeRes.id) {
+            menuid = cafeRes.id;
+          } else {
+            menuid = cafeRes._id;
+          }
+          if (
+            typeof cafeLat === 'number' &&
+            typeof cafeLng === 'number' &&
+            !isNaN(cafeLat) &&
+            !isNaN(cafeLng) &&
+            Math.abs(cafeLat) > 0.01 &&
+            Math.abs(cafeLng) > 0.01
+          ) {
+            return {
+              id: cafeRes._id || cafeRes.id,
+              name: cafeRes.shopName || cafeRes.name || 'Quán Cafe',
+              address: cafeAddress,
+              rating: cafeRes.rating || 0,
+              status: cafeRes.status || 'Open',
+              closingTime: cafeRes.openingHours?.sunday?.close || '22:00',
+              images: [require('../../../assets/images/cafe1.png')],
+              coordinate: {
+                latitude: cafeLat,
+                longitude: cafeLng,
+              },
+              menuid,
+            };
+          }
+          return null;
+        }).filter(Boolean) as Cafe[];
       } catch (err) {
         console.log('Lỗi lấy cafe từ API:', err);
       }
 
       if (cafesFromApi.length > 0) {
         setAllCafes(cafesFromApi);
-        // Zoom map về vị trí quán đầu tiên
-        if (cafesFromApi[0].coordinate && mapRef.current) {
+        // Zoom map về vị trí hiện tại của user để xem các quán xung quanh
+        if (location && mapRef.current) {
           mapRef.current.animateToRegion({
-            latitude: cafesFromApi[0].coordinate.latitude,
-            longitude: cafesFromApi[0].coordinate.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            latitudeDelta: 0.02, // Zoom ra một chút để thấy nhiều quán hơn
+            longitudeDelta: 0.02,
           });
         }
       } else {
