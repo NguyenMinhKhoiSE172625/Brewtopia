@@ -18,7 +18,7 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
  * Production API URL:
  * Using deployed backend on Render
  */
-const DEFAULT_API_URL = 'https://brewtopia-pcr6.onrender.com/api';
+const DEFAULT_API_URL = 'https://brewtopia-production.up.railway.app/api';
 
 // Increase default timeout for slower network connections (30 seconds)
 const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;
@@ -503,6 +503,38 @@ class ApiService {
       }>>('/cafes', {
         method: 'GET',
       });
+    },
+
+    // Get cafe by owner ID (để xử lý event navigation)
+    getCafeByOwner: async (ownerId: string) => {
+      const allCafes = await this.fetch<Array<{
+        _id: string;
+        owner: string;
+        name?: string;
+        shopName?: string;
+        address: string | {
+          street?: string;
+          ward?: string;
+          district?: string;
+          city?: string;
+          coordinates?: [number, number];
+        };
+        rating?: number;
+        status?: string;
+        closingTime?: string;
+        images?: string[];
+        menu?: string[];
+        menuid?: string;
+        description?: string;
+        openingHours?: {
+          [key: string]: { open: string; close: string; };
+        };
+      }>>('/cafes', {
+        method: 'GET',
+      });
+      
+      // Tìm cafe có owner khớp với ownerId
+      return allCafes.find(cafe => cafe.owner === ownerId) || null;
     },
   };
 

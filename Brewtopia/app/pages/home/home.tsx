@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated, Alert } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Image, TextInput, SafeAreaView, Dimensions, ScrollView, FlatList, Modal, Animated, Alert, BackHandler, ToastAndroid } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
@@ -86,6 +86,10 @@ function Home() {
   const welcomePopupOpacity = useRef(new Animated.Value(0)).current;
   const welcomePopupTranslateY = useRef(new Animated.Value(-50)).current;
 
+  // Back button handling
+  const [backPressCount, setBackPressCount] = useState(0);
+  const backPressTimer = useRef<NodeJS.Timeout | null>(null);
+
   const specialOffers = [
     require('../../../assets/images/special1.png'),
     require('../../../assets/images/special2.png'),
@@ -152,6 +156,35 @@ function Home() {
     }, 5000);
     return () => clearTimeout(messageTimer);
   }, []);
+
+  // Handle back button to prevent going back to login
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (backPressCount === 0) {
+        // First back press - show warning
+        setBackPressCount(1);
+        ToastAndroid.show('Ấn quay lại 1 lần nữa để thoát app', ToastAndroid.SHORT);
+        
+        // Reset counter after 2 seconds
+        backPressTimer.current = setTimeout(() => {
+          setBackPressCount(0);
+        }, 2000);
+        
+        return true; // Prevent default back action
+      } else {
+        // Second back press - exit app
+        BackHandler.exitApp();
+        return false;
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      if (backPressTimer.current) {
+        clearTimeout(backPressTimer.current);
+      }
+    };
+  }, [backPressCount]);
 
   // Animation for welcome popup
   useEffect(() => {
@@ -329,11 +362,11 @@ function Home() {
       // Hiển thị loading
       setCafeLoading(true);
 
-      // Lấy thông tin chi tiết cafe
-      const cafeData = await ApiService.cafe.getProfile(event.cafe);
+      // Lấy thông tin chi tiết cafe bằng owner ID (event.cafe trả về owner ID)
+      const cafeData = await ApiService.cafe.getCafeByOwner(event.cafe);
       
       if (!cafeData) {
-        Alert.alert('Lỗi', 'Không thể tải thông tin cafe');
+        Alert.alert('Lỗi', 'Không thể tìm thấy thông tin cafe của sự kiện này');
         return;
       }
 
@@ -348,19 +381,22 @@ function Home() {
         cafeAddress = cafeData.address;
       }
 
-      // Navigate đến trang chi tiết cafe
+      // Lấy menu ID từ cafe data
+      const menuId = cafeData.menu && cafeData.menu.length > 0 ? cafeData.menu[0] : cafeData._id;
+
+      // Navigate đến trang chi tiết cafe với cafe ID thực tế
       router.push({
         pathname: 'pages/shop/detail' as any,
         params: {
-          shopId: cafeData.id || event.cafe,
-          name: cafeData.name || 'Cafe',
+          shopId: cafeData._id, // Sử dụng _id thực tế của cafe
+          name: cafeData.shopName || cafeData.name || 'Cafe',
           address: cafeAddress || 'Địa chỉ không có sẵn',
           description: cafeData.description || '',
           status: cafeData.status || 'Open',
           closingTime: '22:00', // Default closing time
-          rating: '4.5', // Default rating
+          rating: cafeData.rating?.toString() || '4.5', // Default rating
           images: JSON.stringify(cafeData.images || []),
-          menuid: cafeData.id || event.cafe
+          menuid: menuId // Sử dụng menu ID thực tế từ cafe.menu array
         }
       });
 

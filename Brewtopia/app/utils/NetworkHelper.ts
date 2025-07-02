@@ -30,7 +30,7 @@ class NetworkHelper {
   async isServerReachable(): Promise<boolean> {
     try {
       // Get the API URL from config or use a default
-      const apiUrl = Config.API_URL || 'https://brewtopia-pcr6.onrender.com/api';
+      const apiUrl = Config.API_URL || 'https://brewtopia-production.up.railway.app/api';
       
       // Add a query parameter to prevent caching
       const testUrl = `${apiUrl}/ping?_=${Date.now()}`;
