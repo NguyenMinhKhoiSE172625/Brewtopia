@@ -23,7 +23,6 @@
       }
     },
     "android": {
-      "package": "com.brewtopia.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/iconcafe.png",
         "backgroundColor": "#ffffff"
