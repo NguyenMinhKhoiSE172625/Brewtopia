@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { MaterialIcons, Ionicons, AntDesign, FontAwesome } from '@expo/vector-icons';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 interface Comment {
   id: string;
@@ -58,7 +59,10 @@ export default function LivestreamView() {
   const [isLiked, setIsLiked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [viewerCount, setViewerCount] = useState(50);
-  
+  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraType, setCameraType] = useState<'front' | 'back'>('front');
+  const cameraRef = useRef(null);
+
   // Find the selected livestream based on streamId
   const selectedStream = livestreamsData.find(stream => stream.id === streamId) || livestreamsData[0];
   
@@ -143,6 +147,13 @@ export default function LivestreamView() {
     return () => clearInterval(interval);
   }, []);
 
+  // Xin quyền camera khi vào trang
+  useEffect(() => {
+    if (!permission) {
+      requestPermission();
+    }
+  }, [permission]);
+
   const renderComment = ({ item }: { item: Comment }) => (
     <View style={styles.commentItem}>
       <Image source={item.userAvatar} style={styles.commentAvatar} />
@@ -161,14 +172,22 @@ export default function LivestreamView() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
-      {/* Background Livestream */}
-      <Image 
-        source={selectedStream.thumbnail} 
-        style={styles.backgroundVideo}
-        resizeMode="cover"
-      />
-      
+      {/* Hiện camera preview nếu đã cấp quyền, ngược lại hiện ảnh nền */}
+      {permission === null ? (
+        <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
+          <Text style={{ color: '#fff' }}>Đang kiểm tra quyền camera...</Text>
+        </View>
+      ) : !permission.granted ? (
+        <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
+          <Text style={{ color: '#fff' }}>Không có quyền truy cập camera</Text>
+        </View>
+      ) : (
+        <CameraView
+          ref={cameraRef}
+          style={styles.backgroundVideo}
+          facing={cameraType}
+        />
+      )}
       {/* Header Overlay */}
       <View style={styles.headerOverlay}>
         <TouchableOpacity 
