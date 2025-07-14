@@ -98,7 +98,7 @@ function News() {
 
     return {
       id: apiPost._id,
-      username: apiPost.user?.name || 'Unknown User',
+      username: apiPost.user?.name || 'Anonymous',
       timestamp: formatTimestamp(apiPost.createdAt),
       imageUrl: imageUrl,
       caption: apiPost.content,
@@ -225,7 +225,7 @@ function News() {
 
       if (!result.canceled && result.assets.length > 0) {
         const newImages = result.assets.map(asset => asset.uri);
-        resetPosts(prev => [...prev, ...newImages]);
+        setSelectedImages(prev => [...prev, ...newImages]);
       }
     } catch (error) {
               Alert.alert('Lỗi', 'Đã xảy ra lỗi khi chọn hình ảnh.');
@@ -234,7 +234,7 @@ function News() {
   };
 
   const removeImage = (uri: string) => {
-    resetPosts(prev => prev.filter(imageUri => imageUri !== uri));
+    setSelectedImages(prev => prev.filter(imageUri => imageUri !== uri));
   };
 
   const handleCreatePost = async () => {

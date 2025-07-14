@@ -6,13 +6,13 @@ import { SOCKET_URL, debugLog } from '../config/constants';
 class SocketService {
   private socket: Socket | null = null;
   private currentUserId: string | null = null;
-  private listeners: { [key: string]: Function[] } = {};
+  private listeners: { [key: string]: ((...args: any[]) => void)[] } = {};
   private connectionAttempts = 0;
   private maxRetries = 3;
 
   constructor() {
     debugLog('SocketService: Initializing...');
-    this.initializeSocket();
+    // Không tự động khởi tạo socket, để cho manual connect() gọi
   }
 
   private async initializeSocket() {
@@ -34,7 +34,7 @@ class SocketService {
         auth: {
           token
         },
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         forceNew: true,
         timeout: 10000, // 10 giây timeout
         reconnection: true,
@@ -48,6 +48,9 @@ class SocketService {
           connected: this.socket?.connected 
         });
         this.connectionAttempts = 0;
+        
+        // Đăng ký lại tất cả listeners đã được store
+        this.registerStoredListeners();
       });
 
       this.socket.on('disconnect', (reason) => {
@@ -98,18 +101,69 @@ class SocketService {
     }
   }
 
+  private registerStoredListeners() {
+    if (!this.socket) return;
+    
+    debugLog('SocketService: Registering stored listeners', { 
+      events: Object.keys(this.listeners),
+      totalListeners: Object.values(this.listeners).reduce((acc, arr) => acc + arr.length, 0)
+    });
+    
+    Object.entries(this.listeners).forEach(([event, callbacks]) => {
+      callbacks.forEach(callback => {
+        this.socket!.on(event, callback);
+      });
+    });
+    
+    debugLog('SocketService: ✅ All stored listeners registered');
+  }
+
   public setCurrentUser(userId: string) {
     this.currentUserId = userId;
     debugLog('SocketService: Current user set', { userId });
   }
 
-  public connect() {
+  public async connect(): Promise<boolean> {
     debugLog('SocketService: Manual connect called');
+    
     if (!this.socket) {
-      this.initializeSocket();
+      await this.initializeSocket();
     } else if (!this.socket.connected) {
       this.socket.connect();
     }
+
+    // Wait for connection với timeout
+    return new Promise((resolve) => {
+      if (this.socket?.connected) {
+        debugLog('SocketService: Already connected');
+        resolve(true);
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        debugLog('SocketService: Connection timeout');
+        resolve(false);
+      }, 5000);
+
+      const onConnect = () => {
+        clearTimeout(timeout);
+        this.socket?.off('connect', onConnect);
+        this.socket?.off('connect_error', onError);
+        debugLog('SocketService: Connection successful');
+        resolve(true);
+      };
+
+      const onError = () => {
+        clearTimeout(timeout);
+        this.socket?.off('connect', onConnect);
+        this.socket?.off('connect_error', onError);
+        debugLog('SocketService: Connection failed');
+        resolve(false);
+      };
+
+      this.socket?.on('connect', onConnect);
+      this.socket?.on('connect_error', onError);
+    });
   }
 
   public disconnect() {
@@ -120,7 +174,7 @@ class SocketService {
     }
   }
 
-  public async joinRoom(roomId: string, userId?: string) {
+  public async joinRoom(roomId: string, userId?: string): Promise<boolean> {
     try {
       const token = await AsyncStorage.getItem('token');
       let realUserId = userId;
@@ -139,11 +193,14 @@ class SocketService {
       if (this.socket && this.socket.connected) {
         this.socket.emit('joinRoom', roomId, realUserId);
         debugLog('SocketService: ✅ Join room event emitted');
+        return true;
       } else {
         debugLog('SocketService: ❌ Cannot join room - socket not connected');
+        return false;
       }
     } catch (e) {
       debugLog('SocketService: Error joining room', { error: e });
+      return false;
     }
   }
 
@@ -175,7 +232,7 @@ class SocketService {
   }
 
   public on(event: string, callback: (...args: any[]) => void) {
-    debugLog('SocketService: Registering listener', { event });
+    debugLog('SocketService: Registering listener', { event, socketExists: !!this.socket, socketConnected: this.socket?.connected });
     
     if (!this.listeners[event]) {
       this.listeners[event] = [];
@@ -184,6 +241,9 @@ class SocketService {
 
     if (this.socket) {
       this.socket.on(event, callback);
+      debugLog('SocketService: ✅ Listener registered on socket', { event });
+    } else {
+      debugLog('SocketService: ⚠️ Listener stored, will register when socket connects', { event });
     }
   }
 

@@ -37,6 +37,7 @@ export default function Chat() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const realChatIdRef = useRef<string>('');
+  const [socketStatus, setSocketStatus] = useState<any>(null);
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -65,14 +66,9 @@ export default function Chat() {
         const history = await chatService.getChatHistory(String(realChatIdRef.current));
         setMessages(history);
 
-        // Connect to socket and join room (chỉ join sau khi đã có currentUser)
-        socketService.connect();
-        if (parsedUserData) {
-          socketService.joinRoom(String(realChatIdRef.current), parsedUserData._id);
-        }
-
-        // Set up socket listeners
+        // Set up socket listeners TRƯỚC KHI connect
         socketService.on('receiveMessage', (msg: Message) => {
+          console.log('🔥 Socket received message:', msg);
           // Map sender thành object nếu là string
           let senderObj = msg.sender;
           if (typeof msg.sender === 'string') {
@@ -82,11 +78,13 @@ export default function Chat() {
 
           setMessages(prev => {
             if (prev.some(m => m._id === fixedMsg._id)) return prev;
+            console.log('🔥 Adding new message to UI:', fixedMsg.message);
             return [...prev, fixedMsg];
           });
         });
 
         socketService.on('systemMessage', (data: { message: string }) => {
+          console.log('🔥 Socket received system message:', data);
           setMessages(prev => [...prev, { 
             _id: Date.now().toString(),
             sender: { _id: 'system', name: 'System' },
@@ -95,6 +93,23 @@ export default function Chat() {
             system: true
           }]);
         });
+
+        // Connect to socket SAU KHI đã set listeners
+        console.log('🔥 Connecting to socket...');
+        const connected = await socketService.connect();
+        console.log('🔥 Socket connection result:', connected);
+        
+        // Join room sau khi đã connect
+        if (parsedUserData && connected) {
+          console.log('🔥 Joining room:', realChatIdRef.current, 'with user:', parsedUserData._id);
+          const joined = await socketService.joinRoom(String(realChatIdRef.current), parsedUserData._id);
+          console.log('🔥 Room join result:', joined);
+        }
+
+        // Cập nhật socket status để debug
+        const status = socketService.getConnectionStatus();
+        setSocketStatus(status);
+        console.log('🔥 Final socket status:', status);
 
       } catch (err) {
         console.error('Error initializing chat:', err);
@@ -219,11 +234,21 @@ export default function Chat() {
         setError('Không thể gửi tin nhắn');
       }
     } else {
+      console.log('🔥 Sending message via socket:', {
+        chatId: String(realChatIdRef.current),
+        senderId: currentUser._id,
+        message: message.trim()
+      });
+      
       socketService.sendMessage({
         chatId: String(realChatIdRef.current),
         senderId: currentUser._id,
         message: message.trim()
       });
+      
+      // Debug: check socket status sau khi gửi
+      const statusAfterSend = socketService.getConnectionStatus();
+      console.log('🔥 Socket status after sending:', statusAfterSend);
     }
 
     setMessage('');
@@ -269,8 +294,32 @@ export default function Chat() {
             })()}
             style={styles.profileImage}
           />
-          <Text style={styles.headerTitle}>{chatName}</Text>
+          <View>
+            <Text style={styles.headerTitle}>{chatName}</Text>
+            {socketStatus && chatId !== 'ai' && (
+              <Text style={[styles.socketStatus, { color: socketStatus.connected ? '#4CAF50' : '#F44336' }]}>
+                Socket: {socketStatus.connected ? '✅ Kết nối' : '❌ Ngắt kết nối'}
+              </Text>
+            )}
+          </View>
         </View>
+        {chatId !== 'ai' && (
+          <TouchableOpacity 
+            style={styles.debugButton}
+            onPress={() => {
+              const status = socketService.getConnectionStatus();
+              setSocketStatus(status);
+              Alert.alert('Socket Debug', `
+Connected: ${status.connected}
+Socket ID: ${status.socketId || 'None'}
+User ID: ${status.currentUserId || 'None'}
+Attempts: ${status.connectionAttempts}
+              `);
+            }}
+          >
+            <MaterialIcons name="bug-report" size={20} color="#FFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Chat Messages */}
@@ -387,6 +436,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: horizontalScale(12),
+  },
+  socketStatus: {
+    fontSize: fontScale(12),
+    marginLeft: horizontalScale(12),
+    marginTop: verticalScale(2),
+  },
+  debugButton: {
+    padding: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   profileImage: {
     width: horizontalScale(40),
