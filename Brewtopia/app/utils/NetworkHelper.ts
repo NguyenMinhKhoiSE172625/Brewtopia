@@ -6,7 +6,6 @@
 import { Platform, NativeModules } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import DebugService from './DebugService';
-import Config from 'react-native-config';
 
 class NetworkHelper {
   /**
@@ -30,7 +29,7 @@ class NetworkHelper {
   async isServerReachable(): Promise<boolean> {
     try {
       // Get the API URL from config or use a default
-      const apiUrl = Config.API_URL || 'https://brewtopia-production.up.railway.app/api';
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://brewtopia-production.up.railway.app/api';
       
       // Add a query parameter to prevent caching
       const testUrl = `${apiUrl}/ping?_=${Date.now()}`;

@@ -5,7 +5,6 @@
 
 import DebugService from './DebugService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Config from 'react-native-config';
 import { Platform } from 'react-native';
 import UserRoleHelper, { UserRole } from './UserRoleHelper';
 
@@ -21,10 +20,10 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
 const DEFAULT_API_URL = 'https://brewtopia-production.up.railway.app/api';
 
 // Increase default timeout for slower network connections (30 seconds)
-const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;
+const DEFAULT_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT as string, 10) || 30000;
 
 // Maximum number of retry attempts
-const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 3;
+const MAX_RETRIES = parseInt(process.env.EXPO_PUBLIC_MAX_RETRIES as string, 10) || 3;
 
 class ApiService {
   private token: string | null = null;

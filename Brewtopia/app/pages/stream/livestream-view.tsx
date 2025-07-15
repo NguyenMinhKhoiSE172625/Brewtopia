@@ -53,234 +53,125 @@ const livestreamsData = [
 export default function LivestreamView() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { streamId } = params;
-  
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [viewerCount, setViewerCount] = useState(50);
+  // const { streamId } = params;
+
+  // State cho form join phòng
+  const [channelId, setChannelId] = useState('');
+  const [userName, setUserName] = useState('');
+  const [role, setRole] = useState<'streamer' | 'viewer'>('streamer');
+  const [joined, setJoined] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState('');
+
+  // Camera
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraType, setCameraType] = useState<'front' | 'back'>('front');
   const cameraRef = useRef(null);
 
-  // Find the selected livestream based on streamId
-  const selectedStream = livestreamsData.find(stream => stream.id === streamId) || livestreamsData[0];
-  
-  // Set stream info based on selected stream
-  const [streamInfo, setStreamInfo] = useState({
-    id: selectedStream.id,
-    shopName: selectedStream.shopName,
-    shopLogo: selectedStream.shopLogo,
-    title: selectedStream.streamTitle,
-  });
-  
-  // Initialize viewer count from stream data
-  useEffect(() => {
-    if (selectedStream) {
-      setViewerCount(selectedStream.viewerCount);
+  const BASE_URL = 'https://brewtopia-production.up.railway.app/api';
+
+  // Khi join phòng
+  const handleJoinRoom = async () => {
+    setError('');
+    if (!channelId.trim() || !userName.trim()) {
+      setError('Vui lòng nhập đầy đủ tên phòng và tên của bạn.');
+      return;
     }
-  }, [selectedStream]);
-  
-  // Comments data
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: '1',
-      userName: 'WebSushi',
-      userAvatar: require('../../../assets/images/avatar1.png'),
-      text: 'Lorem ipsum is simply dummy text',
-      timestamp: '2m ago'
-    },
-    {
-      id: '2',
-      userName: 'Dan Cruz',
-      userAvatar: require('../../../assets/images/avatar2.png'),
-      text: 'Lorem ipsum is simply dummy text, lorem ipsum dolor sit amet',
-      timestamp: '1m ago'
-    },
-    {
-      id: '3',
-      userName: 'John Weed',
-      userAvatar: require('../../../assets/images/avatar3.png'),
-      text: 'Lorem ipsum is simply dummy text',
-      timestamp: 'Just now'
-    }
-  ]);
-
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-  };
-
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-  };
-
-  const handleShare = () => {
-    // Implement share functionality
-    console.log('Share livestream');
-  };
-
-  const handleSendComment = () => {
-    if (commentText.trim() === '') return;
-    
-    // Add new comment
-    const newComment: Comment = {
-      id: (comments.length + 1).toString(),
-      userName: 'You',
-      userAvatar: require('../../../assets/images/profile1.png'),
-      text: commentText,
-      timestamp: 'Just now'
-    };
-    
-    setComments([...comments, newComment]);
-    setCommentText('');
-  };
-  
-  // Simulating increasing viewer count
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setViewerCount(prevCount => {
-        const increase = Math.floor(Math.random() * 3);
-        return prevCount + increase;
+    setJoining(true);
+    try {
+      // Gọi API join phòng
+      const res = await fetch(`${BASE_URL}/video/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: userName, channel: channelId })
       });
-    }, 10000);
-    
-    return () => clearInterval(interval);
-  }, []);
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.message || 'Không thể tham gia phòng');
+        setJoining(false);
+        return;
+      }
+      setJoined(true);
+      setJoining(false);
+    } catch (e) {
+      setError('Lỗi kết nối server');
+      setJoining(false);
+    }
+  };
 
-  // Xin quyền camera khi vào trang
+  // Xin quyền camera khi vào trang (nếu là streamer và đã join)
   useEffect(() => {
-    if (!permission) {
+    if (joined && role === 'streamer' && !permission) {
       requestPermission();
     }
-  }, [permission]);
+  }, [joined, role, permission]);
 
-  const renderComment = ({ item }: { item: Comment }) => (
-    <View style={styles.commentItem}>
-      <Image source={item.userAvatar} style={styles.commentAvatar} />
-      <View style={styles.commentContent}>
-        <Text style={styles.commentUserName}>{item.userName}</Text>
-        <Text style={styles.commentText}>{item.text}</Text>
-      </View>
-      {item.id === '3' && (
-        <TouchableOpacity style={styles.replyButton}>
-          <AntDesign name="message1" size={16} color="#FFFFFF" />
+  // UI form join phòng
+  if (!joined) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}> 
+        <Text style={{ color: '#6E543C', fontSize: 22, fontWeight: 'bold', marginBottom: 24 }}>Tham gia Livestream</Text>
+        <TextInput
+          style={[styles.input, { marginBottom: 12 }]}
+          placeholder="Tên phòng (channelId)"
+          value={channelId}
+          onChangeText={setChannelId}
+        />
+        <TextInput
+          style={[styles.input, { marginBottom: 12 }]}
+          placeholder="Tên của bạn"
+          value={userName}
+          onChangeText={setUserName}
+        />
+        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+          <TouchableOpacity
+            style={[styles.roleButton, role === 'streamer' && styles.roleButtonActive]}
+            onPress={() => setRole('streamer')}
+          >
+            <Text style={{ color: role === 'streamer' ? '#fff' : '#6E543C' }}>Streamer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.roleButton, role === 'viewer' && styles.roleButtonActive]}
+            onPress={() => setRole('viewer')}
+          >
+            <Text style={{ color: role === 'viewer' ? '#fff' : '#6E543C' }}>Viewer</Text>
+          </TouchableOpacity>
+        </View>
+        {error ? <Text style={{ color: 'red', marginBottom: 8 }}>{error}</Text> : null}
+        <TouchableOpacity
+          style={[styles.joinButton, joining && { opacity: 0.6 }]}
+          onPress={handleJoinRoom}
+          disabled={joining}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Tham gia phòng</Text>
         </TouchableOpacity>
-      )}
-    </View>
-  );
+      </View>
+    );
+  }
 
+  // Sau khi đã join phòng
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      {/* Hiện camera preview nếu đã cấp quyền, ngược lại hiện ảnh nền */}
-      {permission === null ? (
-        <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
-          <Text style={{ color: '#fff' }}>Đang kiểm tra quyền camera...</Text>
-        </View>
-      ) : !permission.granted ? (
-        <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
-          <Text style={{ color: '#fff' }}>Không có quyền truy cập camera</Text>
-        </View>
-      ) : (
-        <CameraView
-          ref={cameraRef}
-          style={styles.backgroundVideo}
-          facing={cameraType}
-        />
-      )}
-      {/* Header Overlay */}
-      <View style={styles.headerOverlay}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <MaterialIcons name="arrow-back-ios" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        
-        <View style={styles.streamInfo}>
-          <Image source={streamInfo.shopLogo} style={styles.shopLogo} />
-          <Text style={styles.shopName}>{streamInfo.shopName}</Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={[
-            styles.followButton,
-            isFollowing && styles.followingButton
-          ]}
-          onPress={handleFollow}
-        >
-          <AntDesign name={isFollowing ? "check" : "plus"} size={16} color="#FFFFFF" />
-          <Text style={styles.followButtonText}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Stream Title */}
-      <View style={styles.streamTitleContainer}>
-        <Text style={styles.streamTitleText}>{selectedStream.streamTitle}</Text>
-      </View>
-      
-      {/* Viewer Count */}
-      <View style={styles.viewerCountContainer}>
-        <Ionicons name="eye" size={18} color="#FFFFFF" />
-        <Text style={styles.viewerCountText}>{viewerCount}+</Text>
-      </View>
-      
-      {/* Comments Section */}
-      <View style={styles.commentsSection}>
-        <FlatList
-          data={comments}
-          renderItem={renderComment}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          style={styles.commentsList}
-        />
-      </View>
-      
-      {/* Comment Input and Actions */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inputContainer}
-        keyboardVerticalOffset={80}
-      >
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Comment ..."
-            placeholderTextColor="rgba(255, 255, 255, 0.7)"
-            value={commentText}
-            onChangeText={setCommentText}
+      {role === 'streamer' ? (
+        permission && permission.granted ? (
+          <CameraView
+            ref={cameraRef}
+            style={styles.backgroundVideo}
+            facing={cameraType}
           />
-          
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleSendComment}
-            >
-              <MaterialIcons name="send" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleShare}
-            >
-              <MaterialIcons name="share" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleLike}
-            >
-              <AntDesign 
-                name={isLiked ? "heart" : "hearto"} 
-                size={24} 
-                color={isLiked ? "#FF4D67" : "#FFFFFF"} 
-              />
-            </TouchableOpacity>
+        ) : (
+          <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
+            <Text style={{ color: '#fff' }}>Đang kiểm tra quyền camera...</Text>
           </View>
+        )
+      ) : (
+        <View style={[styles.backgroundVideo, { justifyContent: 'center', alignItems: 'center' }]}> 
+          <Text style={{ color: '#fff', fontSize: 20 }}>Bạn đã vào phòng với vai trò Viewer</Text>
+          <Text style={{ color: '#fff', marginTop: 8 }}>Tính năng xem stream sẽ cập nhật sau!</Text>
         </View>
-      </KeyboardAvoidingView>
+      )}
+      {/* Có thể bổ sung UI overlay, chat, viewer count... sau khi đã join phòng */}
     </View>
   );
 }
@@ -452,5 +343,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: horizontalScale(4),
+  },
+  input: {
+    width: '100%',
+    height: verticalScale(44),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    color: '#FFFFFF',
+    borderRadius: moderateScale(22),
+    paddingHorizontal: horizontalScale(16),
+    marginBottom: 12,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: horizontalScale(12),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+    borderColor: '#6E543C',
+    alignItems: 'center',
+    marginHorizontal: horizontalScale(4),
+  },
+  roleButtonActive: {
+    backgroundColor: '#6E543C',
+    borderColor: '#6E543C',
+  },
+  joinButton: {
+    width: '100%',
+    height: verticalScale(44),
+    backgroundColor: '#6E543C',
+    borderRadius: moderateScale(22),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
   },
 }); 
