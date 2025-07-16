@@ -90,7 +90,7 @@ export default function TableBooking() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Table Booking</Text>
+        <Text style={styles.headerTitle}>Đặt bàn</Text>
         <View style={styles.backButton} />
       </View>
       
@@ -98,18 +98,18 @@ export default function TableBooking() {
         {showSuccessMessage ? (
           <View style={styles.successMessage}>
             <MaterialIcons name="check-circle" size={60} color="#6E543C" />
-            <Text style={styles.successTitle}>Booking Confirmed!</Text>
+            <Text style={styles.successTitle}>Đặt bàn thành công!</Text>
             <Text style={styles.successText}>
-              Your table has been booked successfully. We look forward to serving you!
+              Bàn của bạn đã được đặt thành công. Hẹn gặp lại bạn tại quán!
             </Text>
           </View>
         ) : (
           <>
             <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Date & Time</Text>
+              <Text style={styles.sectionTitle}>Ngày & Giờ</Text>
               
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Date</Text>
+                <Text style={styles.inputLabel}>Ngày</Text>
                 <TouchableOpacity 
                   style={styles.dateTimeInput}
                   onPress={() => setShowDateModal(true)}
@@ -120,7 +120,7 @@ export default function TableBooking() {
               </View>
               
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Time</Text>
+                <Text style={styles.inputLabel}>Giờ</Text>
                 <TouchableOpacity 
                   style={styles.dateTimeInput}
                   onPress={() => setShowTimeModal(true)}
@@ -132,7 +132,7 @@ export default function TableBooking() {
             </View>
             
             <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Number of Guests</Text>
+              <Text style={styles.sectionTitle}>Số lượng khách</Text>
               
               <View style={styles.quantitySelector}>
                 <TouchableOpacity 
@@ -156,10 +156,10 @@ export default function TableBooking() {
             </View>
             
             <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Select Table</Text>
+              <Text style={styles.sectionTitle}>Chọn bàn</Text>
               
               <Text style={styles.tableInstructions}>
-                Choose a table from the floor plan below:
+                Hãy chọn một bàn từ sơ đồ bên dưới:
               </Text>
               
               <View style={styles.tablesContainer}>
@@ -233,7 +233,7 @@ export default function TableBooking() {
               onPress={handleSubmit}
               disabled={!selectedTable}
             >
-              <Text style={styles.submitButtonText}>Confirm Booking</Text>
+              <Text style={styles.submitButtonText}>Xác nhận đặt bàn</Text>
             </TouchableOpacity>
           </>
         )}
@@ -247,7 +247,7 @@ export default function TableBooking() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Date</Text>
+            <Text style={styles.modalTitle}>Chọn ngày</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {dateOptions.map((dateOption, index) => (
@@ -278,7 +278,7 @@ export default function TableBooking() {
               style={styles.cancelButton}
               onPress={() => setShowDateModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -292,7 +292,7 @@ export default function TableBooking() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Time</Text>
+            <Text style={styles.modalTitle}>Chọn giờ</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {timeOptions.map((timeOption, index) => (
@@ -327,7 +327,7 @@ export default function TableBooking() {
               style={styles.cancelButton}
               onPress={() => setShowTimeModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>

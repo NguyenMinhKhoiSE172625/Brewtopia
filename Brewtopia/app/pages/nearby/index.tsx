@@ -280,7 +280,7 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={styles.cafeAddress}>{cafe.address}</Text>
           <Text style={styles.cafeStatus}>
-            {(cafe.status === 'success' ? 'Open' : cafe.status)} - Closed at {cafe.closingTime}
+                            {(cafe.status === 'success' ? 'Đang mở' : cafe.status)} - Đóng cửa lúc {cafe.closingTime}
           </Text>
         </View>
       </View>
@@ -336,7 +336,7 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
           }
         })}
       >
-        <Text style={styles.detailButtonText}>Detail</Text>
+                          <Text style={styles.detailButtonText}>Chi tiết</Text>
       </TouchableOpacity>
 
       <FlatList

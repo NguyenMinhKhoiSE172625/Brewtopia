@@ -65,12 +65,12 @@ export default function PaymentMethod() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment Method</Text>
+        <Text style={styles.headerTitle}>Phương thức thanh toán</Text>
       </View>
       
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Payment Method</Text>
+          <Text style={styles.sectionTitle}>Chọn phương thức thanh toán</Text>
           
           <TouchableOpacity
             style={[
@@ -87,7 +87,7 @@ export default function PaymentMethod() {
             <Text style={[
               styles.paymentOptionText,
               paymentMethod === 'my_card' && styles.selectedPaymentOptionText
-            ]}>My Card</Text>
+            ]}>Thẻ của tôi</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -137,13 +137,13 @@ export default function PaymentMethod() {
             <Text style={[
               styles.paymentOptionText,
               paymentMethod === 'bank' && styles.selectedPaymentOptionText
-            ]}>Local Bank</Text>
+            ]}>Ngân hàng địa phương</Text>
           </TouchableOpacity>
         </View>
         
         {paymentMethod === 'my_card' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Card</Text>
+            <Text style={styles.sectionTitle}>Chọn thẻ</Text>
             
             {creditCards.map(card => (
               <TouchableOpacity
@@ -163,7 +163,7 @@ export default function PaymentMethod() {
                   <Text style={styles.cardType}>{card.type}</Text>
                 </View>
                 <Text style={styles.cardDetails}>**** **** **** {card.last4}</Text>
-                <Text style={styles.cardExpiry}>Expires: {card.expiry}</Text>
+                <Text style={styles.cardExpiry}>Hạn sử dụng: {card.expiry}</Text>
                 
                 {selectedCard === card.id && (
                   <View style={styles.selectedCardIndicator}>
@@ -176,49 +176,49 @@ export default function PaymentMethod() {
         )}
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Voucher Code</Text>
+          <Text style={styles.sectionTitle}>Mã voucher</Text>
           
           <View style={styles.voucherContainer}>
             <TextInput
               style={styles.voucherInput}
-              placeholder="Enter voucher code..."
+              placeholder="Nhập mã voucher..."
               value={voucher}
               onChangeText={setVoucher}
             />
             
             <TouchableOpacity style={styles.applyButton}>
-              <Text style={styles.applyButtonText}>Apply</Text>
+              <Text style={styles.applyButtonText}>Áp dụng</Text>
             </TouchableOpacity>
           </View>
         </View>
         
         <View style={styles.orderSummary}>
-          <Text style={styles.summaryTitle}>Order Summary</Text>
+          <Text style={styles.summaryTitle}>Tóm tắt đơn hàng</Text>
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>
               {type === 'premium' 
-                ? `Premium (${duration} month${parseInt(duration as string) > 1 ? 's' : ''})`
+                ? `Premium (${duration} tháng${parseInt(duration as string) > 1 ? 's' : ''})`
                 : type === 'ads'
-                ? `${packageName} Package`
-                : 'Subtotal'
+                ? `${packageName} Gói`
+                : 'Tổng cộng'
               }
             </Text>
             <Text style={styles.summaryValue}>${amount}</Text>
           </View>
           
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tax</Text>
+            <Text style={styles.summaryLabel}>Thuế</Text>
             <Text style={styles.summaryValue}>${(parseFloat(amount as string) * 0.1).toFixed(2)}</Text>
           </View>
           
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Discount</Text>
+            <Text style={styles.summaryLabel}>Giảm giá</Text>
             <Text style={styles.summaryValue}>$0.00</Text>
           </View>
           
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>Tổng cộng</Text>
             <Text style={styles.totalValue}>
               ${(parseFloat(amount as string) * 1.1).toFixed(2)}
             </Text>
@@ -227,8 +227,8 @@ export default function PaymentMethod() {
         
         <View style={styles.termsSection}>
           <Text style={styles.termsText}>
-            By placing your order, you agree to the Terms of Service and Privacy Policy.
-            Orders cannot be canceled once placed. Please check your order details before confirming.
+            Bằng cách đặt hàng, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật.
+            Đơn hàng không thể hủy bỏ sau khi đặt. Vui lòng kiểm tra chi tiết đơn hàng trước khi xác nhận.
           </Text>
         </View>
         
@@ -240,7 +240,7 @@ export default function PaymentMethod() {
           onPress={handlePlaceOrder}
           disabled={!paymentMethod || (paymentMethod === 'my_card' && !selectedCard)}
         >
-          <Text style={styles.placeOrderButtonText}>Place Order</Text>
+          <Text style={styles.placeOrderButtonText}>Đặt hàng</Text>
           <MaterialIcons name="check-circle" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </ScrollView>
@@ -249,15 +249,15 @@ export default function PaymentMethod() {
         <View style={styles.successModal}>
           <View style={styles.successContent}>
             <MaterialIcons name="check-circle" size={60} color="#6E543C" />
-            <Text style={styles.successTitle}>Order Placed!</Text>
+            <Text style={styles.successTitle}>Đặt hàng thành công!</Text>
             <Text style={styles.successMessage}>
-              Your order has been successfully placed. You will receive a notification when it's ready.
+              Đơn hàng của bạn đã được ghi nhận. Bạn sẽ nhận được thông báo khi đồ uống sẵn sàng.
             </Text>
             
             <View style={styles.warningContainer}>
               <MaterialIcons name="warning" size={24} color="#E67700" />
               <Text style={styles.warningText}>
-                If you arrive more than 5 minutes after the appointment time, your drink will still be kept until the end of the session, but the quality will not be guaranteed as expected. You will be responsible for any problems.
+                Nếu bạn đến muộn hơn 5 phút so với giờ hẹn, đồ uống vẫn sẽ được giữ đến hết ca, nhưng chất lượng có thể không đảm bảo như mong đợi. Bạn sẽ tự chịu trách nhiệm với các vấn đề phát sinh.
               </Text>
             </View>
             
@@ -265,7 +265,7 @@ export default function PaymentMethod() {
               style={styles.understandButton}
               onPress={handleUnderstand}
             >
-              <Text style={styles.understandButtonText}>I Understand</Text>
+              <Text style={styles.understandButtonText}>Tôi đã hiểu</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -275,16 +275,16 @@ export default function PaymentMethod() {
         <View style={styles.successModal}>
           <View style={styles.successContent}>
             <MaterialIcons name="check-circle" size={60} color="#6E543C" />
-            <Text style={styles.successTitle}>Premium Purchased Successfully!</Text>
+            <Text style={styles.successTitle}>Mua Premium thành công!</Text>
             <Text style={styles.successMessage}>
-              Thank you for purchasing Premium! You now have access to all premium features for {duration} month{parseInt(duration as string) > 1 ? 's' : ''}.
+              Cảm ơn bạn đã mua Premium! Bạn bây giờ có quyền truy cập vào tất cả các tính năng premium trong {duration} tháng{parseInt(duration as string) > 1 ? 's' : ''}.
             </Text>
             
             <TouchableOpacity 
               style={styles.understandButton}
               onPress={handlePremiumSuccess}
             >
-              <Text style={styles.understandButtonText}>Continue</Text>
+              <Text style={styles.understandButtonText}>Tiếp tục</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -294,16 +294,16 @@ export default function PaymentMethod() {
         <View style={styles.successModal}>
           <View style={styles.successContent}>
             <MaterialIcons name="check-circle" size={60} color="#6E543C" />
-            <Text style={styles.successTitle}>Advertisement Package Purchased!</Text>
+            <Text style={styles.successTitle}>Gói quảng cáo đã đặt!</Text>
             <Text style={styles.successMessage}>
-              Thank you for purchasing the {packageName} Package! Your advertisement campaign will be activated within 24 hours.
+              Cảm ơn bạn đã mua gói {packageName}! Chiến dịch quảng cáo của bạn sẽ được kích hoạt trong vòng 24 giờ.
             </Text>
             
             <TouchableOpacity 
               style={styles.understandButton}
               onPress={handleAdsSuccess}
             >
-              <Text style={styles.understandButtonText}>Continue</Text>
+              <Text style={styles.understandButtonText}>Tiếp tục</Text>
             </TouchableOpacity>
           </View>
         </View>

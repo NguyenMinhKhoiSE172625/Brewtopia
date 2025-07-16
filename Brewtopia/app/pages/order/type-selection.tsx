@@ -40,13 +40,13 @@ export default function OrderTypeSelection() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Selection</Text>
+        <Text style={styles.headerTitle}>Chọn loại đặt hàng</Text>
         <View style={styles.backButton} />
       </View>
       
       <View style={styles.content}>
         <View style={styles.promptContainer}>
-          <Text style={styles.promptText}>You want to order...?</Text>
+          <Text style={styles.promptText}>Bạn muốn đặt gì?</Text>
         </View>
         
         <View style={styles.optionsContainer}>
@@ -57,7 +57,7 @@ export default function OrderTypeSelection() {
             <View style={styles.optionIconContainer}>
               <MaterialIcons name="restaurant" size={48} color="#6E543C" />
             </View>
-            <Text style={styles.optionText}>Table</Text>
+            <Text style={styles.optionText}>Đặt bàn</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -67,7 +67,7 @@ export default function OrderTypeSelection() {
             <View style={styles.optionIconContainer}>
               <MaterialIcons name="local-cafe" size={48} color="#6E543C" />
             </View>
-            <Text style={styles.optionText}>Drink</Text>
+            <Text style={styles.optionText}>Đặt nước</Text>
           </TouchableOpacity>
         </View>
         

@@ -44,12 +44,12 @@ function PaymentSuccess() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <MaterialIcons name="check-circle" size={80} color="#6E543C" />
-        <Text style={styles.title}>Payment Successful!</Text>
+        <Text style={styles.title}>Thanh toán thành công!</Text>
         <Text style={styles.message}>
-          Thank you for your payment. Your transaction has been completed successfully.
+          Cảm ơn bạn đã thanh toán. Giao dịch của bạn đã được hoàn thành thành công.
         </Text>
         <TouchableOpacity style={styles.button} onPress={handleContinue}>
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={styles.buttonText}>Tiếp tục</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

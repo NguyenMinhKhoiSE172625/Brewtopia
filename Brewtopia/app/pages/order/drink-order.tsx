@@ -180,16 +180,16 @@ export default function DrinkOrder() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Drinks</Text>
+        <Text style={styles.headerTitle}>Đặt nước</Text>
         <View style={styles.backButton} />
       </View>
       
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Pickup Date & Time</Text>
+          <Text style={styles.sectionTitle}>Ngày & Giờ nhận</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Date</Text>
+            <Text style={styles.inputLabel}>Ngày</Text>
             <TouchableOpacity 
               style={styles.dateTimeInput}
               onPress={() => setShowDateModal(true)}
@@ -200,7 +200,7 @@ export default function DrinkOrder() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Time</Text>
+            <Text style={styles.inputLabel}>Giờ</Text>
             <TouchableOpacity 
               style={styles.dateTimeInput}
               onPress={() => setShowTimeModal(true)}
@@ -212,7 +212,7 @@ export default function DrinkOrder() {
         </View>
         
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Selected Drinks</Text>
+          <Text style={styles.sectionTitle}>Các món đã chọn</Text>
           {selectedItems.length === 0 && (
             <Text style={{color:'#999',marginBottom:12}}>Chưa chọn món nào</Text>
           )}
@@ -228,17 +228,17 @@ export default function DrinkOrder() {
             </View>
           ))}
           <View style={styles.orderTotal}>
-            <Text style={styles.orderTotalLabel}>Total:</Text>
+            <Text style={styles.orderTotalLabel}>Tổng cộng:</Text>
             <Text style={styles.orderTotalAmount}>{totalPrice.toLocaleString()}đ</Text>
           </View>
         </View>
         
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Special Requirements</Text>
+          <Text style={styles.sectionTitle}>Yêu cầu đặc biệt</Text>
           
           <TextInput
             style={styles.requirementsInput}
-            placeholder="Add any special instructions for your order..."
+            placeholder="Thêm ghi chú cho đơn hàng (nếu có)..."
             multiline
             numberOfLines={4}
             value={requirements}
@@ -251,7 +251,7 @@ export default function DrinkOrder() {
           onPress={handlePay}
           disabled={paying}
         >
-          <Text style={styles.payButtonText}>Pay for Order</Text>
+          <Text style={styles.payButtonText}>Thanh toán</Text>
           <MaterialIcons name="payment" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </ScrollView>
@@ -264,7 +264,7 @@ export default function DrinkOrder() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Date</Text>
+            <Text style={styles.modalTitle}>Chọn ngày</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {dateOptions.map((dateOption, index) => (
@@ -295,7 +295,7 @@ export default function DrinkOrder() {
               style={styles.cancelButton}
               onPress={() => setShowDateModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -309,7 +309,7 @@ export default function DrinkOrder() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Time</Text>
+            <Text style={styles.modalTitle}>Chọn giờ</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {timeOptions.map((timeOption, index) => (
@@ -344,7 +344,7 @@ export default function DrinkOrder() {
               style={styles.cancelButton}
               onPress={() => setShowTimeModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -358,7 +358,7 @@ export default function DrinkOrder() {
             <TouchableOpacity onPress={() => {
               setShowSuccess(false);
               setBonusMessage('');
-              router.replace('/pages/payment-success/payment-success');
+              router.replace('/pages/order/confirmation');
             }}>
               <Text style={{ marginTop: 16, color: '#6E543C', fontWeight: 'bold' }}>Tiếp tục</Text>
             </TouchableOpacity>
