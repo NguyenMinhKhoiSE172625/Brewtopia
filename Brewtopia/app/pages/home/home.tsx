@@ -30,6 +30,8 @@ const SpecialOfferItem = memo(({ item, onPress }: { item: any; onPress: () => vo
         borderRadius: moderateScale(16),
       }}
       resizeMode="cover"
+      defaultSource={require('../../../assets/images/Logo.png')}
+      loadingIndicatorSource={require('../../../assets/images/Logo.png')}
     />
   </TouchableOpacity>
 ));
@@ -69,11 +71,11 @@ function Home() {
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [showChatSelection, setShowChatSelection] = useState(false);
   const [messages, setMessages] = useState<Array<{text: string, isUser: boolean}>>([
-          {text: "Xin chào người dùng", isUser: false},
-    {text: "My name is Brewbot", isUser: false},
-    {text: "I'm here to help you, don't hesitate to ask me anything!!", isUser: false},
-    {text: "Welcome", isUser: true},
+    {text: "Xin chào! Tôi là BREWBOT - trợ lý AI của Brewtopia 🤖", isUser: false},
+    {text: "Tôi có thể giúp bạn:\n• Tìm quán cafe phù hợp\n• Đặt bàn và đặt món\n• Xem ưu đãi và tích điểm\n• Trả lời các câu hỏi về ứng dụng", isUser: false},
+    {text: "Bạn có thể hỏi tôi bất cứ điều gì! 😊", isUser: false},
   ]);
   const [newMessage, setNewMessage] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -106,11 +108,17 @@ function Home() {
   const slideAnim = useRef(new Animated.Value(50)).current;
 
   const keyExtractor = useCallback((item: any, index: number) => `special-offer-${index}`, []);
-  const messageKeyExtractor = useCallback((item: Message, index: number) => `message-${index}`, []);
+  const messageKeyExtractor = useCallback((item: Message, index: number) => `message-${index}-${item.text.slice(0, 10)}`, []);
 
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: Dimensions.get('window').width - horizontalScale(32),
     offset: (Dimensions.get('window').width - horizontalScale(32)) * index,
+    index,
+  }), []);
+
+  const getMessageLayout = useCallback((data: any, index: number) => ({
+    length: verticalScale(60), // Estimated message height
+    offset: verticalScale(60) * index,
     index,
   }), []);
 
@@ -154,8 +162,14 @@ function Home() {
         ]),
       ]).start();
     }, 5000);
-    return () => clearTimeout(messageTimer);
-  }, []);
+    
+    return () => {
+      clearTimeout(messageTimer);
+      // Reset animations
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0);
+    };
+  }, [fadeAnim, scaleAnim]);
 
   // Handle back button to prevent going back to login
   useEffect(() => {
@@ -242,9 +256,16 @@ function Home() {
     };
 
     getUserData();
-  }, []);
+    
+    return () => {
+      // Reset welcome popup animations
+      welcomePopupOpacity.setValue(0);
+      welcomePopupTranslateY.setValue(-50);
+    };
+  }, [welcomePopupOpacity, welcomePopupTranslateY]);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showTypingIndicator, setShowTypingIndicator] = useState(false);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -252,22 +273,33 @@ function Home() {
     // Add user message
     const userMessage = { text: newMessage, isUser: true };
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = newMessage;
     setNewMessage("");
 
-    // Show loading state
+    // Show loading state and typing indicator
     setIsLoading(true);
+    setShowTypingIndicator(true);
 
     try {
-      // Get response from Gemini
-      const response = await sendMessageToGemini(newMessage);
+      // Get response from AI
+      const response = await sendMessageToGemini(currentMessage);
+      
+      // Hide typing indicator
+      setShowTypingIndicator(false);
       
       // Add bot response
       const botMessage = { text: response.text, isUser: false };
       setMessages(prev => [...prev, botMessage]);
+      
+      // Log if there was an error but still got fallback response
+      if (response.error) {
+        console.warn('AI processing error, using fallback:', response.error);
+      }
     } catch (error) {
       console.error('Error getting response:', error);
+      setShowTypingIndicator(false);
       // Add error message
-      const errorMessage = { text: "Sorry, I encountered an error. Please try again.", isUser: false };
+      const errorMessage = { text: "Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng thử lại sau hoặc liên hệ nhân viên hỗ trợ! 🛠️", isUser: false };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
@@ -646,7 +678,7 @@ function Home() {
       {/* Nút chat nổi ngoài cùng, không bị che tab bar */}
       <TouchableOpacity
         style={[styles.floatingButton, {bottom: 90, right: 18}]}
-        onPress={() => router.push('/pages/chat/users')}
+        onPress={() => setShowChatSelection(true)}
         activeOpacity={0.8}
       >
         <Ionicons name="chatbubble-ellipses-outline" size={32} color={PRIMARY_BROWN} />
@@ -700,6 +732,74 @@ function Home() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Chat Selection Modal */}
+      <Modal
+        visible={showChatSelection}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowChatSelection(false)}
+      >
+        <View style={styles.chatSelectionOverlay}>
+          <View style={styles.chatSelectionContent}>
+            {/* Header */}
+            <View style={styles.chatSelectionHeader}>
+              <TouchableOpacity 
+                onPress={() => setShowChatSelection(false)}
+                style={styles.chatCloseButton}
+              >
+                <MaterialIcons name="close" size={24} color={PRIMARY_BROWN} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Content */}
+            <View style={styles.chatSelectionBody}>
+              <MaterialIcons name="chat" size={80} color={PRIMARY_BROWN} style={{marginBottom: 20}} />
+              <Text style={styles.chatSelectionTitle}>Chọn loại chat</Text>
+              <Text style={styles.chatSelectionSubtitle}>Bạn muốn trò chuyện với ai?</Text>
+
+              {/* AI Chat Option */}
+              <TouchableOpacity 
+                style={styles.chatOption}
+                onPress={() => {
+                  setShowChatSelection(false);
+                  setShowChatModal(true);
+                }}
+              >
+                <View style={styles.chatOptionLeft}>
+                  <Image 
+                    source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
+                    style={styles.chatOptionIcon}
+                  />
+                  <View style={styles.chatOptionText}>
+                    <Text style={styles.chatOptionTitle}>Chat với AI</Text>
+                    <Text style={styles.chatOptionDesc}>BREWBOT - Trợ lý thông minh</Text>
+                  </View>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={20} color={PRIMARY_BROWN} />
+              </TouchableOpacity>
+
+              {/* Human Chat Option (Coming Soon) */}
+              <TouchableOpacity 
+                style={[styles.chatOption, styles.chatOptionDisabled]}
+                onPress={() => {
+                  setShowChatSelection(false);
+                  Alert.alert("Thông báo", "Tính năng chat với nhân viên sẽ có sớm!");
+                }}
+              >
+                <View style={styles.chatOptionLeft}>
+                  <MaterialIcons name="support-agent" size={40} color="#999" />
+                  <View style={styles.chatOptionText}>
+                    <Text style={[styles.chatOptionTitle, {color: '#999'}]}>Chat với nhân viên</Text>
+                    <Text style={[styles.chatOptionDesc, {color: '#999'}]}>Sẽ có sớm</Text>
+                  </View>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Chat Modal */}
       <Modal
         visible={showChatModal}
@@ -716,7 +816,10 @@ function Home() {
                   source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
                   style={styles.chatHeaderIcon}
                 />
-                <Text style={styles.chatHeaderText}>BREWBOT</Text>
+                <View>
+                  <Text style={styles.chatHeaderText}>BREWBOT</Text>
+                  <Text style={styles.chatHeaderSubtitle}>Trợ lý AI của Brewtopia</Text>
+                </View>
               </View>
               <TouchableOpacity 
                 onPress={() => setShowChatModal(false)}
@@ -732,16 +835,35 @@ function Home() {
               keyExtractor={messageKeyExtractor}
               style={styles.chatMessages}
               renderItem={renderMessage}
-              initialNumToRender={5}
-              maxToRenderPerBatch={3}
-              windowSize={5}
+              initialNumToRender={10}
+              maxToRenderPerBatch={5}
+              windowSize={10}
               removeClippedSubviews={true}
               updateCellsBatchingPeriod={50}
+              getItemLayout={getMessageLayout}
               maintainVisibleContentPosition={{
                 minIndexForVisible: 0,
                 autoscrollToTopThreshold: 10
               }}
             />
+
+            {/* Typing Indicator */}
+            {showTypingIndicator && (
+              <View style={styles.typingIndicator}>
+                <Image 
+                  source={userRole === 'admin' ? require('../../../assets/images/bot2.png') : require('../../../assets/images/bot1.png')}
+                  style={styles.typingBotIcon}
+                />
+                <View style={styles.typingBubble}>
+                  <Text style={styles.typingText}>BREWBOT đang soạn tin...</Text>
+                  <View style={styles.typingDots}>
+                    <View style={[styles.typingDot, styles.typingDot1]} />
+                    <View style={[styles.typingDot, styles.typingDot2]} />
+                    <View style={[styles.typingDot, styles.typingDot3]} />
+                  </View>
+                </View>
+              </View>
+            )}
 
             {/* Chat Input */}
             <View style={styles.chatInputContainer}>
@@ -749,7 +871,7 @@ function Home() {
                 style={styles.chatInput}
                 value={newMessage}
                 onChangeText={setNewMessage}
-                placeholder="Type your message..."
+                placeholder={isLoading ? "BREWBOT đang suy nghĩ..." : "Hỏi về cafe, đặt bàn, ưu đãi..."}
                 placeholderTextColor="#999"
                 multiline={false}
                 editable={!isLoading}
@@ -757,12 +879,12 @@ function Home() {
               <TouchableOpacity 
                 style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
                 onPress={handleSendMessage}
-                disabled={isLoading}
+                disabled={isLoading || !newMessage.trim()}
               >
                 <MaterialIcons 
                   name={isLoading ? "hourglass-empty" : "send"} 
                   size={24} 
-                  color={isLoading ? "#999" : PRIMARY_BROWN} 
+                  color={isLoading || !newMessage.trim() ? "#999" : PRIMARY_BROWN} 
                 />
               </TouchableOpacity>
             </View>
@@ -1201,6 +1323,11 @@ const styles = StyleSheet.create({
     color: '#8B5A2B',
     fontWeight: '600',
   },
+  chatHeaderSubtitle: {
+    fontSize: fontScale(14),
+    color: '#A0785A',
+    marginTop: 2,
+  },
   chatCloseButton: {
     padding: moderateScale(4),
   },
@@ -1423,6 +1550,146 @@ const styles = StyleSheet.create({
     fontSize: fontScale(16),
     fontWeight: '600',
     marginTop: 12,
+  },
+  chatSelectionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatSelectionContent: {
+    width: '90%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#8B4513',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  chatSelectionHeader: {
+    width: '100%',
+    alignItems: 'flex-end',
+  },
+  chatSelectionBody: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  chatSelectionTitle: {
+    fontSize: fontScale(20),
+    fontWeight: 'bold',
+    color: '#8B5A2B',
+    marginBottom: 8,
+  },
+  chatSelectionSubtitle: {
+    fontSize: fontScale(14),
+    color: '#A0785A',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  chatOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    backgroundColor: '#F0E6D2',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E8DDD4',
+  },
+  chatOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatOptionIcon: {
+    width: horizontalScale(40),
+    height: verticalScale(40),
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  chatOptionText: {
+    flex: 1,
+  },
+  chatOptionTitle: {
+    fontSize: fontScale(16),
+    fontWeight: 'bold',
+    color: '#8B5A2B',
+  },
+  chatOptionDesc: {
+    fontSize: fontScale(12),
+    color: '#A0785A',
+    marginTop: 2,
+  },
+  chatOptionDisabled: {
+    opacity: 0.7,
+  },
+  typingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    backgroundColor: '#F0E6D2',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E8DDD4',
+  },
+  typingBotIcon: {
+    width: horizontalScale(30),
+    height: verticalScale(30),
+    marginRight: horizontalScale(10),
+    borderRadius: 15,
+  },
+  typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E8DDD4',
+  },
+  typingText: {
+    fontSize: fontScale(14),
+    color: '#8B5A2B',
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  typingDots: {
+    flexDirection: 'row',
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#8B5A2B',
+    marginHorizontal: 2,
+  },
+  typingDot1: {
+    animation: 'typing 1.4s infinite ease-in-out',
+  },
+  typingDot2: {
+    animation: 'typing 1.4s infinite ease-in-out 0.2s',
+  },
+  typingDot3: {
+    animation: 'typing 1.4s infinite ease-in-out 0.4s',
+  },
+  '@keyframes typing': {
+    '0%': {
+      opacity: 0.7,
+    },
+    '50%': {
+      opacity: 1,
+    },
+    '100%': {
+      opacity: 0.7,
+    },
   },
 
 }); 

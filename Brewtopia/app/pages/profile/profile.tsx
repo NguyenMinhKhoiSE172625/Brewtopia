@@ -103,18 +103,26 @@ function Profile() {
       );
   };
 
+  const showComingSoonAlert = () => {
+    Alert.alert(
+      "Thông báo",
+      "Tính năng sẽ có sớm!",
+      [{ text: "OK" }]
+    );
+  };
+
   const userMenuItems = [
     {
       id: '1',
       title: 'Thông tin tài khoản',
       icon: 'person-outline',
-      onPress: () => router.push('/pages/profile/account-details')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '2',
       title: 'Lịch sử đơn hàng',
       icon: 'receipt-long',
-      onPress: () => router.push('/pages/profile/order-history')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '3',
@@ -132,7 +140,7 @@ function Profile() {
       id: '5',
       title: 'Quán yêu thích',
       icon: 'favorite',
-      onPress: () => router.push('/pages/profile/favorite-shops')
+      onPress: () => showComingSoonAlert()
     }
   ];
 
@@ -141,37 +149,37 @@ function Profile() {
       id: '1',
       title: 'Quản lý cửa hàng',
       icon: 'store',
-      onPress: () => router.push('/pages/business-registration/shop-info')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '2',
       title: 'Menu sản phẩm',
       icon: 'restaurant-menu',
-      onPress: () => router.push('/pages/business-registration/menu-selection')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '3',
       title: 'Quản lý đơn hàng',
       icon: 'assignment',
-      onPress: () => router.push('/pages/admin/order-management')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '4',
       title: 'Thống kê bán hàng',
       icon: 'analytics',
-      onPress: () => router.push('/pages/admin/sales-analytics')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '5',
       title: 'Quản lý sự kiện',
       icon: 'event',
-      onPress: () => router.push('/pages/admin/event-management')
+      onPress: () => showComingSoonAlert()
     },
     {
       id: '6',
       title: 'Cài đặt tài khoản',
       icon: 'settings',
-      onPress: () => router.push('/pages/profile/account-settings')
+      onPress: () => showComingSoonAlert()
     }
   ];
 

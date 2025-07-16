@@ -98,7 +98,7 @@ function News() {
 
     return {
       id: apiPost._id,
-      username: apiPost.user?.name || 'Anonymous',
+      username: apiPost.user?.name || 'Người dùng ẩn danh',
       timestamp: formatTimestamp(apiPost.createdAt),
       imageUrl: imageUrl,
       caption: apiPost.content,
@@ -167,20 +167,20 @@ function News() {
 
   useEffect(() => {
     // Lắng nghe like realtime
-    socketService.on('like:update', ({ targetId, likeChange, targetModel }) => {
+    const handleLikeUpdate = ({ targetId, likeChange, targetModel }: any) => {
       if (targetModel === 'Post') {
-        resetPosts(prev =>
-          prev.map(post =>
+        setPosts((prev: any) =>
+          prev.map((post: any) =>
             post.id === targetId
               ? { ...post, likes: (post.likes || 0) + likeChange }
               : post
           )
         );
       }
-    });
+    };
 
     // Lắng nghe comment realtime
-    socketService.on('comment:update', ({ action, comment }) => {
+    const handleCommentUpdate = ({ action, comment }: any) => {
       if (action === 'create' && comment.targetType === 'Post') {
         setComments(prev => ({
           ...prev,
@@ -193,7 +193,10 @@ function News() {
           [comment.targetId]: (prev[comment.targetId] || []).filter(c => c._id !== comment._id)
         }));
       }
-    });
+    };
+
+    socketService.on('like:update', handleLikeUpdate);
+    socketService.on('comment:update', handleCommentUpdate);
 
     return () => {
       socketService.removeListener('like:update');
@@ -361,7 +364,7 @@ function News() {
         result.push(
           <SponsorBanner 
             key={`sponsor-${index}`} 
-            title={index === 1 ? "Sponsored Cafes" : "Discover New Flavors"} 
+            title={index === 1 ? "Các nhà tài trợ" : "Khám phá các vị mới"} 
           />
         );
       }

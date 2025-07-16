@@ -7,7 +7,12 @@ import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../
 export default function OrderTypeSelection() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { cafeId, cart } = params;
+  const { cafeId, cart, menuid } = params;
+  
+  console.log('TypeSelection - params:', params);
+  console.log('TypeSelection - cafeId:', cafeId);
+  console.log('TypeSelection - cart:', cart);
+  console.log('TypeSelection - menuid:', menuid);
 
   const handleTableSelection = () => {
     router.push({
@@ -19,7 +24,7 @@ export default function OrderTypeSelection() {
   const handleDrinkSelection = () => {
     router.push({
       pathname: 'pages/order/drink-order' as any,
-      params: { cafeId, cart }
+      params: { cafeId, cart, menuid }
     });
   };
 

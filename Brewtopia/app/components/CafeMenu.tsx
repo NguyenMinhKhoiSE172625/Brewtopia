@@ -42,29 +42,67 @@ export default function CafeMenu({ cafeId, menuid }: { cafeId: string; menuid?: 
   const [cartBtnPos, setCartBtnPos] = useState({x: SCREEN_WIDTH - 56 - 24, y: SCREEN_HEIGHT - 56 - 32});
   const cartBtnScale = useRef(new Animated.Value(1)).current;
 
-  // Tạo refs cho tất cả menu items
+  // Tạo refs cho tất cả menu items - chỉ tạo khi cần thiết
   const itemRefs = useMemo(() => {
     const refs: Record<string, any> = {};
     menuItems.forEach(item => {
-      refs[item._id] = { current: null };
+      if (!refs[item._id]) {
+        refs[item._id] = { current: null };
+      }
     });
     return refs;
-  }, [menuItems]);
+  }, [menuItems.length]); // Chỉ re-create khi length thay đổi
 
   useEffect(() => {
     const idToUse = menuid || cafeId;
-    if (idToUse) {
+    
+    const fetchMenuItems = async () => {
+      if (!idToUse) {
+        setMenuItems([]);
+        return;
+      }
+      
       setLoading(true);
-      ApiService.fetch(`/menu-items/${idToUse}`)
-        .then((data: any) => {
-          // Nếu data là mảng thì dùng luôn
-          setMenuItems(Array.isArray(data) ? data : []);
-        })
-        .catch(() => setMenuItems([]))
-        .finally(() => setLoading(false));
-    } else {
-      setMenuItems([]);
-    }
+      try {
+        // Thử gọi trực tiếp menu-items trước
+        console.log('CafeMenu - Trying /menu-items/', idToUse);
+        const itemsData = await ApiService.fetch(`/menu-items/${idToUse}`);
+        console.log('CafeMenu - Direct menu-items response:', itemsData);
+        
+        if (Array.isArray(itemsData) && itemsData.length > 0) {
+          setMenuItems(itemsData);
+          return;
+        }
+        
+        // Nếu không có items, thử gọi /menus để lấy menu trước
+        console.log('CafeMenu - No items found, trying /menus/', idToUse);
+        const menuData = await ApiService.fetch(`/menus/${idToUse}`);
+        console.log('CafeMenu - Menu response:', menuData);
+        
+        if (Array.isArray(menuData) && menuData.length > 0) {
+          // Lấy menu đầu tiên và gọi items
+          const firstMenu = menuData[0];
+          console.log('CafeMenu - First menu:', firstMenu);
+          
+          if (firstMenu._id) {
+            console.log('CafeMenu - Trying /menu-items/', firstMenu._id);
+            const itemsData2 = await ApiService.fetch(`/menu-items/${firstMenu._id}`);
+            console.log('CafeMenu - Items from menu response:', itemsData2);
+            setMenuItems(Array.isArray(itemsData2) ? itemsData2 : []);
+          }
+        } else {
+          console.log('CafeMenu - No menu found');
+          setMenuItems([]);
+        }
+      } catch (error) {
+        console.log('CafeMenu - API error:', error);
+        setMenuItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMenuItems();
   }, [menuid, cafeId]);
 
   // Lấy vị trí nút giỏ hàng nổi trên màn hình
@@ -338,6 +376,10 @@ export default function CafeMenu({ cafeId, menuid }: { cafeId: string; menuid?: 
                   setShowCartModal(false);
                   // Chỉ truyền id và quantity
                   const cartToSend = cartList.map(ci => ({ id: ci.item._id, quantity: ci.quantity }));
+                  console.log('CafeMenu - Sending to type-selection:');
+                  console.log('- cafeId:', cafeId);
+                  console.log('- cartToSend:', cartToSend);
+                  console.log('- menuid:', menuid);
                   router.push({
                     pathname: 'pages/order/type-selection' as any,
                     params: { cafeId, cart: JSON.stringify(cartToSend), menuid }
