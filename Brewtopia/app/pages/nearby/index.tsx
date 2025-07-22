@@ -268,59 +268,66 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
   return (
     <Animated.View style={[styles.cafeCard, {
       transform: [{ translateY: slideAnim }],
-      opacity: fadeAnim
-    }]}>
-      <View style={styles.cafeHeader}>
-        <View style={styles.cafeHeaderTop}>
-          <Text style={styles.cafeName}>{cafe.name}</Text>
-          <TouchableOpacity onPress={onClose}>
-            <MaterialIcons name="more-horiz" size={28} color="#6E543C" />
-          </TouchableOpacity>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.cafeAddress}>{cafe.address}</Text>
-          <Text style={styles.cafeStatus}>
-                            {(cafe.status === 'success' ? 'Đang mở' : cafe.status)} - Đóng cửa lúc {cafe.closingTime}
-          </Text>
+      opacity: fadeAnim,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.18,
+      shadowRadius: 8,
+      elevation: 8,
+      borderTopLeftRadius: moderateScale(28),
+      borderTopRightRadius: moderateScale(28),
+      backgroundColor: '#FFF',
+      paddingHorizontal: moderateScale(20),
+      paddingTop: moderateScale(20),
+      paddingBottom: verticalScale(32),
+    }]}>  
+      {/* Ảnh đại diện quán */}
+      <View style={{ alignItems: 'center', marginBottom: verticalScale(12) }}>
+        <CachedImage
+          source={cafe.images[0]}
+          style={{ width: horizontalScale(90), height: horizontalScale(90), borderRadius: 45, borderWidth: 2, borderColor: '#E5DCCB', backgroundColor: '#EEE' }}
+          contentFit="cover"
+        />
+      </View>
+      {/* Tên, địa chỉ, giờ */}
+      <View style={{ alignItems: 'center', marginBottom: verticalScale(10) }}>
+        <Text style={{ fontSize: fontScale(22), fontWeight: '700', color: '#6E543C', marginBottom: verticalScale(2) }}>{cafe.name}</Text>
+        <Text style={{ fontSize: fontScale(14), color: '#666', textAlign: 'center', marginBottom: verticalScale(2) }}>{cafe.address}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(2) }}>
+          <MaterialIcons name="schedule" size={16} color="#6E543C" style={{ marginRight: 4 }} />
+          <Text style={{ fontSize: fontScale(13), color: '#6E543C' }}>Đóng cửa lúc {cafe.closingTime}</Text>
         </View>
       </View>
-      
-      <View style={styles.cafeActions}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={onGetDirections}
-        >
-          <MaterialIcons name="place" size={24} color="#6E543C" />
-          <Text style={styles.actionText}>Path</Text>
+      {/* Nút chức năng */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: verticalScale(10), gap: horizontalScale(8) }}>
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={onGetDirections}>
+          <View style={{ backgroundColor: '#F5F1ED', borderRadius: 30, padding: 12, marginBottom: 2, elevation: 2 }}>
+            <MaterialIcons name="place" size={24} color="#6E543C" />
+          </View>
+          <Text style={{ fontSize: fontScale(12), color: '#6E543C' }}>Path</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => {/* Handle phone call */}}
-        >
-          <MaterialIcons name="phone" size={24} color="#6E543C" />
-          <Text style={styles.actionText}>Phone</Text>
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => {}}>
+          <View style={{ backgroundColor: '#F5F1ED', borderRadius: 30, padding: 12, marginBottom: 2, elevation: 2 }}>
+            <MaterialIcons name="phone" size={24} color="#6E543C" />
+          </View>
+          <Text style={{ fontSize: fontScale(12), color: '#6E543C' }}>Phone</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => {/* Toggle notifications */}}
-        >
-          <MaterialIcons name="notifications" size={24} color="#6E543C" />
-          <Text style={styles.actionText}>Alert</Text>
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => {}}>
+          <View style={{ backgroundColor: '#F5F1ED', borderRadius: 30, padding: 12, marginBottom: 2, elevation: 2 }}>
+            <MaterialIcons name="notifications" size={24} color="#6E543C" />
+          </View>
+          <Text style={{ fontSize: fontScale(12), color: '#6E543C' }}>Alert</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={onShare}
-        >
-          <MaterialIcons name="share" size={24} color="#6E543C" />
-          <Text style={styles.actionText}>Share</Text>
+        <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={onShare}>
+          <View style={{ backgroundColor: '#F5F1ED', borderRadius: 30, padding: 12, marginBottom: 2, elevation: 2 }}>
+            <MaterialIcons name="share" size={24} color="#6E543C" />
+          </View>
+          <Text style={{ fontSize: fontScale(12), color: '#6E543C' }}>Share</Text>
         </TouchableOpacity>
       </View>
-
+      {/* Nút chi tiết */}
       <TouchableOpacity 
-        style={styles.detailButton}
+        style={{ backgroundColor: '#6E543C', borderRadius: 25, alignItems: 'center', paddingVertical: verticalScale(13), marginTop: verticalScale(6), shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 4, elevation: 4 }}
         onPress={() => router.push({
           pathname: 'pages/shop/detail' as any,
           params: {
@@ -336,25 +343,8 @@ const CafeCard = memo(({ cafe, onClose, onGetDirections, onShare, slideAnim, fad
           }
         })}
       >
-                          <Text style={styles.detailButtonText}>Chi tiết</Text>
+        <Text style={{ color: '#FFF', fontSize: fontScale(16), fontWeight: '700' }}>Chi tiết</Text>
       </TouchableOpacity>
-
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.cafeImagesContainer}
-        contentContainerStyle={styles.cafeImagesContent}
-        data={cafe.images}
-        keyExtractor={cafeImageKeyExtractor}
-        renderItem={renderCafeImage}
-        initialNumToRender={2}
-        maxToRenderPerBatch={2}
-        windowSize={3}
-        removeClippedSubviews={true}
-        updateCellsBatchingPeriod={50}
-        getItemLayout={getItemLayout}
-        progressViewOffset={1}
-      />
     </Animated.View>
   );
 });

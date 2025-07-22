@@ -45,7 +45,7 @@ export default function ShopDetail() {
     status: (status as string) || 'Đang mở cửa',
     closingTime: (closingTime as string) || '23:00',
     rating: rating ? Number(rating) : 4.5,
-    images: imagesArr.length > 0 ? imagesArr : [require('../../../assets/images/cafe1.png')],
+    images: [require('../../../assets/images/B-Logo.png')], // Luôn dùng ảnh này
     menuid: menuid as string,
   };
 
@@ -92,7 +92,7 @@ export default function ShopDetail() {
             <Text style={styles.shopName}>{shopData.name}</Text>
             <View style={styles.statusContainer}>
               <Text style={styles.statusText}>
-                {shopData.status} - Đóng cửa lúc {shopData.closingTime}
+                Đóng cửa lúc {shopData.closingTime}
               </Text>
             </View>
           </View>

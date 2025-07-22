@@ -30,109 +30,109 @@ export default function PackageDetails() {
 
   const packages = {
     1: {
-      name: 'Display Package',
-      basePrice: 15.96,
-      description: 'Minimum commitment of 15,000 impressions/month, weekly reports on impressions, clicks and engagement time.',
+      name: 'Gói hiển thị',
+      basePrice: 390000,
+      description: 'Cam kết tối thiểu 15.000 lượt hiển thị/tháng, báo cáo hàng tuần về lượt hiển thị, lượt nhấp và thời gian tương tác.',
       features: [
-        'Banners (static or animated) appear in priority positions: "Deals & Discover" category and partner introduction page.',
-        'Integrated CTA button leads visitors to a personalized landing page.'
+        'Banner (tĩnh hoặc động) xuất hiện ở vị trí ưu tiên: mục "Ưu đãi & Khám phá" và trang giới thiệu đối tác.',
+        'Nút CTA tích hợp dẫn khách đến trang đích cá nhân hóa.'
       ],
       upgrades: {
         impressions: [
-          { id: 1, name: '+5,000 impressions', price: 4 },
-          { id: 2, name: '+8,000 impressions', price: 7.25 },
-          { id: 3, name: '+15,000 impressions', price: 25 }
+          { id: 1, name: '+5.000 lượt hiển thị', price: 100000 },
+          { id: 2, name: '+8.000 lượt hiển thị', price: 180000 },
+          { id: 3, name: '+15.000 lượt hiển thị', price: 400000 }
         ],
         format: [
-          { id: 1, name: 'Short video banner', price: 6 },
-          { id: 2, name: 'Advanced animated banner', price: 10 },
-          { id: 3, name: 'Interactive banner (image & video)', price: 14 }
+          { id: 1, name: 'Banner video ngắn', price: 150000 },
+          { id: 2, name: 'Banner động nâng cao', price: 250000 },
+          { id: 3, name: 'Banner tương tác (ảnh & video)', price: 350000 }
         ],
         reporting: [
-          { id: 1, name: 'Heatmap & avg. view time', price: 4 },
-          { id: 2, name: 'Detailed customer behavior', price: 8 },
-          { id: 3, name: 'Real-time dashboard', price: 12 }
+          { id: 1, name: 'Báo cáo heatmap & thời gian xem TB', price: 100000 },
+          { id: 2, name: 'Phân tích hành vi khách hàng', price: 200000 },
+          { id: 3, name: 'Dashboard realtime', price: 300000 }
         ]
       }
     },
     2: {
-      name: 'Interactive Package',
-      basePrice: 31.96,
-      description: '1,500 clicks/month commitment, detailed weekly reports on clicks and post-click traffic.',
+      name: 'Gói tương tác',
+      basePrice: 780000,
+      description: 'Cam kết 1.500 lượt nhấp/tháng, báo cáo chi tiết hàng tuần về lượt nhấp và hành vi sau nhấp.',
       features: [
-        'Ads appear on the homepage, map, and table reservation/product details page.',
-        '"Featured recommendations" position when customers search by area.'
+        'Quảng cáo xuất hiện trên trang chủ, bản đồ, trang đặt bàn/sản phẩm.',
+        'Vị trí "Đề xuất nổi bật" khi khách tìm kiếm theo khu vực.'
       ],
       upgrades: {
         impressions: [
-          { id: 1, name: '+500 clicks', price: 8 },
-          { id: 2, name: '+750 clicks', price: 14 },
-          { id: 3, name: '+1,000 clicks', price: 20 }
+          { id: 1, name: '+500 lượt nhấp', price: 200000 },
+          { id: 2, name: '+750 lượt nhấp', price: 350000 },
+          { id: 3, name: '+1.000 lượt nhấp', price: 500000 }
         ],
         format: [
-          { id: 1, name: 'High-interaction images', price: 6 },
-          { id: 2, name: 'Short video ads', price: 10 },
-          { id: 3, name: 'Combined image & video', price: 14 }
+          { id: 1, name: 'Hình ảnh tương tác cao', price: 150000 },
+          { id: 2, name: 'Video ngắn', price: 250000 },
+          { id: 3, name: 'Kết hợp ảnh & video', price: 350000 }
         ],
         reporting: [
-          { id: 1, name: 'Detailed conversion', price: 6 },
-          { id: 2, name: 'Post-click behavior', price: 10 },
-          { id: 3, name: 'Real-time dashboard', price: 14 }
+          { id: 1, name: 'Báo cáo chuyển đổi chi tiết', price: 150000 },
+          { id: 2, name: 'Phân tích hành vi sau nhấp', price: 250000 },
+          { id: 3, name: 'Dashboard realtime', price: 350000 }
         ]
       }
     },
     3: {
-      name: 'Conversion Package',
-      basePrice: 63.96,
-      description: 'Charge per action with a maximum commitment of 300 actions/month.',
+      name: 'Gói chuyển đổi',
+      basePrice: 1560000,
+      description: 'Tính phí theo hành động với cam kết tối đa 300 hành động/tháng.',
       features: [
-        'Ads appear on the homepage, table reservation page, payment page and product/service detail page.',
-        'Integrate exclusive discount codes and push notifications.',
-        'Detailed reports by action type.'
+        'Quảng cáo xuất hiện trên trang chủ, trang đặt bàn, trang thanh toán và chi tiết sản phẩm/dịch vụ.',
+        'Tích hợp mã giảm giá độc quyền và thông báo nhắc khách hoàn tất giao dịch.',
+        'Báo cáo chi tiết theo loại hành động.'
       ],
       upgrades: {
         impressions: [
-          { id: 1, name: '+100 actions', price: 12 },
-          { id: 2, name: '+200 actions', price: 20 },
-          { id: 3, name: '+300 actions', price: 28 }
+          { id: 1, name: '+100 hành động', price: 300000 },
+          { id: 2, name: '+200 hành động', price: 500000 },
+          { id: 3, name: '+300 hành động', price: 700000 }
         ],
         format: [
-          { id: 1, name: 'Email remarketing', price: 8 },
-          { id: 2, name: 'SMS remarketing', price: 12 },
-          { id: 3, name: 'Email & SMS remarketing', price: 16 }
+          { id: 1, name: 'Email remarketing', price: 200000 },
+          { id: 2, name: 'SMS remarketing', price: 300000 },
+          { id: 3, name: 'Email & SMS remarketing', price: 400000 }
         ],
         reporting: [
-          { id: 1, name: 'Customer behavior', price: 8 },
-          { id: 2, name: 'Advanced dashboard', price: 12 },
-          { id: 3, name: 'Real-time analysis', price: 16 }
+          { id: 1, name: 'Phân tích hành vi khách hàng', price: 200000 },
+          { id: 2, name: 'Dashboard nâng cao', price: 300000 },
+          { id: 3, name: 'Phân tích realtime', price: 400000 }
         ]
       }
     },
     4: {
-      name: 'Exclusive Package',
-      basePrice: 143.96,
-      description: 'Premium solution for both F&B and non-F&B businesses.',
+      name: 'Gói độc quyền',
+      basePrice: 3500000,
+      description: 'Giải pháp cao cấp cho cả doanh nghiệp F&B và ngoài F&B.',
       features: [
-        'Priority position on all main pages.',
-        'Flexible CPM, CPC, CPA support.',
-        'Push notifications and A/B testing.',
-        'Social media integration.'
+        'Vị trí ưu tiên trên tất cả các trang chính.',
+        'Hỗ trợ CPM, CPC, CPA linh hoạt.',
+        'Thông báo đẩy và A/B testing.',
+        'Tích hợp mạng xã hội.'
       ],
       upgrades: {
         impressions: [
-          { id: 1, name: 'Google Ads channel', price: 40 },
-          { id: 2, name: 'LinkedIn channel', price: 60 },
-          { id: 3, name: 'Google Ads & LinkedIn', price: 80 }
+          { id: 1, name: 'Kênh Google Ads', price: 1000000 },
+          { id: 2, name: 'Kênh LinkedIn', price: 1500000 },
+          { id: 3, name: 'Google Ads & LinkedIn', price: 2000000 }
         ],
         format: [
-          { id: 1, name: 'Basic CRM reports', price: 28 },
-          { id: 2, name: 'Advanced CRM reports', price: 40 },
-          { id: 3, name: 'Real-time dashboard', price: 52 }
+          { id: 1, name: 'Báo cáo CRM cơ bản', price: 700000 },
+          { id: 2, name: 'Báo cáo CRM nâng cao', price: 1000000 },
+          { id: 3, name: 'Dashboard realtime', price: 1300000 }
         ],
         reporting: [
-          { id: 1, name: 'Basic A/B testing', price: 20 },
-          { id: 2, name: 'Advanced A/B testing', price: 32 },
-          { id: 3, name: 'ML optimization', price: 48 }
+          { id: 1, name: 'A/B testing cơ bản', price: 500000 },
+          { id: 2, name: 'A/B testing nâng cao', price: 800000 },
+          { id: 3, name: 'Tối ưu hóa bằng ML', price: 1200000 }
         ]
       }
     }
@@ -187,10 +187,10 @@ export default function PackageDetails() {
 
       <ScrollView style={styles.content}>
         <View style={styles.priceCard}>
-          <Text style={styles.priceTitle}>PRICE LIST</Text>
+          <Text style={styles.priceTitle}>BẢNG GIÁ</Text>
           
           <View style={styles.descriptionBox}>
-            <Text style={styles.descriptionTitle}>DESCRIPTION</Text>
+            <Text style={styles.descriptionTitle}>MÔ TẢ</Text>
             <Text style={styles.descriptionText}>{selectedPackage.description}</Text>
             {selectedPackage.features.map((feature, index) => (
               <Text key={index} style={styles.featureText}>• {feature}</Text>
@@ -198,7 +198,7 @@ export default function PackageDetails() {
           </View>
 
           <View style={styles.upgradesSection}>
-            <Text style={styles.upgradeTitle}>Upgrade additional impressions</Text>
+            <Text style={styles.upgradeTitle}>Nâng cấp lượt hiển thị</Text>
             {selectedPackage.upgrades.impressions.map((option) => (
               <TouchableOpacity
                 key={option.id}
@@ -213,11 +213,11 @@ export default function PackageDetails() {
                   size={24} 
                   color="#6E543C" 
                 />
-                <Text style={styles.upgradeText}>{option.name} - ${option.price}/Month</Text>
+                <Text style={styles.upgradeText}>{option.name} - {option.price.toLocaleString()} VNĐ/tháng</Text>
               </TouchableOpacity>
             ))}
 
-            <Text style={styles.upgradeTitle}>Upgrade interactive banner format</Text>
+            <Text style={styles.upgradeTitle}>Nâng cấp định dạng banner</Text>
             {selectedPackage.upgrades.format.map((option) => (
               <TouchableOpacity
                 key={option.id}
@@ -232,11 +232,11 @@ export default function PackageDetails() {
                   size={24} 
                   color="#6E543C" 
                 />
-                <Text style={styles.upgradeText}>{option.name} - ${option.price}/Month</Text>
+                <Text style={styles.upgradeText}>{option.name} - {option.price.toLocaleString()} VNĐ/tháng</Text>
               </TouchableOpacity>
             ))}
 
-            <Text style={styles.upgradeTitle}>Upgrade your in-depth reporting</Text>
+            <Text style={styles.upgradeTitle}>Nâng cấp báo cáo chuyên sâu</Text>
             {selectedPackage.upgrades.reporting.map((option) => (
               <TouchableOpacity
                 key={option.id}
@@ -251,15 +251,15 @@ export default function PackageDetails() {
                   size={24} 
                   color="#6E543C" 
                 />
-                <Text style={styles.upgradeText}>{option.name} - ${option.price}/Month</Text>
+                <Text style={styles.upgradeText}>{option.name} - {option.price.toLocaleString()} VNĐ/tháng</Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <View style={styles.totalSection}>
-            <Text style={styles.totalText}>TOTAL: ${total.toFixed(2)}</Text>
+            <Text style={styles.totalText}>TỔNG: {total.toLocaleString()} VNĐ</Text>
             <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-              <Text style={styles.payButtonText}>PAY</Text>
+              <Text style={styles.payButtonText}>Thanh toán</Text>
             </TouchableOpacity>
           </View>
         </View>
