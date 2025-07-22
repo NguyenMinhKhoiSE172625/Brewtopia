@@ -6,7 +6,6 @@ import 'react-native-gesture-handler';
 import { LogBox, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ApiService from './utils/ApiService';
-import Config from 'react-native-config';
 import DebugService from './utils/DebugService';
 
 // Ignore specific warnings
@@ -44,7 +43,7 @@ export default function RootLayout() {
     const checkNetworkConnection = async () => {
       try {
         // Try to fetch a reliable endpoint to test connectivity
-        const connectionCheckUrl = Config.CONN_CHECK_URL || 'https://www.google.com';
+        const connectionCheckUrl = process.env.EXPO_PUBLIC_CONN_CHECK_URL || 'https://www.google.com';
         const response = await fetch(connectionCheckUrl, { 
           method: 'HEAD',
           cache: 'no-cache',

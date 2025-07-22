@@ -41,45 +41,45 @@ export default function BookingAds() {
   const packages = [
     {
       id: 1,
-      name: 'Display Package',
-      price: '15.96',
-      description: 'Minimum commitment of 15,000 impressions/month, weekly reports on impressions, clicks and engagement time.',
+      name: 'Gói hiển thị',
+      price: '390.000',
+      description: 'Cam kết tối thiểu 15.000 lượt hiển thị/tháng, báo cáo hàng tuần về lượt hiển thị, lượt nhấp và thời gian tương tác.',
       features: [
-        'Banners (static or animated) appear in priority positions: "Deals & Discover" category and partner introduction page.',
-        'Integrated CTA button leads visitors to a personalized landing page.'
+        'Banner (tĩnh hoặc động) xuất hiện ở vị trí ưu tiên: mục "Ưu đãi & Khám phá" và trang giới thiệu đối tác.',
+        'Nút CTA tích hợp dẫn khách đến trang đích cá nhân hóa.'
       ]
     },
     {
       id: 2,
-      name: 'Interactive Package',
-      price: '31.96',
-      description: '1,500 clicks/month commitment, detailed weekly reports on clicks and post-click traffic.',
+      name: 'Gói tương tác',
+      price: '780.000',
+      description: 'Cam kết 1.500 lượt nhấp/tháng, báo cáo chi tiết hàng tuần về lượt nhấp và hành vi sau nhấp.',
       features: [
-        'Ads appear on the homepage, map, and table reservation/product details page.',
-        '"Featured recommendations" position when customers search by area.'
+        'Quảng cáo xuất hiện trên trang chủ, bản đồ, trang đặt bàn/sản phẩm.',
+        'Vị trí "Đề xuất nổi bật" khi khách tìm kiếm theo khu vực.'
       ]
     },
     {
       id: 3,
-      name: 'Conversion Package',
-      price: '63.96',
-      description: 'Charge per action with a maximum commitment of 300 actions/month (about 4.200-4.300 VND/action).',
+      name: 'Gói chuyển đổi',
+      price: '1.560.000',
+      description: 'Tính phí theo hành động với cam kết tối đa 300 hành động/tháng (~4.200-4.300đ/hành động).',
       features: [
-        'Ads appear on the homepage, table reservation page, payment page and product/service detail page.',
-        'Integrate exclusive discount codes and push notifications to automatically remind customers to complete transactions.',
-        'Detailed reports by action type.'
+        'Quảng cáo xuất hiện trên trang chủ, trang đặt bàn, trang thanh toán và chi tiết sản phẩm/dịch vụ.',
+        'Tích hợp mã giảm giá độc quyền và thông báo nhắc khách hoàn tất giao dịch.',
+        'Báo cáo chi tiết theo loại hành động.'
       ]
     },
     {
       id: 4,
-      name: 'Exclusive Package',
-      price: '143.96',
-      description: 'There are 2 versions: "Exclusive Plus" for F&B industry and "Exclusive Pro" for non-F&B businesses.',
+      name: 'Gói độc quyền',
+      price: '3.500.000',
+      description: 'Có 2 phiên bản: "Độc quyền Plus" cho ngành F&B và "Độc quyền Pro" cho doanh nghiệp ngoài F&B.',
       features: [
-        'Priority position on the homepage, map, news page and waiting screen when customers book/pay.',
-        'Flexible support for combining CPM, CPC and CPA.',
-        'Integrated push notification and basic A/B testing tools.',
-        'Integrated advertising on Brewtopia\'s social media channels (Facebook, Instagram, TikTok).'
+        'Vị trí ưu tiên trên trang chủ, bản đồ, trang tin tức và màn hình chờ khi khách đặt/thanh toán.',
+        'Hỗ trợ linh hoạt CPM, CPC và CPA.',
+        'Tích hợp thông báo đẩy và công cụ A/B testing cơ bản.',
+        'Quảng cáo trên kênh mạng xã hội của Brewtopia (Facebook, Instagram, TikTok).'
       ]
     }
   ];
@@ -90,7 +90,7 @@ export default function BookingAds() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Advertising package</Text>
+        <Text style={styles.headerTitle}>Gói quảng cáo</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -106,7 +106,7 @@ export default function BookingAds() {
             <View key={pkg.id} style={styles.packageCard}>
               <View style={styles.packageHeader}>
                 <Text style={styles.packageName}>{pkg.name}</Text>
-                <Text style={styles.packagePrice}>{pkg.price}$</Text>
+                <Text style={styles.packagePrice}>{pkg.price} VNĐ</Text>
               </View>
               
               <TouchableOpacity 
@@ -116,7 +116,7 @@ export default function BookingAds() {
                   params: { packageId: pkg.id }
                 })}
               >
-                <Text style={styles.exploreButtonText}>EXPLORE</Text>
+                <Text style={styles.exploreButtonText}>Khám phá</Text>
               </TouchableOpacity>
             </View>
           ))

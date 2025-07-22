@@ -18,7 +18,7 @@ export default function OrderConfirmation() {
     <SafeAreaView style={styles.container}>
       {/* Header with title */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Order Confirmation</Text>
+        <Text style={styles.headerTitle}>Xác nhận đơn hàng</Text>
       </View>
       
       <View style={styles.content}>
@@ -26,12 +26,12 @@ export default function OrderConfirmation() {
           <MaterialIcons name="check-circle" size={80} color="#4CAF50" />
         </View>
         
-        <Text style={styles.successTitle}>Payment Successful!</Text>
-        <Text style={styles.successMessage}>Your order has been successfully placed.</Text>
+        <Text style={styles.successTitle}>Thanh toán thành công!</Text>
+        <Text style={styles.successMessage}>Đơn hàng của bạn đã được ghi nhận.</Text>
         
         <View style={styles.orderInfo}>
-          <Text style={styles.orderNumber}>Order #12345</Text>
-          <Text style={styles.orderDate}>March 26, 2023 | 10:30 AM</Text>
+          <Text style={styles.orderNumber}>Mã đơn: #12345</Text>
+          <Text style={styles.orderDate}>26/03/2023 | 10:30</Text>
         </View>
         
         <View style={styles.divider} />
@@ -39,13 +39,11 @@ export default function OrderConfirmation() {
         <View style={styles.announcementContainer}>
           <View style={styles.announcementHeader}>
             <MaterialIcons name="warning" size={24} color="#F57C00" />
-            <Text style={styles.announcementTitle}>Important Notice</Text>
+            <Text style={styles.announcementTitle}>Lưu ý quan trọng</Text>
           </View>
           
           <Text style={styles.announcementText}>
-            If it is more than 5 minutes after the appointment time, your drink will 
-            still be kept until the end of the session, but the quality will not be 
-            guaranteed as expected, you will be responsible for any problems.
+            Nếu bạn đến muộn hơn 5 phút so với giờ hẹn, đồ uống vẫn sẽ được giữ đến hết ca, nhưng chất lượng có thể không đảm bảo như mong đợi. Bạn sẽ tự chịu trách nhiệm với các vấn đề phát sinh.
           </Text>
         </View>
         
@@ -65,7 +63,7 @@ export default function OrderConfirmation() {
           style={styles.submitButton}
           onPress={handleSubmit}
         >
-          <Text style={styles.submitButtonText}>I Understand</Text>
+          <Text style={styles.submitButtonText}>Tôi đã hiểu</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

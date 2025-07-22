@@ -1,104 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, SafeAreaView, Text, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, SafeAreaView, Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import UsersList from './UsersList';
-import chatService from '../../services/chatService';
-import socketService from '../../services/socketService';
 import { horizontalScale, verticalScale, moderateScale, fontScale } from '../../utils/scaling';
 
 export default function Users() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getUserData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('user_data');
-        if (userData) {
-          setCurrentUser(JSON.parse(userData));
-        }
-      } catch (error) {
-        console.error('Error getting user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUserData();
-  }, []);
-
-  const handleUserSelect = async (user: any) => {
-    // Đảm bảo luôn lấy userId từ AsyncStorage
-    let userId = currentUser?._id;
-    if (!userId) {
-      try {
-        const userData = await AsyncStorage.getItem('user_data');
-        if (userData) {
-          userId = JSON.parse(userData)._id;
-        }
-      } catch (error) {
-        console.error('Error getting user data:', error);
-      }
-    }
-    if (!userId) {
-      console.warn('Không lấy được userId!');
-      return;
-    }
-
-    // Nếu là AI thì chuyển thẳng sang chat bot, không tạo phòng, không join socket
-    if (user.isAI) {
-      router.push({
-        pathname: '/pages/chat/chat',
-        params: {
-          chatId: 'ai',
-          chatName: user.name,
-          isGroup: 'false'
-        }
-      });
-      return;
-    }
-
-    try {
-      // Tạo phòng chat với user được chọn (chỉ truyền user._id, không truyền currentUser._id)
-      const response = await chatService.createChatRoom(
-        [user._id],
-        false,
-        user.name
-      );
-
-      // Lấy đúng dữ liệu phòng chat
-      let chatRoomData = response;
-      if (response.room) {
-        chatRoomData = response.room;
-      }
-      const roomId = chatRoomData._id;
-      const participants = chatRoomData.participants || [];
-      console.log('Create room response:', chatRoomData);
-      // Kiểm tra userId có nằm trong participants không
-      const isCurrentUserInRoom = participants.some((p: any) => (typeof p === 'string' ? p === userId : p._id === userId));
-      if (!isCurrentUserInRoom) {
-        throw new Error('Bạn không được phép tham gia phòng này');
-      }
-
-      // Join room qua socket
-      socketService.joinRoom(roomId, userId);
-
-      // Chuyển đến trang chat
-      router.push({
-        pathname: '/pages/chat/chat',
-        params: {
-          chatId: roomId,
-          chatName: user.name,
-          isGroup: 'false'
-        }
-      });
-    } catch (error) {
-      console.error('Error creating chat room:', error);
-    }
+  const showComingSoonAlert = () => {
+    Alert.alert(
+      "Thông báo",
+      "Tính năng Chat sẽ có sớm! Chúng tôi đang phát triển để mang đến trải nghiệm tốt nhất cho bạn.",
+      [{ text: "OK", onPress: () => router.push('/pages/home/home') }]
+    );
   };
+
+  React.useEffect(() => {
+    showComingSoonAlert();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,11 +37,23 @@ export default function Users() {
         </View>
       </View>
 
-      {/* Users List */}
-      <UsersList
-        onUserSelect={handleUserSelect}
-        currentUserId={currentUser?._id}
-      />
+      {/* Content */}
+      <View style={styles.content}>
+        <View style={styles.comingSoonContainer}>
+          <MaterialIcons name="chat" size={80} color="#6E543C" />
+          <Text style={styles.comingSoonTitle}>Tính năng Chat</Text>
+          <Text style={styles.comingSoonSubtitle}>Sẽ có sớm!</Text>
+          <Text style={styles.comingSoonDescription}>
+            Chúng tôi đang phát triển tính năng chat để bạn có thể trò chuyện với các quán cafe và người dùng khác một cách thuận tiện nhất.
+          </Text>
+          <TouchableOpacity 
+            style={styles.backToHomeButton}
+            onPress={() => router.push('/pages/home/home')}
+          >
+            <Text style={styles.backToHomeButtonText}>Về trang chủ</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -163,5 +94,56 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: horizontalScale(40),
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: moderateScale(32),
+  },
+  comingSoonContainer: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: moderateScale(32),
+    borderRadius: moderateScale(16),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  comingSoonTitle: {
+    fontSize: fontScale(24),
+    fontWeight: '600',
+    color: '#6E543C',
+    marginTop: verticalScale(16),
+    marginBottom: verticalScale(8),
+  },
+  comingSoonSubtitle: {
+    fontSize: fontScale(18),
+    fontWeight: '500',
+    color: '#FF6B6B',
+    marginBottom: verticalScale(16),
+  },
+  comingSoonDescription: {
+    fontSize: fontScale(14),
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: fontScale(20),
+    marginBottom: verticalScale(24),
+  },
+  backToHomeButton: {
+    backgroundColor: '#6E543C',
+    paddingHorizontal: horizontalScale(24),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(8),
+  },
+  backToHomeButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontScale(16),
+    fontWeight: '600',
   },
 }); 

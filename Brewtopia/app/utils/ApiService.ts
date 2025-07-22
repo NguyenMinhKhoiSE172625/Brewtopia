@@ -5,7 +5,6 @@
 
 import DebugService from './DebugService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Config from 'react-native-config';
 import { Platform } from 'react-native';
 import UserRoleHelper, { UserRole } from './UserRoleHelper';
 
@@ -21,10 +20,14 @@ import UserRoleHelper, { UserRole } from './UserRoleHelper';
 const DEFAULT_API_URL = 'https://brewtopia-production.up.railway.app/api';
 
 // Increase default timeout for slower network connections (30 seconds)
-const DEFAULT_TIMEOUT = parseInt(Config.API_TIMEOUT as string, 10) || 30000;
+const DEFAULT_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT as string, 10) || 30000;
 
 // Maximum number of retry attempts
-const MAX_RETRIES = parseInt(Config.MAX_RETRIES as string, 10) || 3;
+const MAX_RETRIES = parseInt(process.env.EXPO_PUBLIC_MAX_RETRIES as string, 10) || 2;
+
+// Request cache for GET requests
+const requestCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 class ApiService {
   private token: string | null = null;
@@ -120,6 +123,16 @@ class ApiService {
     const fullUrl = url.startsWith('http') ? url : `${DEFAULT_API_URL}${url}`;
     const method = options.method || 'GET';
     
+    // Check cache for GET requests
+    if (method === 'GET' && !options.body) {
+      const cacheKey = fullUrl;
+      const cached = requestCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        console.log(`🔄 Cache hit for: ${method} ${fullUrl}`);
+        return cached.data;
+      }
+    }
+    
     try {
       // Add timeout to the request
       const controller = new AbortController();
@@ -140,7 +153,7 @@ class ApiService {
       console.log(`Current token: ${this.token}`);
       
       // Log the request
-      console.log(`Request: ${method} ${fullUrl}`);
+      console.log(`🔥 API Request: ${method} ${fullUrl}`);
       
       // Make the request
       const response = await fetch(fullUrl, {
@@ -178,7 +191,7 @@ class ApiService {
       }
       
       // Log the response
-      console.log(`Response: ${method} ${fullUrl} - Status: ${response.status}`);
+      console.log(`✅ API Response: ${method} ${fullUrl} - Status: ${response.status}`, data);
       
       // Handle error responses
       if (!response.ok) {
@@ -187,6 +200,26 @@ class ApiService {
           data,
           message: data.message || 'API request failed',
         };
+      }
+      
+      // Cache GET requests
+      if (method === 'GET' && !options.body && response.ok) {
+        const cacheKey = fullUrl;
+        requestCache.set(cacheKey, {
+          data,
+          timestamp: Date.now(),
+          ttl: CACHE_TTL
+        });
+        
+        // Clean old cache entries
+        if (requestCache.size > 100) {
+          const now = Date.now();
+          for (const [key, value] of requestCache.entries()) {
+            if (now - value.timestamp > value.ttl) {
+              requestCache.delete(key);
+            }
+          }
+        }
       }
       
       return data as T;

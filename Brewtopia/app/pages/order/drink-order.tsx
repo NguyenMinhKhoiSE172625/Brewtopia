@@ -13,11 +13,20 @@ export default function DrinkOrder() {
   const { cafeId, cart: cartParam, menuid } = params;
   
   // Parse cart id+quantity
-  let cartArr: {id: string, quantity: number}[] = [];
-  try {
-    const parsed = cartParam ? JSON.parse(cartParam as string) : [];
-    cartArr = Array.isArray(parsed) ? parsed : [];
-  } catch { cartArr = []; }
+  const [cartArr, setCartArr] = useState<{id: string, quantity: number}[]>([]);
+  
+  // Parse cart param khi component mount hoặc cartParam thay đổi
+  useEffect(() => {
+    try {
+      const parsed = cartParam ? JSON.parse(cartParam as string) : [];
+      const newCartArr = Array.isArray(parsed) ? parsed : [];
+      setCartArr(newCartArr);
+      console.log('DrinkOrder - Parsed cart:', newCartArr);
+    } catch (error) {
+      console.log('DrinkOrder - Error parsing cart:', error);
+      setCartArr([]);
+    }
+  }, [cartParam]);
 
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
@@ -53,25 +62,74 @@ export default function DrinkOrder() {
   
   // Lấy menu từ API
   useEffect(() => {
-    if (menuid) {
-      ApiService.fetch(`/menu-items/${menuid}`)
-        .then((data) => setMenuItems(Array.isArray(data) ? data : []))
-        .catch(() => setMenuItems([]));
-    }
+    console.log('DrinkOrder - menuid:', menuid);
+    console.log('DrinkOrder - cartParam:', cartParam);
+    console.log('DrinkOrder - cartArr:', cartArr);
+    
+    const fetchMenuItems = async () => {
+      if (!menuid) return;
+      
+      try {
+        // Thử gọi trực tiếp menu-items trước
+        console.log('DrinkOrder - Trying /menu-items/', menuid);
+        const itemsData = await ApiService.fetch(`/menu-items/${menuid}`);
+        console.log('DrinkOrder - Direct menu-items response:', itemsData);
+        
+        if (Array.isArray(itemsData) && itemsData.length > 0) {
+          setMenuItems(itemsData);
+          return;
+        }
+        
+        // Nếu không có items, thử gọi /menus để lấy menu trước
+        console.log('DrinkOrder - No items found, trying /menus/', menuid);
+        const menuData = await ApiService.fetch(`/menus/${menuid}`);
+        console.log('DrinkOrder - Menu response:', menuData);
+        
+        if (Array.isArray(menuData) && menuData.length > 0) {
+          // Lấy menu đầu tiên và gọi items
+          const firstMenu = menuData[0];
+          console.log('DrinkOrder - First menu:', firstMenu);
+          
+          if (firstMenu._id) {
+            console.log('DrinkOrder - Trying /menu-items/', firstMenu._id);
+            const itemsData2 = await ApiService.fetch(`/menu-items/${firstMenu._id}`);
+            console.log('DrinkOrder - Items from menu response:', itemsData2);
+            setMenuItems(Array.isArray(itemsData2) ? itemsData2 : []);
+          }
+        } else {
+          console.log('DrinkOrder - No menu found');
+          setMenuItems([]);
+        }
+      } catch (error) {
+        console.log('DrinkOrder - API error:', error);
+        setMenuItems([]);
+      }
+    };
+    
+    fetchMenuItems();
   }, [menuid]);
 
   // Ghép quantity vào từng item
   useEffect(() => {
+    console.log('DrinkOrder - Matching items:');
+    console.log('- menuItems.length:', menuItems.length);
+    console.log('- cartArr.length:', cartArr.length);
+    console.log('- menuItems:', menuItems);
+    console.log('- cartArr:', cartArr);
+    
     if (menuItems.length && cartArr.length) {
       const selected = cartArr.map(ci => {
         const item = menuItems.find(mi => String(mi._id) === String(ci.id));
+        console.log(`- Looking for item with id ${ci.id}:`, item);
         return item ? { ...item, quantity: ci.quantity } : null;
       }).filter(Boolean);
+      console.log('- Final selected items:', selected);
       setSelectedItems(selected);
     } else {
+      console.log('- No items to match, setting empty array');
       setSelectedItems([]);
     }
-  }, [menuItems, cartParam]);
+  }, [menuItems, cartArr]);
 
   // Tính tổng tiền động
   const totalPrice = selectedItems.reduce((sum, ci) => sum + (ci.price || 0) * (ci.quantity || 1), 0);
@@ -122,16 +180,16 @@ export default function DrinkOrder() {
         >
           <MaterialIcons name="arrow-back" size={24} color="#6E543C" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Drinks</Text>
+        <Text style={styles.headerTitle}>Đặt nước</Text>
         <View style={styles.backButton} />
       </View>
       
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Pickup Date & Time</Text>
+          <Text style={styles.sectionTitle}>Ngày & Giờ nhận</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Date</Text>
+            <Text style={styles.inputLabel}>Ngày</Text>
             <TouchableOpacity 
               style={styles.dateTimeInput}
               onPress={() => setShowDateModal(true)}
@@ -142,7 +200,7 @@ export default function DrinkOrder() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Time</Text>
+            <Text style={styles.inputLabel}>Giờ</Text>
             <TouchableOpacity 
               style={styles.dateTimeInput}
               onPress={() => setShowTimeModal(true)}
@@ -154,7 +212,7 @@ export default function DrinkOrder() {
         </View>
         
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Selected Drinks</Text>
+          <Text style={styles.sectionTitle}>Các món đã chọn</Text>
           {selectedItems.length === 0 && (
             <Text style={{color:'#999',marginBottom:12}}>Chưa chọn món nào</Text>
           )}
@@ -170,17 +228,17 @@ export default function DrinkOrder() {
             </View>
           ))}
           <View style={styles.orderTotal}>
-            <Text style={styles.orderTotalLabel}>Total:</Text>
+            <Text style={styles.orderTotalLabel}>Tổng cộng:</Text>
             <Text style={styles.orderTotalAmount}>{totalPrice.toLocaleString()}đ</Text>
           </View>
         </View>
         
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Special Requirements</Text>
+          <Text style={styles.sectionTitle}>Yêu cầu đặc biệt</Text>
           
           <TextInput
             style={styles.requirementsInput}
-            placeholder="Add any special instructions for your order..."
+            placeholder="Thêm ghi chú cho đơn hàng (nếu có)..."
             multiline
             numberOfLines={4}
             value={requirements}
@@ -193,7 +251,7 @@ export default function DrinkOrder() {
           onPress={handlePay}
           disabled={paying}
         >
-          <Text style={styles.payButtonText}>Pay for Order</Text>
+          <Text style={styles.payButtonText}>Thanh toán</Text>
           <MaterialIcons name="payment" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </ScrollView>
@@ -206,7 +264,7 @@ export default function DrinkOrder() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Date</Text>
+            <Text style={styles.modalTitle}>Chọn ngày</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {dateOptions.map((dateOption, index) => (
@@ -237,7 +295,7 @@ export default function DrinkOrder() {
               style={styles.cancelButton}
               onPress={() => setShowDateModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,7 +309,7 @@ export default function DrinkOrder() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Time</Text>
+            <Text style={styles.modalTitle}>Chọn giờ</Text>
             
             <ScrollView style={styles.optionsContainer}>
               {timeOptions.map((timeOption, index) => (
@@ -286,7 +344,7 @@ export default function DrinkOrder() {
               style={styles.cancelButton}
               onPress={() => setShowTimeModal(false)}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -300,7 +358,7 @@ export default function DrinkOrder() {
             <TouchableOpacity onPress={() => {
               setShowSuccess(false);
               setBonusMessage('');
-              router.replace('/pages/payment-success/payment-success');
+              router.replace('/pages/order/confirmation');
             }}>
               <Text style={{ marginTop: 16, color: '#6E543C', fontWeight: 'bold' }}>Tiếp tục</Text>
             </TouchableOpacity>

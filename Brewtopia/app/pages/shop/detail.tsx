@@ -39,13 +39,13 @@ export default function ShopDetail() {
   // Dữ liệu động từ params, fallback sang mock nếu thiếu
   const shopData: ShopDetail = {
     id: shopId as string,
-    name: (name as string) || 'COFFEE SHOP 1',
-    address: (address as string) || 'ABC St, WCD District, City A',
-    description: (description as string) || 'A cozy coffee shop with a wide selection of specialty coffees and a relaxing atmosphere.',
-    status: (status as string) || 'Open',
+    name: (name as string) || 'QUÁN CÀ PHÊ 1',
+    address: (address as string) || '123 Đường ABC, Quận WCD, Thành phố A',
+    description: (description as string) || 'Một quán cà phê ấm cúng với nhiều loại cà phê đặc biệt và không gian thư giãn.',
+    status: (status as string) || 'Đang mở cửa',
     closingTime: (closingTime as string) || '23:00',
     rating: rating ? Number(rating) : 4.5,
-    images: imagesArr.length > 0 ? imagesArr : [require('../../../assets/images/cafe1.png')],
+    images: [require('../../../assets/images/B-Logo.png')], // Luôn dùng ảnh này
     menuid: menuid as string,
   };
 
@@ -92,7 +92,7 @@ export default function ShopDetail() {
             <Text style={styles.shopName}>{shopData.name}</Text>
             <View style={styles.statusContainer}>
               <Text style={styles.statusText}>
-                {shopData.status} - Closed at {shopData.closingTime}
+                Đóng cửa lúc {shopData.closingTime}
               </Text>
             </View>
           </View>
@@ -110,13 +110,13 @@ export default function ShopDetail() {
             style={[styles.tab, activeTab === 'Event' && styles.activeTab]} 
             onPress={() => setActiveTab('Event')}
           >
-            <Text style={[styles.tabText, activeTab === 'Event' && styles.activeTabText]}>Event</Text>
+            <Text style={[styles.tabText, activeTab === 'Event' && styles.activeTabText]}>Sự kiện</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'Feed' && styles.activeTab]} 
             onPress={() => setActiveTab('Feed')}
           >
-            <Text style={[styles.tabText, activeTab === 'Feed' && styles.activeTabText]}>Feed</Text>
+            <Text style={[styles.tabText, activeTab === 'Feed' && styles.activeTabText]}>Bảng tin</Text>
           </TouchableOpacity>
         </View>
         {/* Tab Content scroll cùng trang */}
